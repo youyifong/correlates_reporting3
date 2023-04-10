@@ -1,0 +1,251 @@
+---
+header-includes:
+   - \usepackage{float}
+output:
+  pdf_document: default
+  html_document: default
+  citation_package: natbib
+  number_sections: true
+  extra_dependencies: ["caption", "subcaption", "graphicx"]
+  toc: true
+---
+
+```{r, echo=FALSE, message=FALSE}
+message("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ running cor_threshold report ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+```
+
+
+```{r setup, include=FALSE}
+Sys.setenv(TRIAL="janssen_trial_real")
+knitr::opts_chunk$set(echo = TRUE)
+folder_var <- "cor_threshold"
+library(here)
+library(dplyr)
+print(here::here())
+config <- config::get(config = Sys.getenv("TRIAL"))
+for(opt in names(config)){
+  eval(parse(text = paste0(names(config[opt])," <- config[[opt]]")))
+}
+ 
+```
+
+# Univariate CoR: Nonparametric Threshold Modeling (>=s)
+
+An extension of the unadjusted nonparametric threshold-searching approach
+developed in @Donovan, the covariate-adjusted TMLE-based approach developed by
+van der Laan, Zhang, Gilbert (submitted) is used to estimate the so-called
+threshold-response function $E_X[ E[Y \mid S \geq s, X, A = 1] \mid A=1]$ for a
+range of thresholds $s$. Here, $X$ is a set of baseline characteristics, $A=1$
+represents the vaccine group, $S$ is the biomarker/immune-response/correlate of
+interest, and $Y$ is the indicator of infection diagnosis before the reference time point
+$t_f$, which is defined as the final observed time of an event. This parameter can be viewed as a causal/covariate-adjusted version of
+the parameter $P(Y=1 \mid S \geq s, A=1)$. Intuitively, the threshold-response
+at a given threshold is the expected probability of obtaining of acquiring HIV-1 infection diagnosis if
+one experiences a marker/immune-response value above that threshold. The variables adjusted for are: age, whether country is South Africa, BMI and baseline behavioral risk score. A
+number of plots and tables are reported:
+\begin{enumerate}
+\item A plot and table with risk estimates and point-wise 95\% confidence intervals
+\item A plot and table with risk estimates and simultaneous 95\% confidence bands
+\item Monotone-corrected versions of 1 and 2.
+\end{enumerate}
+
+A reverse cumulative distribution function curve estimated by the IPW NPMLE of
+the marker values is superimposed on the threshold-response plots and a dashed
+red line is added to mark the threshold value after which no more events are
+observed.
+
+The blue dots on the plots represent the risk predictions at marker values where there was an observed case.
+
+ 
+
+\newpage
+
+```{r, echo = F, include = F}
+ 
+ci <- "pointwise"
+above = TRUE
+monotone <- FALSE
+
+```
+
+```{r, echo = F, include = F}
+TRIAL <- Sys.getenv("TRIAL")
+TRIAL <- "janssen_trial_real"
+ENSEMBLE <- FALSE
+if(tolower(TRIAL) %in% c("janssen_pooled_mock", "janssen_pooled_EUA", "janssen_na_mock", "janssen_na_EUA", "janssen_la_mock", "janssen_la_EUA", "janssen_sa_mock", 'janssen_sa_EUA', "janssen_trial_EUA")) {
+  ENSEMBLE <- TRUE
+  
+  keys <-  c("D29", "D29start1") 
+ 
+}
+
+if(tolower(TRIAL) %in% c("hvtn705")) {
+  keys <- c("D210") 
+}
+
+
+if(tolower(TRIAL) %in% c("moderna_mock", 
+"moderna_real")) {
+  keys <- c("D29", "D57") 
+}
+
+
+```
+
+
+```{r, results="asis", echo = F }
+ 
+ 
+for(short_key in keys){
+  COR <- strsplit(short_key, "_")[[1]][1]
+  config.cor <- config::get(config = COR)
+  day <- config.cor$tpeak
+  tpeak <- config.cor$tpeak
+  countAfter1 <- COR == "D29start1"
+  
+  assays <- config$assays
+  time <- paste0("Day", tpeak)
+  markers <- paste0("Day", tpeak, assays)
+
+
+  
+  
+  
+  title <- paste0("Plots and Tables with estimates and ", ci, " confidence intervals"," for day ", day, " markers")
+  if(monotone) {
+    title <- paste0(title, " (monotone-corrected)")
+  }
+  if(countAfter1) {
+    title <- paste0(title, " (events after 1 day post dose)")
+  } else {
+    
+  }
+  cat("##", title, "\n")
+   
+  for(marker in markers) {
+    key <- paste0(short_key, "_", marker)
+    
+    assay <- gsub(time, "" , marker)
+    if(!(assay %in% assays)) {
+      assay <- assays[stringr::str_detect(marker, assays)]
+    }
+
+    
+    res = knitr::knit_child(c(here::here(folder_var, 'sub_report.Rmd')), quiet = TRUE)
+    #res = knitr::knit_child(c(here::here( 'sub_report.Rmd')), quiet = TRUE)
+
+    cat(res, sep = '\n')
+    cat("\\clearpage", sep = '\n')
+  }
+  
+   
+  
+  monotone <- TRUE
+  
+   
+  
+ title <- paste0("Plots and Tables with estimates and ", ci, " confidence intervals"," for day ", day, " markers")
+  if(monotone) {
+    title <- paste0(title, " (monotone-corrected)")
+  }
+  if(countAfter1) {
+    title <- paste0(title, " (events after 1 day post dose)")
+  } else {
+    
+  }
+  cat("##", title, "\n")
+   
+  for(marker in markers) {
+    key <- paste0(short_key, "_", marker)
+    #assay <- assays[stringr::str_detect(marker, assays)]
+    assay <- gsub(time, "" , marker)
+    
+    
+    res = knitr::knit_child(c(here::here(folder_var, 'sub_report.Rmd')), quiet = TRUE)
+    
+    cat(res, sep = '\n')
+    cat("\\clearpage", sep = '\n')
+  }
+}
+
+
+
+
+```
+
+
+
+```{r, echo = F , results = "asis" }
+ci <- "simultaneous"
+
+for(short_key in keys){
+  COR <- strsplit(short_key, "_")[[1]][1]
+  config.cor <- config::get(config = COR)
+  day <- config.cor$tpeak
+  tpeak <- config.cor$tpeak
+  countAfter1 <- COR == "D29start1"
+  
+  assays <- config$assays
+  time <- paste0("Day", tpeak)
+  markers <- paste0("Day", tpeak, assays)
+  
+  
+  
+  title <- paste0("Plots and Tables with estimates and ", ci, " confidence intervals"," for day ", day, " markers")
+  if(monotone) {
+    title <- paste0(title, " (monotone-corrected)")
+  }
+  if(countAfter1) {
+    title <- paste0(title, " (events after 1 day post dose)")
+  } else {
+    
+  }
+  cat("##", title, "\n")
+  
+  for(marker in markers) {
+    key <- paste0(short_key, "_", marker)
+    #assay <- assays[stringr::str_detect(marker, assays)]
+    assay <- gsub(time, "" , marker)
+    res = knitr::knit_child(c(here::here(folder_var, 'sub_report.Rmd')), quiet = TRUE)
+    
+    cat(res, sep = '\n')
+    cat("\\clearpage", sep = '\n')
+  }
+  
+   
+  
+  monotone <- TRUE
+  
+   
+  
+ title <- paste0("Plots and Tables with estimates and ", ci, " confidence intervals"," for day ", day, " markers")
+  if(monotone) {
+    title <- paste0(title, " (monotone-corrected)")
+  }
+  if(countAfter1) {
+    title <- paste0(title, " (events after 1 day post dose)")
+  } else {
+    
+  }
+  cat("##", title, "\n")
+   
+  for(marker in markers) {
+    key <- paste0(short_key, "_", marker)
+    #assay <- assays[stringr::str_detect(marker, assays)]
+    assay <- gsub(time, "" , marker)
+
+    res = knitr::knit_child(c(here::here(folder_var, 'sub_report.Rmd')), quiet = TRUE)
+    
+    cat(res, sep = '\n')
+    cat("\\clearpage", sep = '\n')
+  }
+}
+
+
+
+```
+
+
+
+
+ 

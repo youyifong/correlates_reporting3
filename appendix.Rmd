@@ -1,0 +1,34 @@
+# Appendix
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
+quiet <- capture.output({
+  renv::activate(project = here::here())
+  #source(here::here("_common.R"))
+})
+library(here)
+library(digest)
+
+# hash algorithm picked based on https://csrc.nist.gov/projects/hash-functions
+hash_algorithm <- "sha256"
+
+
+# get hash of commit at HEAD
+commit_hash <- system("git rev-parse HEAD", intern = TRUE)    
+# get hash of input processed data file based on chosen hashing algorithm
+processed_file_digest <- digest(file = path_to_data, algo = hash_algorithm)
+    
+
+
+```
+
+* This report was built from the
+  [`CoVPN/correlates_reporting`](https://github.com/CoVPN/correlates_reporting)
+  repository with commit hash  
+  `r system("git rev-parse HEAD", intern = TRUE)`.  
+  A diff of the changes introduced by that commit may be viewed at  
+  https://github.com/CoVPN/correlates_reporting/commit/`r system("git rev-parse HEAD", intern = TRUE)`
+
+
+* The `r hash_algorithm` hash sum of the processed file,  
+`r paste0(path_to_data)`:  
+`r processed_file_digest`

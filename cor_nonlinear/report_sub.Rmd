@@ -1,0 +1,15 @@
+# Day `r COR` Univariate CoR: Nonlinear modeling {#cor-nonlinear-Day`r COR`}
+
+
+We fit smoothing spline models with degrees of freedom selected by cross-validation using the mgcv R package. Marginalized risk curves are drawn for marker values between 2.5 and 97.5 percentiles. 
+<!-- and two-phase models using the chngpt R package. -->
+
+
+```{r, echo=FALSE, results='asis'}
+  for (a in assays) {
+    res = knitr::knit_child(c(here::here('cor_nonlinear', 'risk_plots.Rmd')), quiet = TRUE)
+    cat(res, sep = '\n')
+  }
+```
+
+
