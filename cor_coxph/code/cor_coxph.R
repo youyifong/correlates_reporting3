@@ -19,7 +19,6 @@ renv::activate(project = here::here(".."))
     # There is a bug on Windows that prevents renv from working properly. The following code provides a workaround:
     if (.Platform$OS.type == "windows") .libPaths(c(paste0(Sys.getenv ("R_HOME"), "/library"), .libPaths()))    
 source(here::here("..", "_common.R"))
-# dat.mock is made
 
 library(kyotil) # p.adj.perm, getFormattedSummary
 library(marginalizedRisk)
@@ -30,10 +29,18 @@ library(parallel)
 library(forestplot)
 library(Hmisc) # wtd.quantile, cut2
 library(xtable) # this is a dependency of kyotil
-source(here::here("code", "params.R"))
 time.start=Sys.time()
 myprint(study_name)
 myprint(verbose)
+
+
+dat = read.csv(config$data_cleaned)
+assay_metadata = read.csv(config$assay_metadata)
+assays=assay_metadata$assay
+
+source(here::here("code", "params.R"))
+
+
 
 
 # path for figures and tables etc
@@ -51,26 +58,29 @@ myprint(numPerm)
 # uloq censoring, done here b/c should not be done for immunogenicity reports
 # note that if delta are used, delta needs to be recomputed
 for (a in assays) {
-  for (t in "Day"%.%tpeak ) {
-    dat.mock[[t %.% a]] <- ifelse(dat.mock[[t %.% a]] > log10(uloqs[a]), log10(uloqs[a]), dat.mock[[t %.% a]])
+  uloq=assay_metadata$uloq[assay_metadata$assay==a]
+  for (t in c("BD1", "BD29")  ) {
+    dat.mock[[t %.% a]] <- ifelse(dat.mock[[t %.% a]] > log10(uloq), log10(uloq), dat.mock[[t %.% a]])
   }
 }    
 
-# define an alias for EventIndPrimaryDxx
-dat.mock$yy=dat.mock[[config.cor$EventIndPrimary]]
-dat.mock$yy=dat.mock[[config.cor$EventIndPrimary]]
 
 myprint(tfinal.tpeak)
 write(tfinal.tpeak, file=paste0(save.results.to, "timepoints_cum_risk_"%.%study_name))
 
     
-dat.vac.seroneg=subset(dat.mock, Trt==1 & ph1)
-dat.pla.seroneg=subset(dat.mock, Trt==0 & ph1)
+dat.vac.naive=subset(dat,  Trt==1 & naive & ph1)
+dat.pla.naive=subset(dat,  Trt==0 & naive & ph1)
+dat.vac.nnaive=subset(dat, Trt==1 & !naive & ph1)
+dat.pla.nnaive=subset(dat, Trt==0 & !naive & ph1)
+
+# for use in competing risk estimation
+dat.vac.naive.ph2=subset(dat.vac.naive, ph2)
 
 
 # define trichotomized markers
-dat.vac.seroneg = add.trichotomized.markers (dat.vac.seroneg, all.markers, wt.col.name="wt")
-marker.cutpoints=attr(dat.vac.seroneg, "marker.cutpoints")
+dat.vac.naive = add.trichotomized.markers (dat.vac.naive, all.markers, wt.col.name="wt")
+marker.cutpoints=attr(dat.vac.naive, "marker.cutpoints")
 for (a in all.markers) {        
     q.a=marker.cutpoints[[a]]
     if (startsWith(a, "Day")) {
@@ -82,46 +92,36 @@ for (a in all.markers) {
     }
 }
 
-# some exploratory code
-if (config$is_ows_trial) source(here::here("code", "cor_coxph_misc.R"))
 
 #create twophase design object
-design.vacc.seroneg<-twophase(id=list(~1,~1), strata=list(NULL,~Wstratum), subset=~ph2, data=dat.vac.seroneg)
-with(dat.vac.seroneg, table(Wstratum, ph2))
+design.vacc.naive<-twophase(id=list(~1,~1), strata=list(NULL,~Wstratum), subset=~ph2, data=dat.vac.naive)
+with(dat.vac.naive, table(Wstratum, ph2))
     
-# create verification object to be populated by the following scripts
-rv=list() 
-rv$marker.cutpoints=marker.cutpoints
-
-# getting some quantiles
-#10**wtd.quantile(dat.vac.seroneg$Day57pseudoneutid50, dat.vac.seroneg$wt, c(0.025, 0.05, seq(.2,.9,by=0.01),seq(.9,.99,by=0.005)))
 
 # table of ph1 and ph2 cases
-tab=with(dat.vac.seroneg, table(ph2, EventIndPrimary))
+tab=with(dat.vac.naive, table(ph2, EventIndPrimary))
 names(dimnames(tab))[2]="Event Indicator"
 print(tab)
 mytex(tab, file.name="tab1", save2input.only=T, input.foldername=save.results.to)
 
-# for use in competing risk estimation
-dat.vac.seroneg.ph2=subset(dat.vac.seroneg, ph2)
 
 begin=Sys.time()
 print(date())
 
 # some checks
 
-#with(dat.vac.seroneg.ph2, weighted.mean(Day35bindRBD<log10(100), wt))
+#with(dat.vac.naive.ph2, weighted.mean(Day35bindRBD<log10(100), wt))
 
-#with(dat.vac.seroneg.ph2, table(EventIndPrimary, is.na(seq1.spike.weighted.hamming)))
-#with(dat.vac.seroneg.ph2, table(EventIndPrimary, is.na(seq1.log10vl)))
+#with(dat.vac.naive.ph2, table(EventIndPrimary, is.na(seq1.spike.weighted.hamming)))
+#with(dat.vac.naive.ph2, table(EventIndPrimary, is.na(seq1.log10vl)))
 
-#with(dat.vac.seroneg, table(EventIndPrimary, sieve.status, EventTimePrimary>0))
-#with(dat.vac.seroneg, table(EventIndPrimaryD29, sieve.status, EventTimePrimary>0))
-#with(dat.vac.seroneg, table(EventIndPrimaryIncludeNotMolecConfirmedD29, sieve.status, EventTimePrimary>0))
-#with(dat.vac.seroneg, plot(EventTimePrimary, sieve.time, cex=.2)); abline(0,1)
-#subset(dat.vac.seroneg, EventIndPrimary==0 & sieve.status==1)
+#with(dat.vac.naive, table(EventIndPrimary, sieve.status, EventTimePrimary>0))
+#with(dat.vac.naive, table(EventIndPrimaryD29, sieve.status, EventTimePrimary>0))
+#with(dat.vac.naive, table(EventIndPrimaryIncludeNotMolecConfirmedD29, sieve.status, EventTimePrimary>0))
+#with(dat.vac.naive, plot(EventTimePrimary, sieve.time, cex=.2)); abline(0,1)
+#subset(dat.vac.naive, EventIndPrimary==0 & sieve.status==1)
 
-#with(subset(dat.vac.seroneg, EventIndPrimaryIncludeNotMolecConfirmedD29==1), table(is.na(seq1.variant), EventIndPrimaryHasVLD29))
+#with(subset(dat.vac.naive, EventIndPrimaryIncludeNotMolecConfirmedD29==1), table(is.na(seq1.variant), EventIndPrimaryHasVLD29))
 
 
 ###################################################################################################
@@ -156,29 +156,6 @@ if (Sys.getenv("TRIAL") == "janssen_pooled_EUA" & COR=="D29IncludeNotMolecConfir
 }
 print("Passed cor_coxph unit testing")    
 
-
-# forest plots
-if(length(config$forestplot_script)==1 & !study_name %in% c("PREVENT19","VAT08m") & !contain(attr(config,"config"),"senior")) {
-    tmp=here::here("code", config$forestplot_script)
-    if (file.exists(tmp)) source(tmp)
-    
-    # unit testing 
-    if (study_name == "MockCOVE") {
-        tmp.1=c(sapply(rv$fr.2[-1], function (x) x[c("HR","p.value"),1])) # concatList(tmp.1, ", ")
-        if (tpeak=="29") {
-            tmp.2=c(2.19803e-01,3.42813e-06,4.00791e-01,1.55780e-03,2.64497e-01,2.90077e-04,2.52391e-01,3.38292e-04,3.11841e-01,1.09284e-03)
-        } else if (tpeak=="57") {
-            tmp.2=c(1.17284e-01,4.73761e-11,3.91017e-01,7.49144e-04,2.84943e-01,1.36601e-05,2.44480e-01,9.03454e-06,2.70036e-01,9.12665e-06)
-        }
-        assertthat::assert_that(
-            max(abs(tmp.1-tmp.2)/abs(tmp.2))<1e-5,
-            msg = "failed MockCOVE unit testing")    
-        print("Passed MockCOVE unit testing")    
-    }
-}
-
-
-
 ###################################################################################################
 # marginalized risk and controlled VE
 ###################################################################################################
@@ -194,10 +171,6 @@ source(here::here("code", "cor_coxph_marginalized_risk_plotting.R"))
 if (attr(config, "config") %in% c("moderna_real", "janssen_pooled_EUA")) source(here::here("code", "cor_coxph_samplesizeratio.R"))
 
 
-
-###################################################################################################
-# save verification object rv
-save(rv, file=paste0(here::here("verification"), "/", COR, ".rv."%.%study_name%.%".Rdata"))
 
 print(date())
 print("cor_coxph run time: "%.%format(Sys.time()-time.start, digits=1))
