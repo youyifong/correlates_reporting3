@@ -13,7 +13,7 @@ print(date())
 
 COR="D29xxx"; Sys.setenv(VERBOSE = 1) 
 
-for (TRIAL in c("janssen_pooled_partA")) {
+# for (TRIAL in c("janssen_pooled_partA")) {
 
 
 renv::activate(project = here::here(".."))     
@@ -89,12 +89,12 @@ p=  getFormattedSummary(fits, exp=T, robust=T, type=10)
 tab=cbind(est, p)
 colnames(tab)=c("HR", "P value")
 tab
-
-mytex(tab, file.name=paste0("CoR_lineage1", align="c", include.colnames = T, save2input.only=T, input.foldername=save.results.to)
-
-    
-
-
-
-
-} # end for TRIAL
+# 
+# mytex(tab, file.name=paste0("CoR_lineage1", align="c", include.colnames = T, save2input.only=T, input.foldername=save.results.to)
+# 
+#     
+# 
+# 
+# 
+# 
+# } # end for TRIAL

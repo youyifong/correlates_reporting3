@@ -8,13 +8,13 @@ if(verbose) print("Regression for continuous markers")
 fits=list()
 for (a in all.markers) {
     f= update(form.0, as.formula(paste0("~.+", a)))
-    fits[[a]]=svycoxph(f, design=design.vacc.seroneg) 
+    fits[[a]]=svycoxph(f, design=design.1) 
 }
 # scaled marker
 fits.scaled=list()
 for (a in all.markers) {
     f= update(form.0, as.formula(paste0("~.+scale(", a, ")")))
-    fits.scaled[[a]]=svycoxph(f, design=design.vacc.seroneg) 
+    fits.scaled[[a]]=svycoxph(f, design=design.1) 
 }
 
 # put coxph model coef together to save
@@ -53,7 +53,7 @@ fits.tri=list()
 for (a in all.markers) {
     if(verbose) myprint(a)
     f= update(form.0, as.formula(paste0("~.+", a, "cat")))
-    fits.tri[[a]]=run.svycoxph(f, design=design.vacc.seroneg) 
+    fits.tri[[a]]=run.svycoxph(f, design=design.1) 
 }
 fits.tri=fits.tri
 
@@ -105,9 +105,9 @@ if (length(p.unadj)>1) {
     #### Westfall and Young permutation-based adjustment
     if(!file.exists(paste0(save.results.to, "pvals.perm.",study_name,".Rdata"))) {
         
-        dat.ph2 = design.vacc.seroneg$phase1$sample$variables
-        design.vacc.seroneg.perm=design.vacc.seroneg
-        #design.vacc.seroneg.perm$phase1$full$variables
+        dat.ph2 = design.1$phase1$sample$variables
+        design.1.perm=design.1
+        #design.1.perm$phase1$full$variables
     
     #    # if want to only do multitesting when liveneutmn50 is included
     #    if (!"liveneutmn50" %in% assays) numPerm=5
@@ -120,27 +120,27 @@ if (length(p.unadj)>1) {
             if (class(save.seed)=="try-error") {set.seed(1); save.seed <- get(".Random.seed", .GlobalEnv) }          
             set.seed(seed)        
             
-            # permute markers in design.vacc.seroneg.perm
+            # permute markers in design.1.perm
             new.idx=sample(1:nrow(dat.ph2))
             tmp=dat.ph2
             for (a in all.markers) {
                 tmp[[a]]=tmp[[a]][new.idx]
                 tmp[[a%.%"cat"]]=tmp[[a%.%"cat"]][new.idx]
             }
-            design.vacc.seroneg.perm$phase1$sample$variables = tmp
+            design.1.perm$phase1$sample$variables = tmp
             
             # rename all.markers so that out has the proper names. this is only effective within permutation
             names(all.markers)=all.markers
             out=c(
                 cont=sapply (all.markers, function(a) {
                     f= update(form.0, as.formula(paste0("~.+", a)))
-                    fit=run.svycoxph(f, design=design.vacc.seroneg.perm) 
+                    fit=run.svycoxph(f, design=design.1.perm) 
                     if (length(fit)==1) NA else last(c(getFixedEf(fit)))
                 })        
                 ,    
                 tri=sapply (all.markers, function(a) {
                     f= update(form.0, as.formula(paste0("~.+", a, "cat")))
-                    fit=run.svycoxph(f, design=design.vacc.seroneg.perm) 
+                    fit=run.svycoxph(f, design=design.1.perm) 
                     if (length(fit)==1) NA else last(c(getFixedEf(fit)))
                 })
             )
@@ -335,7 +335,7 @@ if (!is.null(config$multivariate_assays)) {
             a.tmp=gsub(x, paste0(if(i==1) "scale","(Day",tpeak,x,")"), a.tmp) 
         }
         f= update(form.0, as.formula(paste0("~.+", a.tmp)))
-        fit=svycoxph(f, design=design.vacc.seroneg) 
+        fit=svycoxph(f, design=design.1) 
         var.ind=length(coef(fit)) - length(aa):1 + 1
         
         fits=list(fit)
@@ -374,7 +374,7 @@ if (!is.null(config$additional_models)) {
     for (a in config$additional_models) {
         tmp=gsub("tpeak",tpeak,a)
         f= update(Surv(EventTimePrimary, EventIndPrimary) ~1, as.formula(paste0("~.+", tmp)))
-        fit=svycoxph(f, design=design.vacc.seroneg) 
+        fit=svycoxph(f, design=design.1) 
         
         fits=list(fit)
         est=getFormattedSummary(fits, exp=T, robust=T, type=1)
@@ -395,7 +395,7 @@ if (!is.null(config$additional_models)) {
 
 if (attr(config,"config")=="janssen_pooled_EUA") {
     f=Surv(EventTimePrimary, EventIndPrimary) ~ risk_score + as.factor(Region) * Day29pseudoneutid50    
-    fit=svycoxph(f, design=design.vacc.seroneg) 
+    fit=svycoxph(f, design=design.1) 
     var.ind=5:6
     
     fits=list(fit)
