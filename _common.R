@@ -1,7 +1,6 @@
 #if (exists(".DEF.COMMON")) stop ("_common.R has already been loaded") else .DEF.COMMON=TRUE
 library(methods)
 library(dplyr)
-library(kyotil)
 library(marginalizedRisk)
 library(survival)
     
@@ -19,290 +18,41 @@ if(!exists("verbose")) verbose=0
 if (Sys.getenv("VERBOSE") %in% c("T","TRUE")) verbose=1
 if (Sys.getenv("VERBOSE") %in% c("1", "2", "3")) verbose=as.integer(Sys.getenv("VERBOSE"))
     
+if(Sys.getenv("TRIAL")=="") stop(" *************************************  environmental variable TRIAL not defined  *************************************")
+
 config <- config::get(config = Sys.getenv("TRIAL"))
+study_name=config$study_name
 
-
-###################################################################################################
-# get marginalized risk without marker
-
-get.marginalized.risk.no.marker=function(formula, dat, day){
-    if (!is.list(formula)) {
-        # model=T is required because the type of prediction requires it, see Note on ?predict.coxph
-        fit.risk = coxph(formula, dat, model=T) 
-        dat$EventTimePrimary=day
-        risks = 1 - exp(-predict(fit.risk, newdata=dat, type="expected"))
-        mean(risks)
-    } else {
-        # competing risk estimation
-        out=pcr2(formula, dat, day)
-        mean(out)
-    }
-}
-
-# formulae
-    form.s = Surv(EventTimePrimary, EventIndPrimary) ~ 1
-    form.0 = update (form.s, as.formula(config$covariates_riskscore))
-    print(form.0)
-    
-    comp.risk=FALSE
-    
-
-    if (is.null(config.cor$tinterm)) {    
-    
-        dat.mock$ph1=dat.mock[[config.cor$ph1]]
-        dat.mock$ph2=dat.mock[[config.cor$ph2]]
-        dat.mock$EventIndPrimary =dat.mock[[config.cor$EventIndPrimary]]
-        dat.mock$EventTimePrimary=dat.mock[[config.cor$EventTimePrimary]]
-        dat.mock$Wstratum=dat.mock[[config.cor$WtStratum]]
-        dat.mock$wt=dat.mock[[config.cor$wt]]
-        if (!is.null(config.cor$tpsStratum)) dat.mock$tps.stratum=dat.mock[[config.cor$tpsStratum]]
-        if (!is.null(config.cor$Earlyendpoint)) dat.mock$Earlyendpoint=dat.mock[[config.cor$Earlyendpoint]]
-        
-        # this day may be different from tpeak. it is the origin of followup days
-        tpeak1 = as.integer(sub(".*[^0-9]+", "", config.cor$EventTimePrimary))
-        
-        # subset to require risk_score
-        # check to make sure that risk score is not missing in ph1
-        if(!is.null(dat.mock$risk_score)) {
-            if (!attr(config, "config") %in% c("janssen_na_EUA","janssen_na_partA")) { 
-                # check this for backward compatibility
-                stopifnot(nrow(subset(dat.mock, ph1 & is.na(risk_score)))==0)
-            }
-            dat.mock=subset(dat.mock, !is.na(risk_score))
-        }        
-    
-        # data integrity checks
-        if (!is.null(dat.mock$ph1)) {
-            # missing values in variables that should have no missing values
-            variables_with_no_missing <- paste0(c("ph2", "EventIndPrimary", "EventTimePrimary"))
-            ans=sapply(variables_with_no_missing, function(a) all(!is.na(dat.mock[dat.mock$ph1==1, a])))
-            if(!all(ans)) stop(paste0("Unexpected missingness in: ", paste(variables_with_no_missing[!ans], collapse = ", ")))   
-            
-            # ph1 should not have NA in Wstratum
-            ans=with(subset(dat.mock,ph1==1), all(!is.na(Wstratum)))
-            if(!ans) stop("Some Wstratum in ph1 are NA")
-        } else {
-            # may not be defined if COR is not provided in command line and used the default value
-        }
-        
-        # default rule for followup time is the last case in ph2 in vaccine arm
-        tfinal.tpeak=with(subset(dat.mock, Trt==1 & ph2), max(EventTimePrimary[EventIndPrimary==1]))
-        
-        # exceptions
-        if (attr(config, "config") == "janssen_na_EUA") {
-            tfinal.tpeak=53
-        } else if (attr(config, "config") == "janssen_la_EUA") { # from day 48 to 58, risk jumps from .008 to .027
-            tfinal.tpeak=48 
-        } else if (attr(config, "config") == "janssen_sa_EUA") {
-            tfinal.tpeak=40            
-        } else if (attr(config, "config") == "janssen_pooled_EUA") {
-            tfinal.tpeak=54
-            
-        } else if (startsWith(attr(config, "config"), "janssen_") & contain(attr(config, "config"), "partA")) {
-            # smaller of the two: 1) last case in ph2 in vaccine, 2) last time to have 15 at risk in subcohort vaccine arm
-            tfinal.tpeak=min(
-                with(subset(dat.mock, Trt==1 & ph2 & EventIndPrimary==1), max(EventTimePrimary)),
-                with(subset(dat.mock, Trt==1 & ph2 & SubcohortInd==1),    sort(EventTimePrimary, decreasing=T)[15]-1)
-            )
-            # for moderate, we choose to use the same tfinal.tpeak as the overall COVID
-            if (COR=="D29ModerateIncludeNotMolecConfirmed") {
-            tfinal.tpeak=min(
-                with(subset(dat.mock, Trt==1 & ph2 & ModerateEventIndPrimaryIncludeNotMolecConfirmedD29==1), max(EventTimePrimary)),
-                with(subset(dat.mock, Trt==1 & ph2 & SubcohortInd==1),    sort(EventTimePrimary, decreasing=T)[15]-1)
-            )
-            }
-
-        } else if (attr(config, "config") %in% c("profiscov", "profiscov_lvmn")) {
-            if (COR=="D91") tfinal.tpeak=66 else if(COR=="D43") tfinal.tpeak= 91+66-43
-            
-        } else if (study_name=="HVTN705") {
-            tfinal.tpeak=550
-
-        }
-        
-        prev.vacc = get.marginalized.risk.no.marker(form.0, subset(dat.mock, Trt==1 & ph1), tfinal.tpeak)
-        prev.plac = get.marginalized.risk.no.marker(form.0, subset(dat.mock, Trt==0 & ph1), tfinal.tpeak)   
-        overall.ve = c(1 - prev.vacc/prev.plac) 
-        myprint(prev.plac, prev.vacc, overall.ve)
-        
-
-#        # get VE in the first month or two of followup
-#        dat.tmp=dat.mock
-#        t.tmp=30
-#        # censor at t.tmp 
-#        dat.tmp$EventIndPrimary =ifelse(dat.tmp$EventTimePrimary<=t.tmp, dat.tmp$EventIndPrimary, 0)
-#        dat.tmp$EventTimePrimary=ifelse(dat.tmp$EventTimePrimary<=t.tmp, dat.tmp$EventTimePrimary, t.tmp)
-#        prev.vacc = get.marginalized.risk.no.marker(form.0, subset(dat.tmp, Trt==1 & ph1), t.tmp)
-#        prev.plac = get.marginalized.risk.no.marker(form.0, subset(dat.tmp, Trt==0 & ph1), t.tmp)
-#        overall.ve = c(1 - prev.vacc/prev.plac)    
-#        myprint(prev.plac, prev.vacc, overall.ve)        
-        
-    } else {
-        # subset to require risk_score
-        # note that it is assumed there no risk_score is missing for anyone in the analysis population. 
-        # in the case of single time point COR, we do a check for that after definining ph1, 
-        # which is why we have to do subset separately here again
-        if(!is.null(dat.mock$risk_score)) dat.mock=subset(dat.mock, !is.na(risk_score))
-        
-    }
-    
-    
-}
-
-## wt can be computed from ph1, ph2 and Wstratum. See config for redundancy note
-#wts_table <- dat.mock %>% dplyr::filter(ph1==1) %>% with(table(Wstratum, ph2))
-#wts_norm <- rowSums(wts_table) / wts_table[, 2]
-#dat.mock$wt <- wts_norm[dat.mock$Wstratum %.% ""]
-#dat.mock$wt = ifelse(with(dat.mock, ph1), dat.mock$wt, NA) # the step above assigns weights for some subjects outside ph1. the next step makes them NA
-
-
-
-
-
-
-###############################################################################
-# figure labels and titles for markers
-###############################################################################
-
-
-# race labeling
-labels.race <- c(
-  "White", 
-  "Black or African American",
-  "Asian", 
-  if ((study_name=="ENSEMBLE" | study_name=="MockENSEMBLE") & startsWith(attr(config, "config"),"janssen_la")) "Indigenous South American" else "American Indian or Alaska Native",
-  "Native Hawaiian or Other Pacific Islander", 
-  "Multiracial",
-  if ((study_name=="COVE" | study_name=="MockCOVE")) "Other", 
-  "Not reported and unknown"
-)
-
-# ethnicity labeling
-labels.ethnicity <- c(
-  "Hispanic or Latino", "Not Hispanic or Latino",
-  "Not reported and unknown"
-)
-
-
-# baseline stratum labeling
-if (study_name=="COVEBoost") {
-    Bstratum.labels <- c(
-      "Age >= 65",
-      "Age < 65, At risk",
-      "Age < 65, Not at risk"
-    )
-    
-} else stop("unknown study_name 2")
-
-
-
-# baseline stratum labeling
-if (study_name=="COVEBoost" | study_name=="MockCOVE") {
-    demo.stratum.labels <- c(
-      "Age >= 65, URM",
-      "Age < 65, At risk, URM",
-      "Age < 65, Not at risk, URM",
-      "Age >= 65, White non-Hisp",
-      "Age < 65, At risk, White non-Hisp",
-      "Age < 65, Not at risk, White non-Hisp"
-    )
-    
-} else stop("unknown study_name 3")
-
-
-###############################################################################
-# theme options
-###############################################################################
-
-# fixed knitr chunk options
-knitr::opts_chunk$set(
-  comment = "#>",
-  collapse = TRUE,
-  out.width = "80%",
-  out.extra = "",
-  fig.pos = "H",
-  fig.show = "hold",
-  fig.align = "center",
-  fig.width = 6,
-  fig.asp = 0.618,
-  fig.retina = 0.8,
-  dpi = 600,
-  echo = FALSE,
-  message = FALSE,
-  warning = FALSE
-)
-
-# global options
-options(
-  digits = 6,
-  #scipen = 999,
-  dplyr.print_min = 6,
-  dplyr.print_max = 6,
-  crayon.enabled = FALSE,
-  bookdown.clean_book = TRUE,
-  knitr.kable.NA = "NA",
-  repos = structure(c(CRAN = "https://cran.rstudio.com/"))
-)
-
-# no complaints from installation warnings
-Sys.setenv(R_REMOTES_NO_ERRORS_FROM_WARNINGS="true")
-
-# overwrite options by output type
-if (knitr:::is_html_output()) {
-  #options(width = 80)
-
-  # automatically create a bib database for R packages
-  knitr::write_bib(c(
-    .packages(), "bookdown", "knitr", "rmarkdown"
-  ), "packages.bib")
-}
-if (knitr:::is_latex_output()) {
-  #knitr::opts_chunk$set(width = 67)
-  #options(width = 67)
-  options(cli.unicode = TRUE)
-
-  # automatically create a bib database for R packages
-  knitr::write_bib(c(
-    .packages(), "bookdown", "knitr", "rmarkdown"
-  ), "packages.bib")
-}
-
-# create and set global ggplot theme
-# borrowed from https://github.com/tidymodels/TMwR/blob/master/_common.R
-theme_transparent <- function(...) {
-  # use black-white theme as base
-  ret <- ggplot2::theme_bw(...)
-
-  # modify with transparencies
-  trans_rect <- ggplot2::element_rect(fill = "transparent", colour = NA)
-  ret$panel.background  <- trans_rect
-  ret$plot.background   <- trans_rect
-  ret$legend.background <- trans_rect
-  ret$legend.key        <- trans_rect
-
-  # always have legend below
-  ret$legend.position <- "bottom"
-  return(ret)
-}
-
-library(ggplot2)
-theme_set(theme_transparent())
-theme_update(
-  text = element_text(size = 25),
-  axis.text.x = element_text(colour = "black", size = 30),
-  axis.text.y = element_text(colour = "black", size = 30)
-)
-
-# custom ggsave function with updated defaults
-ggsave_custom <- function(filename = default_name(plot),
-                          height= 15, width = 21, ...) {
-  ggsave(filename = filename, height = height, width = width, ...)
-}
-
-
+assay_metadata = read.csv(config$assay_metadata)
+assays=assay_metadata$assay
 
 
 ############## Utility func
+
+# dat should be the ph2 dataset from a case control study
+# smaller of the two: 1) last case in dat, 2) last time to have 15 at risk in dat
+get.tfinal.tpeak.case.control.rule1 = function(dat, event.ind.col, event.time.col) {
+  min(
+    max (dat[[event.time.col]] [dat[[event.ind.col]]==1]),
+    sort(dat[[event.time.col]], decreasing=T)[15]-1
+  )
+}
+
+# get marginalized risk without marker
+get.marginalized.risk.no.marker=function(formula, dat, day){
+  if (!is.list(formula)) {
+    # model=T is required because the type of prediction requires it, see Note on ?predict.coxph
+    fit.risk = coxph(formula, dat, model=T) 
+    dat$EventTimePrimary=day
+    risks = 1 - exp(-predict(fit.risk, newdata=dat, type="expected"))
+    mean(risks)
+  } else {
+    # competing risk estimation
+    out=pcr2(formula, dat, day)
+    mean(out)
+  }
+}
+
 
 # e.g. Day22pseudoneutid50 => pseudoneutid50, Delta22overBpseudoneutid50 => pseudoneutid50
 get.assay.from.name=function(a) {
@@ -659,3 +409,145 @@ get.marker.histogram=function(marker, wt, trial, marker.break=marker) {
     attr(tmp,"class")="histogram" 
     tmp
 }
+
+
+
+###############################################################################
+# figure labels and titles for markers
+###############################################################################
+
+
+# race labeling
+labels.race <- c(
+  "White", 
+  "Black or African American",
+  "Asian", 
+  if ((study_name=="ENSEMBLE" | study_name=="MockENSEMBLE") & startsWith(attr(config, "config"),"janssen_la")) "Indigenous South American" else "American Indian or Alaska Native",
+  "Native Hawaiian or Other Pacific Islander", 
+  "Multiracial",
+  if ((study_name=="COVE" | study_name=="MockCOVE")) "Other", 
+  "Not reported and unknown"
+)
+
+# ethnicity labeling
+labels.ethnicity <- c(
+  "Hispanic or Latino", "Not Hispanic or Latino",
+  "Not reported and unknown"
+)
+
+
+# baseline stratum labeling
+if (study_name=="COVEBoost") {
+  Bstratum.labels <- c(
+    "Age >= 65",
+    "Age < 65, At risk",
+    "Age < 65, Not at risk"
+  )
+  
+} else stop("unknown study_name 2")
+
+
+
+# baseline stratum labeling
+if (study_name=="COVEBoost" | study_name=="MockCOVE") {
+  demo.stratum.labels <- c(
+    "Age >= 65, URM",
+    "Age < 65, At risk, URM",
+    "Age < 65, Not at risk, URM",
+    "Age >= 65, White non-Hisp",
+    "Age < 65, At risk, White non-Hisp",
+    "Age < 65, Not at risk, White non-Hisp"
+  )
+  
+} else stop("unknown study_name 3")
+
+
+###############################################################################
+# theme options
+###############################################################################
+
+# fixed knitr chunk options
+knitr::opts_chunk$set(
+  comment = "#>",
+  collapse = TRUE,
+  out.width = "80%",
+  out.extra = "",
+  fig.pos = "H",
+  fig.show = "hold",
+  fig.align = "center",
+  fig.width = 6,
+  fig.asp = 0.618,
+  fig.retina = 0.8,
+  dpi = 600,
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE
+)
+
+# global options
+options(
+  digits = 6,
+  #scipen = 999,
+  dplyr.print_min = 6,
+  dplyr.print_max = 6,
+  crayon.enabled = FALSE,
+  bookdown.clean_book = TRUE,
+  knitr.kable.NA = "NA",
+  repos = structure(c(CRAN = "https://cran.rstudio.com/"))
+)
+
+# no complaints from installation warnings
+Sys.setenv(R_REMOTES_NO_ERRORS_FROM_WARNINGS="true")
+
+# overwrite options by output type
+if (knitr:::is_html_output()) {
+  #options(width = 80)
+  
+  # automatically create a bib database for R packages
+  knitr::write_bib(c(
+    .packages(), "bookdown", "knitr", "rmarkdown"
+  ), "packages.bib")
+}
+if (knitr:::is_latex_output()) {
+  #knitr::opts_chunk$set(width = 67)
+  #options(width = 67)
+  options(cli.unicode = TRUE)
+  
+  # automatically create a bib database for R packages
+  knitr::write_bib(c(
+    .packages(), "bookdown", "knitr", "rmarkdown"
+  ), "packages.bib")
+}
+
+# create and set global ggplot theme
+# borrowed from https://github.com/tidymodels/TMwR/blob/master/_common.R
+theme_transparent <- function(...) {
+  # use black-white theme as base
+  ret <- ggplot2::theme_bw(...)
+  
+  # modify with transparencies
+  trans_rect <- ggplot2::element_rect(fill = "transparent", colour = NA)
+  ret$panel.background  <- trans_rect
+  ret$plot.background   <- trans_rect
+  ret$legend.background <- trans_rect
+  ret$legend.key        <- trans_rect
+  
+  # always have legend below
+  ret$legend.position <- "bottom"
+  return(ret)
+}
+
+library(ggplot2)
+theme_set(theme_transparent())
+theme_update(
+  text = element_text(size = 25),
+  axis.text.x = element_text(colour = "black", size = 30),
+  axis.text.y = element_text(colour = "black", size = 30)
+)
+
+# custom ggsave function with updated defaults
+ggsave_custom <- function(filename = default_name(plot),
+                          height= 15, width = 21, ...) {
+  ggsave(filename = filename, height = height, width = width, ...)
+}
+

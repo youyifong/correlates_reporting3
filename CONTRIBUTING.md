@@ -146,13 +146,7 @@ applied to fairly technical:
     thorough walkthrough of some common `git` commands as well as explanations
     of what these commands do when invoked.
 
-Some basic commands:
 
-To clone the repo, 
-
-```bash
-git clone https://usr@github.com/CoVPN/correlates_reporting2.git
-```
 
 
 
