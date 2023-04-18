@@ -3,7 +3,8 @@ library(methods)
 library(dplyr)
 library(marginalizedRisk)
 library(survival)
-    
+library(parallel)
+
 # disable lower level parallelization in favor of higher level of parallelization
 library(RhpcBLASctl)
 blas_get_num_procs()
@@ -26,12 +27,16 @@ study_name=config$study_name
 assay_metadata = read.csv(config$assay_metadata)
 assays=assay_metadata$assay
 
+form.s = Surv(EventTimePrimary, EventIndPrimary) ~ 1
+form.0 = update (form.s, as.formula(config$covariates))
+print(form.0)
+
 
 ############## Utility func
 
 # dat should be the ph2 dataset from a case control study
 # smaller of the two: 1) last case in dat, 2) last time to have 15 at risk in dat
-get.tfinal.tpeak.case.control.rule1 = function(dat, event.ind.col, event.time.col) {
+get.tfinal.tpeak.case.control.rule1 = function(dat, event.ind.col="EventIndPrimary", event.time.col="EventTimePrimary") {
   min(
     max (dat[[event.time.col]] [dat[[event.ind.col]]==1]),
     sort(dat[[event.time.col]], decreasing=T)[15]-1
@@ -57,9 +62,11 @@ get.marginalized.risk.no.marker=function(formula, dat, day){
 # e.g. Day22pseudoneutid50 => pseudoneutid50, Delta22overBpseudoneutid50 => pseudoneutid50
 get.assay.from.name=function(a) {
     if (startsWith(a,"Day")) {
-        sub("Day[[0123456789]+", "", a)
+      sub("Day[[0123456789]+", "", a)
+    } else if (startsWith(a,"BD")) {
+      sub("BD[[0123456789]+", "", a)
     } else if (contain(a,"overB")) {
-        sub("Delta[[0123456789]+overB", "", a)
+      sub("Delta[[0123456789]+overB", "", a)
     } else if (contain(a,"over")) {
         sub("Delta[[0123456789]+over[[0123456789]+", "", a)
     } else stop("get.assay.from.name: not sure what to do")
@@ -284,7 +291,7 @@ report.assay.values=function(x, assay){
 #report.assay.values (dat.vac.seroneg[["Day57pseudoneutid80"]], "pseudoneutid80")
 
 
-add.trichotomized.markers=function(dat, markers, wt.col.name) {
+add.trichotomized.markers=function(dat, markers, ph2.col.name="ph2", wt.col.name="wt") {
     
     if(verbose) print("add.trichotomized.markers ...")
     
@@ -294,35 +301,30 @@ add.trichotomized.markers=function(dat, markers, wt.col.name) {
         tmp.a=dat[[a]]
         
         # if we estimate cutpoints using all non-NA markers, it may have an issue when a lot of subjects outside ph2 have non-NA markers
-        # since that leads to uneven distribution of markers between low/med/high among ph2
-        # this issue did not affect earlier trials much, but it is a problem with vat08m. We are changing the code for trials after vat08m
-        if (attr(config, "config") %in% c("hvtn705","hvtn705V1V2","hvtn705second","hvtn705secondprimary","moderna_real","moderna_mock","prevent19",
-                "janssen_pooled_EUA","janssen_na_EUA","janssen_la_EUA","janssen_sa_EUA")) {
-            flag=rep(TRUE, length(tmp.a))
+        flag=dat[[ph2.col.name]]
+
+        if(startsWith(a, "Delta")) {
+          # fold change
+          q.a <- wtd.quantile(tmp.a[flag], weights = dat[[wt.col.name]][flag], probs = c(1/3, 2/3))
         } else {
-            flag=dat$ph2
-        }
-    
-        if(startsWith(a, "Day")) {
-            # not fold change
-            uppercut=log10(uloqs[get.assay.from.name(a)]); uppercut=uppercut*ifelse(uppercut>0,.9999,1.0001)
-            lowercut=min(tmp.a, na.rm=T)*1.0001; lowercut=lowercut*ifelse(lowercut>0,1.0001,.9999)
-            if (mean(tmp.a>uppercut, na.rm=T)>1/3) {
-                # if more than 1/3 of vaccine recipients have value > ULOQ, let q.a be (median among those < ULOQ, ULOQ)
-                if (verbose) cat("more than 1/3 of vaccine recipients have value > ULOQ\n")
-                q.a=c(wtd.quantile(tmp.a[dat[[a]]<=uppercut & flag], weights = dat[[wt.col.name]][tmp.a<=uppercut & flag], probs = c(1/2)),  uppercut)
-            } else if (mean(tmp.a<lowercut, na.rm=T)>1/3) {
-                # if more than 1/3 of vaccine recipients have value at min, let q.a be (min, median among those > LLOQ)
-                if (verbose) cat("more than 1/3 of vaccine recipients have at min\n")
-                q.a=c(lowercut, wtd.quantile(tmp.a[dat[[a]]>=lowercut & flag], weights = dat[[wt.col.name]][tmp.a>=lowercut & flag], probs = c(1/2))  )
-            } else {
-                # this implementation uses all non-NA markers, which include a lot of subjects outside ph2, and that leads to uneven distribution of markers between low/med/high among ph2
-                #q.a <- wtd.quantile(tmp.a, weights = dat[[wt.col.name]], probs = c(1/3, 2/3))
-                q.a <- wtd.quantile(tmp.a[flag], weights = dat[[wt.col.name]][flag], probs = c(1/3, 2/3))
-            }
-        } else {
-            # fold change
-            q.a <- wtd.quantile(tmp.a[flag], weights = dat[[wt.col.name]][flag], probs = c(1/3, 2/3))
+          # not fold change
+          uloq=assay_metadata$uloq[assay_metadata$assay==get.assay.from.name(a)]
+          
+          uppercut=log10(uloq); uppercut=uppercut*ifelse(uppercut>0,.9999,1.0001)
+          lowercut=min(tmp.a, na.rm=T)*1.0001; lowercut=lowercut*ifelse(lowercut>0,1.0001,.9999)
+          if (mean(tmp.a>uppercut, na.rm=T)>1/3) {
+              # if more than 1/3 of vaccine recipients have value > ULOQ, let q.a be (median among those < ULOQ, ULOQ)
+              if (verbose) cat("more than 1/3 of vaccine recipients have value > ULOQ\n")
+              q.a=c(wtd.quantile(tmp.a[dat[[a]]<=uppercut & flag], weights = dat[[wt.col.name]][tmp.a<=uppercut & flag], probs = c(1/2)),  uppercut)
+          } else if (mean(tmp.a<lowercut, na.rm=T)>1/3) {
+              # if more than 1/3 of vaccine recipients have value at min, let q.a be (min, median among those > LLOQ)
+              if (verbose) cat("more than 1/3 of vaccine recipients have at min\n")
+              q.a=c(lowercut, wtd.quantile(tmp.a[dat[[a]]>=lowercut & flag], weights = dat[[wt.col.name]][tmp.a>=lowercut & flag], probs = c(1/2))  )
+          } else {
+              # this implementation uses all non-NA markers, which include a lot of subjects outside ph2, and that leads to uneven distribution of markers between low/med/high among ph2
+              #q.a <- wtd.quantile(tmp.a, weights = dat[[wt.col.name]], probs = c(1/3, 2/3))
+              q.a <- wtd.quantile(tmp.a[flag], weights = dat[[wt.col.name]][flag], probs = c(1/3, 2/3))
+          }
         }
         tmp=try(factor(cut(tmp.a, breaks = c(-Inf, q.a, Inf))), silent=T)
  

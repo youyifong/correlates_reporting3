@@ -9,10 +9,10 @@
 ## the point estimate matche the results from bootstrap
 ## the variance is asymptotic and still needs to be figured out
 #prevs=sapply (c(placebo=0, vaccine=1), function(i) {
-#    dat.tmp=subset(dat.mock, Trt==i & Bserostatus==0 & ph1)
-#    fit.tmp = coxph(form.0, dat.tmp, model=T) # model=T to make predict possible
-#    dat.tmp[[config.cor$EventTimePrimary]]=tfinal.tpeak
-#    pred.tmp=predict(fit.tmp, newdata=dat.tmp, type="expected", se.fit=T)    
+#    dat.ph1=subset(dat.mock, Trt==i & Bserostatus==0 & ph1)
+#    fit.tmp = coxph(form.0, dat.ph1, model=T) # model=T to make predict possible
+#    dat.ph1[[config.cor$EventTimePrimary]]=tfinal.tpeak
+#    pred.tmp=predict(fit.tmp, newdata=dat.ph1, type="expected", se.fit=T)    
 #    sd.tmp=exp(mean(log(pred.tmp$se.fit)))
 #    prev=c(est=NA, "2.5%"=NA, "97.5%"=NA)
 #    prev[1] = mean (1 - exp(-pred.tmp$fit))    
@@ -24,48 +24,34 @@
 if(!file.exists(paste0(save.results.to, "marginalized.risk.no.marker.Rdata"))) {    
     if (verbose) print("bootstrap marginalized.risk.no.marker Rdata")
 
-    for (.trt in 0:1) {
-        dat.tmp=if(.trt==1) dat.vac.seroneg else dat.pla.seroneg
-                
-        prob=get.marginalized.risk.no.marker(form.0, dat.tmp, tfinal.tpeak)
-        
-        # bootstrapping
-        # store the current rng state 
-        save.seed <- try(get(".Random.seed", .GlobalEnv), silent=TRUE) 
-        if (class(save.seed)=="try-error") {set.seed(1); save.seed <- get(".Random.seed", .GlobalEnv) }   
-        
-        if(config$case_cohort) ptids.by.stratum=get.ptids.by.stratum.for.bootstrap (dat.tmp) 
+    prob=get.marginalized.risk.no.marker(form.0, dat.ph1, tfinal.tpeak)
     
-        # if mc.cores is >1 here, the process will be stuck in coxph for some unknown reason
-        out=mclapply(1:B, mc.cores = 1, FUN=function(seed) {  
-            if (verbose>=2) myprint(seed) 
-            if(config$case_cohort) {
-                dat.b = get.bootstrap.data.cor (dat.tmp, ptids.by.stratum, seed) 
-            } else {
-                dat.b = bootstrap.case.control.samples(dat.tmp, seed, delta.name="EventIndPrimary", strata.name="tps.stratum", ph2.name="ph2", min.cell.size=0) 
-            }
-            get.marginalized.risk.no.marker(form.0, dat.b, tfinal.tpeak)
-            
-        })
-        boot=do.call(cbind, out)
-        
-        # restore rng state 
-        assign(".Random.seed", save.seed, .GlobalEnv)    
-        
-        if (.trt==0) {
-            res.plac.cont=c(est=prob, boot)
-            prev.plac=c(res.plac.cont[1], quantile(res.plac.cont[-1], c(.025,.975)))
-        } else {
-            res.vacc.cont=c(est=prob, boot)
-            prev.vacc=c(res.vacc.cont[1], quantile(res.vacc.cont[-1], c(.025,.975)))
-        }
-    }    
+    # bootstrapping
+    # store the current rng state 
+    save.seed <- try(get(".Random.seed", .GlobalEnv), silent=TRUE) 
+    if (class(save.seed)=="try-error") {set.seed(1); save.seed <- get(".Random.seed", .GlobalEnv) }   
     
-    overall.ve = c(1 - res.vacc.cont["est"]/res.plac.cont["est"], quantile(1 - res.vacc.cont[-1]/res.plac.cont[-1], c(0.025, 0.975)))
+    if(config$sampling_scheme=="case_cohort") ptids.by.stratum=get.ptids.by.stratum.for.bootstrap (dat.ph1) 
 
-    print(cbind(prev.plac, prev.vacc, overall.ve))
+    # if mc.cores is >1 here, the process will be stuck in coxph for some unknown reason
+    out=mclapply(1:B, mc.cores = 1, FUN=function(seed) {  
+        if (verbose>=2) myprint(seed) 
+        if(config$sampling_scheme=="case_cohort") {
+            dat.b = get.bootstrap.data.cor (dat.ph1, ptids.by.stratum, seed) 
+        } else if (config$sampling_scheme=="case_control") {
+            dat.b = bootstrap.case.control.samples(dat.ph1, seed, delta.name="EventIndPrimary", strata.name="tps.stratum", ph2.name="ph2", min.cell.size=0) 
+        } else stop("config$sampling_scheme is wrong")
+        get.marginalized.risk.no.marker(form.0, dat.b, tfinal.tpeak)
+        
+    })
+    boot=do.call(cbind, out)
     
-    save(res.plac.cont, res.vacc.cont, prev.plac, prev.vacc, overall.ve, file=paste0(save.results.to, "marginalized.risk.no.marker.Rdata"))
+    # restore rng state 
+    assign(".Random.seed", save.seed, .GlobalEnv)    
+    
+    marginalized.risk.no.marker = list(est=c(prob, quantile(boot, c(.025,.975) )), boot=boot)      
+
+    save(marginalized.risk.no.marker, file=paste0(save.results.to, "marginalized.risk.no.marker.Rdata"))
     
 } else {
     load(paste0(save.results.to, "marginalized.risk.no.marker.Rdata"))

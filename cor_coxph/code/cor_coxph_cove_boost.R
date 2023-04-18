@@ -13,6 +13,8 @@ time.start=Sys.time()
 TRIAL=Sys.getenv("TRIAL")
 myprint(TRIAL)
 myprint(verbose)
+begin=Sys.time()
+print(date())
 
 
 # read analysis ready data
@@ -37,88 +39,58 @@ for (a in assays) {
 }    
 
 # define subsets of data    
-dat.ph1=subset(dat,  Trt==1 & naive & ph1)
-dat.pla.naive=subset(dat,  Trt==0 & naive & ph1)
-dat.vac.nnaive=subset(dat, Trt==1 & !naive & ph1)
-dat.pla.nnaive=subset(dat, Trt==0 & !naive & ph1)
+dat.vac.naive=subset(dat,  Trt==1 & naive & ph1.BD29)
+dat.pla.naive=subset(dat,  Trt==0 & naive & ph1.BD29)
+dat.vac.nnaive=subset(dat, Trt==1 & !naive & ph1.BD29)
+dat.pla.nnaive=subset(dat, Trt==0 & !naive & ph1.BD29)
 
-# for use in competing risk estimation
-dat.ph1.ph2=subset(dat.ph1, ph2)
-dat.pla.naive.ph2=subset(dat.pla.naive, ph2)
-dat.vac.nnaive.ph2=subset(dat.vac.nnaive, ph2)
-dat.pla.nnaive.ph2=subset(dat.pla.nnaive, ph2)
 
-# loop through each dataset
+# loop through each quadrant
 for (idat in 1:4) {
-  if (idat==1) {dat.ph1 = dat.vac.naive;  dat.ph2 = dat.vac.naive.ph2;  ilabel="vac_naive"}
-  if (idat==2) {dat.ph1 = dat.pla.naive;  dat.ph2 = dat.pla.naive.ph2;  ilabel="pla_naive"}
-  if (idat==3) {dat.ph1 = dat.vac.nnaive; dat.ph2 = dat.vac.nnaive.ph2; ilabel="vac_nnaive"}
-  if (idat==4) {dat.ph1 = dat.pla.nnaive; dat.ph2 = dat.pla.nnaive.ph2; ilabel="pla_nnaive"}
+  if (idat==1) {dat.ph1 = dat.vac.naive;  ilabel="vac_naive"}
+  if (idat==2) {dat.ph1 = dat.pla.naive;  ilabel="pla_naive"}
+  if (idat==3) {dat.ph1 = dat.vac.nnaive; ilabel="vac_nnaive"}
+  if (idat==4) {dat.ph1 = dat.pla.nnaive; ilabel="pla_nnaive"}
   
   save.results.to = paste0(save.results.to.0, "/", ilabel, "/") 
-  if (!dir.exists(save.results.to.0))  dir.create(save.results.to.0)
-  print(paste0("save.results.to equals ", save.results.to))
+  if (!dir.exists(save.results.to))  dir.create(save.results.to)
+  print(paste0("save results to ", save.results.to))
   
-  tfinal.tpeak=get.tfinal.tpeak.case.control.rule1 (dat.ph2, "EventIndOmicron", "EventTimeOmicron") 
+  dat.ph1$ph1=dat.ph1$ph1.BD29
+  dat.ph1$ph2=dat.ph1$ph2.BD29
+  dat.ph1$wt=dat.ph1$wt.BD29
+  dat.ph1$EventIndPrimary =dat.ph1$EventIndOmicronBD29
+  dat.ph1$EventTimePrimary=dat.ph1$EventTimeOmicronBD29
+
+  dat.ph2 = subset(dat.ph1, ph2)
+  
+  tfinal.tpeak=get.tfinal.tpeak.case.control.rule1 (dat.ph2) 
   myprint(tfinal.tpeak)
   write(tfinal.tpeak, file=paste0(save.results.to, "timepoints_cum_risk_"%.%study_name))
 
   # define trichotomized markers
-  dat.ph1 = add.trichotomized.markers (dat.ph1, all.markers, wt.col.name="wt.BD29")
+  dat.ph1 = add.trichotomized.markers (dat.ph1, "BD29"%.%assays)
   marker.cutpoints=attr(dat.ph1, "marker.cutpoints")
-  for (a in all.markers) {        
+  for (a in "BD29"%.%assays) {        
       q.a=marker.cutpoints[[a]]
-      if (startsWith(a, "Day")) {
-          # not fold change
-          write(paste0(labels.axis[1,get.assay.from.name(a)], " [", concatList(round(q.a, 2), ", "), ")%"), file=paste0(save.results.to, "cutpoints_", a, "_"%.%study_name))
-      } else {
-          # fold change
-          write(paste0(a, " [", concatList(round(q.a, 2), ", "), ")%"), file=paste0(save.results.to, "cutpoints_", a, "_"%.%study_name))
-      }
+      to.write = paste0(a, " [", concatList(round(q.a, 2), ", "), ")%")
+      write(to.write, file=paste0(save.results.to, "cutpoints_", a, "_"%.%study_name))
   }
-  
   
   #create twophase design object
   design.vacc.naive<-twophase(id=list(~1,~1), strata=list(NULL,~Wstratum), subset=~ph2, data=dat.ph1)
   with(dat.ph1, table(Wstratum, ph2))
       
-  
   # table of ph1 and ph2 cases
   tab=with(dat.ph1, table(ph2, EventIndPrimary))
   names(dimnames(tab))[2]="Event Indicator"
   print(tab)
   mytex(tab, file.name="tab1", save2input.only=T, input.foldername=save.results.to)
   
-  
-  begin=Sys.time()
-  print(date())
-  
-  # some checks
-  
-  #with(dat.ph1.ph2, weighted.mean(Day35bindRBD<log10(100), wt))
-  
-  #with(dat.ph1.ph2, table(EventIndPrimary, is.na(seq1.spike.weighted.hamming)))
-  #with(dat.ph1.ph2, table(EventIndPrimary, is.na(seq1.log10vl)))
-  
-  #with(dat.ph1, table(EventIndPrimary, sieve.status, EventTimePrimary>0))
-  #with(dat.ph1, table(EventIndPrimaryD29, sieve.status, EventTimePrimary>0))
-  #with(dat.ph1, table(EventIndPrimaryIncludeNotMolecConfirmedD29, sieve.status, EventTimePrimary>0))
-  #with(dat.ph1, plot(EventTimePrimary, sieve.time, cex=.2)); abline(0,1)
-  #subset(dat.ph1, EventIndPrimary==0 & sieve.status==1)
-  
-  #with(subset(dat.ph1, EventIndPrimaryIncludeNotMolecConfirmedD29==1), table(is.na(seq1.variant), EventIndPrimaryHasVLD29))
-  
-  
-  ###################################################################################################
-  # estimate overall VE in the placebo and vaccine arms
-  ###################################################################################################
-  
+  # estimate overall marginalized risk (no markers) and VE
   source(here::here("code", "cor_coxph_marginalized_risk_no_marker.R"))
   
-  if(Sys.getenv("COR_COXPH_NO_MARKER_ONLY")==1) q("no")
-  
-  
-  
+
   ###################################################################################################
   # run PH models
   ###################################################################################################
