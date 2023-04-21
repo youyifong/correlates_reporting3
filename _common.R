@@ -21,6 +21,7 @@ if (Sys.getenv("VERBOSE") %in% c("1", "2", "3")) verbose=as.integer(Sys.getenv("
     
 if(Sys.getenv("TRIAL")=="") stop(" *************************************  environmental variable TRIAL not defined  *************************************")
 
+# load config
 config <- config::get(config = Sys.getenv("TRIAL"))
 study_name=config$study_name
 

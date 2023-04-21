@@ -2,6 +2,7 @@
 
 renv::activate(project = here::here(".."))     
 source(here::here("..", "_common.R"))
+source("code/params.R")
 
 library(survey)
 library(plotrix) # weighted.hist
@@ -16,6 +17,11 @@ myprint(verbose)
 begin=Sys.time()
 print(date())
 
+# need this function b/c svycoxh may error due to singularity if, e.g. all cases have the same marker value
+run.svycoxph=function(f, design) {
+  fit=try(svycoxph(f, design=design), silent=T)
+  if (class(fit)[1]=="try-error") NA else fit
+}
 
 # read analysis ready data
 dat = read.csv(config$data_cleaned)
@@ -45,8 +51,10 @@ dat.vac.nnaive=subset(dat, Trt==1 & !naive & ph1.BD29)
 dat.pla.nnaive=subset(dat, Trt==0 & !naive & ph1.BD29)
 
 
+
 # loop through each quadrant
 for (idat in 1:4) {
+  # idat=2
   if (idat==1) {dat.ph1 = dat.vac.naive;  ilabel="vac_naive"}
   if (idat==2) {dat.ph1 = dat.pla.naive;  ilabel="pla_naive"}
   if (idat==3) {dat.ph1 = dat.vac.nnaive; ilabel="vac_nnaive"}
@@ -61,6 +69,8 @@ for (idat in 1:4) {
   dat.ph1$wt=dat.ph1$wt.BD29
   dat.ph1$EventIndPrimary =dat.ph1$EventIndOmicronBD29
   dat.ph1$EventTimePrimary=dat.ph1$EventTimeOmicronBD29
+
+  dat.ph1$yy=dat.ph1$EventIndPrimary
 
   dat.ph2 = subset(dat.ph1, ph2)
   
@@ -77,40 +87,37 @@ for (idat in 1:4) {
       write(to.write, file=paste0(save.results.to, "cutpoints_", a, "_"%.%study_name))
   }
   
-  #create twophase design object
-  design.vacc.naive<-twophase(id=list(~1,~1), strata=list(NULL,~Wstratum), subset=~ph2, data=dat.ph1)
-  with(dat.ph1, table(Wstratum, ph2))
-      
   # table of ph1 and ph2 cases
   tab=with(dat.ph1, table(ph2, EventIndPrimary))
   names(dimnames(tab))[2]="Event Indicator"
   print(tab)
   mytex(tab, file.name="tab1", save2input.only=T, input.foldername=save.results.to)
   
+
+  
+  ###################################################################################################
   # estimate overall marginalized risk (no markers) and VE
+  
   source(here::here("code", "cor_coxph_marginalized_risk_no_marker.R"))
   
 
   ###################################################################################################
   # run PH models
-  ###################################################################################################
-      
+  
+  all.markers = paste0("BD29", assays)
+  design.1<-twophase(id=list(~1,~1), strata=list(NULL,~Wstratum), subset=~ph2, data=dat.ph1)
+  #with(dat.ph1, table(Wstratum, ph2, useNA="ifany"))
+  tpeak=29
   source(here::here("code", "cor_coxph_ph.R"))
   
   
   # unit testing of coxph results
-  if (Sys.getenv("TRIAL") == "janssen_pooled_EUA" & COR=="D29IncludeNotMolecConfirmedstart1") {
+  if (Sys.getenv("TRIAL") == "moderna_boost") {
       tmp.1=c(rv$tab.1[,4], rv$tab.2[,"overall.p.0"])
       tmp.2=c("0.162","0.079","0.006",      "0.498","   ","   ","0.162","   ","   ","0.003","   ","   ")
       assertthat::assert_that(all(tmp.1==tmp.2), msg = "failed cor_coxph unit testing")    
       
-  } else if (attr(config, "config")=="moderna_real" & COR=="D57") {
-      assertthat::assert_that(all(abs(p.unadj-c(0.004803168, 0.002172787, 0.000129743, 0.000202068, 0.064569846, 0.005631520, 0.009016447, 0.051800145, 0.011506959, 0.579164657))<1e-6), msg = "failed cor_coxph unit testing")    
-      
-  } else if (attr(config, "config")=="prevent19" & COR=="D35") {
-      assertthat::assert_that(all(abs(p.unadj-c(0.000453604, 0.0023274, 0.013258206))<1e-6), msg = "failed cor_coxph unit testing")    
-      
-  }
+  } 
   print("Passed cor_coxph unit testing")    
   
   ###################################################################################################
