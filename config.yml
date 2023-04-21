@@ -14,8 +14,8 @@ moderna_boost: &moderna_boost
   ve_ylim: [0,1]
   ve_ylim_log: [0.0,0.98]
   low_efficacy: no
-  num_boot_replicates: 1000
-  num_perm_replicates: 10000
+  num_boot_replicates: 100
+  num_perm_replicates: 100
   ph1: [ph1.BD29]
   endpoints: [EventIndOmicron]
 
