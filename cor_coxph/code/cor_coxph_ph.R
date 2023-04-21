@@ -20,8 +20,8 @@ for (a in all.markers) {
 # put coxph model coef together to save
 fits.cont.coef.ls = lapply(fits, function (fit) getFixedEf(fit, robust=T))
 
-natrisk=nrow(dat.vac.seroneg)
-nevents=sum(dat.vac.seroneg$yy==1)
+natrisk=nrow(dat.ph1)
+nevents=sum(dat.ph1$yy==1)
 
 # make pretty table
 rows=length(coef(fits[[1]]))
@@ -37,12 +37,6 @@ pvals.cont = sapply(fits, function(x) {
     tmp[nrow(tmp),p.val.col]
 })
 
-
-
-## not used anymore
-## mean and max followup time in the vaccine arm
-#write(round(mean(dat.vac.seroneg[[config.cor$EventTimePrimary]])), file=paste0(save.results.to, "CoR_mean_followup_time_vacc_"%.%study_name))
-#write(round(max (dat.vac.seroneg[[config.cor$EventTimePrimary]])), file=paste0(save.results.to, "CoR_max_followup_time_vacc_"%.% study_name))
 
 
 
@@ -96,7 +90,7 @@ if (study_name=="PREVENT19") {
     p.unadj = p.unadj[startsWith(names(p.unadj), "cont."), drop=F]
 }
 
-#### Holm and FDR adjustment
+# Holm and FDR adjustment
 pvals.adj.fdr=p.adjust(p.unadj, method="fdr")
 pvals.adj.hol=p.adjust(p.unadj, method="holm")
 
@@ -184,6 +178,7 @@ if (study_name=="PREVENT19") {
     pvals.adj=rbind(pvals.adj, tri.Day35bindSpike=c(NA,NA,NA))
 }
 
+
 ###################################################################################################
 # make continuous markers table
 
@@ -203,39 +198,38 @@ p.2=formatDouble(pvals.adj["cont."%.%names(pvals.cont),"p.FDR" ], 3, remove.lead
 
 
 tab.1=cbind(paste0(nevents, "/", format(natrisk, big.mark=",")), t(est), t(ci), t(p), p.2, p.1)
-rownames(tab.1)=all.markers.names.short
+# rownames(tab.1)=all.markers.names.short
 tab.1
 mytex(tab.1, file.name="CoR_univariable_svycoxph_pretty_"%.%study_name, align="c", include.colnames = F, save2input.only=T, input.foldername=save.results.to,
     col.headers=paste0("\\hline\n 
-         \\multicolumn{1}{l}{", toTitleCase(study_name), "} & \\multicolumn{1}{c}{No. cases /}   & \\multicolumn{2}{c}{HR per 10-fold incr.}                     & \\multicolumn{1}{c}{P-value}   & \\multicolumn{1}{c}{q-value}   & \\multicolumn{1}{c}{FWER} \\\\ 
+         \\multicolumn{1}{l}{", study_name, "} & \\multicolumn{1}{c}{No. cases /}   & \\multicolumn{2}{c}{HR per 10-fold incr.}                     & \\multicolumn{1}{c}{P-value}   & \\multicolumn{1}{c}{q-value}   & \\multicolumn{1}{c}{FWER} \\\\ 
          \\multicolumn{1}{l}{Immunologic Marker}            & \\multicolumn{1}{c}{No. at-risk**} & \\multicolumn{1}{c}{Pt. Est.} & \\multicolumn{1}{c}{95\\% CI} & \\multicolumn{1}{c}{(2-sided)} & \\multicolumn{1}{c}{***} & \\multicolumn{1}{c}{} \\\\ 
          \\hline\n 
     "),
     longtable=T, 
     label=paste0("tab:CoR_univariable_svycoxph_pretty"), 
     caption.placement = "top", 
-    caption=paste0("Inference for Day ", tpeak, "antibody marker covariate-adjusted correlates of risk of ", config.cor$txt.endpoint, " in the vaccine group: Hazard ratios per 10-fold increment in the marker*")
+    caption=paste0("Inference for Day ", tpeak, "antibody marker covariate-adjusted correlates of risk of ", config$txt.endpoint, " in the vaccine group: Hazard ratios per 10-fold increment in the marker*")
 )
 tab.cont=tab.1
 
 tab.1.nop12=cbind(paste0(nevents, "/", format(natrisk, big.mark=",")), t(est), t(ci), t(p))
-rownames(tab.1.nop12)=all.markers.names.short
-rv$tab.1=tab.1.nop12
+# rownames(tab.1.nop12)=all.markers.names.short
 
 # scaled markers
 tab.1.scaled=cbind(paste0(nevents, "/", format(natrisk, big.mark=",")), t(est.scaled), t(ci.scaled), t(p), p.2, p.1)
-rownames(tab.1.scaled)=all.markers.names.short
+# rownames(tab.1.scaled)=all.markers.names.short
 tab.1.scaled
 mytex(tab.1.scaled, file.name="CoR_univariable_svycoxph_pretty_scaled_"%.%study_name, align="c", include.colnames = F, save2input.only=T, input.foldername=save.results.to,
     col.headers=paste0("\\hline\n 
-         \\multicolumn{1}{l}{", toTitleCase(study_name), "} & \\multicolumn{1}{c}{No. cases /}   & \\multicolumn{2}{c}{HR per SD incr.}                     & \\multicolumn{1}{c}{P-value}   & \\multicolumn{1}{c}{q-value}   & \\multicolumn{1}{c}{FWER} \\\\ 
+         \\multicolumn{1}{l}{", study_name, "} & \\multicolumn{1}{c}{No. cases /}   & \\multicolumn{2}{c}{HR per SD incr.}                     & \\multicolumn{1}{c}{P-value}   & \\multicolumn{1}{c}{q-value}   & \\multicolumn{1}{c}{FWER} \\\\ 
          \\multicolumn{1}{l}{Immunologic Marker}            & \\multicolumn{1}{c}{No. at-risk**} & \\multicolumn{1}{c}{Pt. Est.} & \\multicolumn{1}{c}{95\\% CI} & \\multicolumn{1}{c}{(2-sided)} & \\multicolumn{1}{c}{***} & \\multicolumn{1}{c}{} \\\\ 
          \\hline\n 
     "),
     longtable=T, 
     label=paste0("tab:CoR_univariable_svycoxph_pretty_scaled"), 
     caption.placement = "top", 
-    caption=paste0("Inference for Day ", tpeak, "antibody marker covariate-adjusted correlates of risk of ", config.cor$txt.endpoint, " in the vaccine group: Hazard ratios per SD increment in the marker*")
+    caption=paste0("Inference for Day ", tpeak, "antibody marker covariate-adjusted correlates of risk of ", config$txt.endpoint, " in the vaccine group: Hazard ratios per SD increment in the marker*")
 )
 tab.cont.scaled=tab.1.scaled
 
@@ -255,8 +249,8 @@ overall.p.2=c(rbind(overall.p.2, NA,NA))
 # if "Delta"%.%tpeak%.%"overB" is included, nevents have a problem because some markers may have only two category in the cases
 
 # n cases and n at risk
-natrisk = round(c(sapply (all.markers%.%"cat", function(a) aggregate(subset(dat.vac.seroneg,ph2==1)        [["wt"]], subset(dat.vac.seroneg,ph2==1        )[a], sum, na.rm=T, drop=F)[,2] )))
-nevents = round(c(sapply (all.markers%.%"cat", function(a) aggregate(subset(dat.vac.seroneg,yy==1 & ph2==1)[["wt"]], subset(dat.vac.seroneg,yy==1 & ph2==1)[a], sum, na.rm=T, drop=F)[,2] )))
+natrisk = round(c(sapply (all.markers%.%"cat", function(a) aggregate(subset(dat.ph1,ph2==1)        [["wt"]], subset(dat.ph1,ph2==1        )[a], sum, na.rm=T, drop=F)[,2] )))
+nevents = round(c(sapply (all.markers%.%"cat", function(a) aggregate(subset(dat.ph1,yy==1 & ph2==1)[["wt"]], subset(dat.ph1,yy==1 & ph2==1)[a], sum, na.rm=T, drop=F)[,2] )))
 natrisk[is.na(natrisk)]=0
 nevents[is.na(nevents)]=0
 colSums(matrix(natrisk, nrow=3))
@@ -271,40 +265,34 @@ tab=cbind(
     formatDouble(nevents/natrisk, digit=4, remove.leading0=F),
     est, ci, p, overall.p.0, overall.p.2, overall.p.1
 )
-tmp=rbind(all.markers.names.short, "", "")
-rownames(tab)=c(tmp)
+# rownames(tab)=c(rbind(all.markers.names.short, "", ""))
 tab
 tab.cat=tab[1:(nrow(tab)),]
-#cond.plac=dat.pla.seroneg[[config.cor$EventTimePrimary]]<=tfinal.tpeak # not used anymore
+#cond.plac=dat.pla.seroneg[[config$EventTimePrimary]]<=tfinal.tpeak # not used anymore
 
 # use longtable because this table could be long, e.g. in hvtn705second
 mytex(tab[1:(nrow(tab)),], file.name="CoR_univariable_svycoxph_cat_pretty_"%.%study_name, align="c", include.colnames = F, save2input.only=T, input.foldername=save.results.to,
     col.headers=paste0("\\hline\n 
-         \\multicolumn{1}{l}{", toTitleCase(study_name), "} & \\multicolumn{1}{c}{Tertile}   & \\multicolumn{1}{c}{No. cases /}   & \\multicolumn{1}{c}{Attack}   & \\multicolumn{2}{c}{Haz. Ratio}                     & \\multicolumn{1}{c}{P-value}   & \\multicolumn{1}{c}{Overall P-}      & \\multicolumn{1}{c}{Overall q-}   & \\multicolumn{1}{c}{Overall} \\\\ 
+         \\multicolumn{1}{l}{", study_name, "} & \\multicolumn{1}{c}{Tertile}   & \\multicolumn{1}{c}{No. cases /}   & \\multicolumn{1}{c}{Attack}   & \\multicolumn{2}{c}{Haz. Ratio}                     & \\multicolumn{1}{c}{P-value}   & \\multicolumn{1}{c}{Overall P-}      & \\multicolumn{1}{c}{Overall q-}   & \\multicolumn{1}{c}{Overall} \\\\ 
          \\multicolumn{1}{l}{Immunologic Marker}            & \\multicolumn{1}{c}{}          & \\multicolumn{1}{c}{No. at-risk**} & \\multicolumn{1}{c}{rate}   & \\multicolumn{1}{c}{Pt. Est.} & \\multicolumn{1}{c}{95\\% CI} & \\multicolumn{1}{c}{(2-sided)} & \\multicolumn{1}{c}{value***} & \\multicolumn{1}{c}{value $\\dagger$} & \\multicolumn{1}{c}{FWER} \\\\ 
          \\hline\n 
     "),        
-    add.to.row=list(list(nrow(tab)), # insert at the beginning of table, and at the end of, say, the first table
-        c(paste0(" \n \\multicolumn{8}{l}{} \\\\ \n", 
-                  "\n \\multicolumn{2}{l}{Placebo} & ", 
-                 paste0(sum(dat.pla.seroneg$yy), "/", format(nrow(dat.pla.seroneg), big.mark=",")), "&",  
-                 formatDouble(sum(dat.pla.seroneg$yy)/nrow(dat.pla.seroneg), digit=4, remove.leading0=F), "&",  
-                 "\\multicolumn{4}{l}{}  \\\\ \n")
-          #"\\hline\n \\multicolumn{4}{l}{Standard Deviation 1 mcg/mL}\\\\ \n"
-         )
-    ),
+    # add.to.row=list(list(nrow(tab)), # insert at the beginning of table, and at the end of, say, the first table
+    #     c(paste0(" \n \\multicolumn{8}{l}{} \\\\ \n", 
+    #               "\n \\multicolumn{2}{l}{Placebo} & ", 
+    #              paste0(sum(dat.pla.seroneg$yy), "/", format(nrow(dat.pla.seroneg), big.mark=",")), "&",  
+    #              formatDouble(sum(dat.pla.seroneg$yy)/nrow(dat.pla.seroneg), digit=4, remove.leading0=F), "&",  
+    #              "\\multicolumn{4}{l}{}  \\\\ \n")
+    #       #"\\hline\n \\multicolumn{4}{l}{Standard Deviation 1 mcg/mL}\\\\ \n"
+    #      )
+    # ),
     longtable=T, 
     label=paste0("tab:CoR_univariable_svycoxph_cat_pretty_", study_name), 
     caption.placement = "top", 
-    caption=paste0("Inference for Day ", tpeak, "antibody marker covariate-adjusted correlates of risk of ", config.cor$txt.endpoint, " in the vaccine group: Hazard ratios for Middle vs. Upper tertile vs. Lower tertile*")
+    caption=paste0("Inference for Day ", tpeak, "antibody marker covariate-adjusted correlates of risk of ", config$txt.endpoint, " in the vaccine group: Hazard ratios for Middle vs. Upper tertile vs. Lower tertile*")
 )
 
 
-
-
-# save two subjects for collate
-save.s.1=paste0(sum(dat.pla.seroneg$yy), "/", format(nrow(dat.pla.seroneg), big.mark=","))
-save.s.2=formatDouble(sum(dat.pla.seroneg$yy)/nrow(dat.pla.seroneg), digit=4, remove.leading0=F)
 
 
 tab.nop12=cbind(
@@ -313,8 +301,7 @@ tab.nop12=cbind(
     formatDouble(nevents/natrisk, digit=4, remove.leading0=F),
     est, ci, p, overall.p.0
 )
-rownames(tab.nop12)=c(rbind(all.markers.names.short, "", ""))
-rv$tab.2=tab.nop12
+# rownames(tab.nop12)=c(rbind(all.markers.names.short, "", ""))
 
 
 
@@ -322,158 +309,6 @@ rv$tab.2=tab.nop12
 ###################################################################################################
 # multivariate_assays models
 
-if (!is.null(config$multivariate_assays)) {
-    if(verbose) print("Multiple regression")
-    
-    for (a in config$multivariate_assays) {
-      for (i in 1:2) {
-      # 1: per SD; 2: per 10-fold
-        a.tmp=a
-        aa=trim(strsplit(a, "\\+")[[1]])
-        for (x in aa[!contain(aa, "\\*")]) {
-            # replace every variable with Day210x, with or without scale
-            a.tmp=gsub(x, paste0(if(i==1) "scale","(Day",tpeak,x,")"), a.tmp) 
-        }
-        f= update(form.0, as.formula(paste0("~.+", a.tmp)))
-        fit=svycoxph(f, design=design.1) 
-        var.ind=length(coef(fit)) - length(aa):1 + 1
-        
-        fits=list(fit)
-        est=getFormattedSummary(fits, exp=T, robust=T, rows=var.ind, type=1)
-        ci= getFormattedSummary(fits, exp=T, robust=T, rows=var.ind, type=13)
-        est = paste0(est, " ", ci)
-        p=  getFormattedSummary(fits, exp=T, robust=T, rows=var.ind, type=10)
-        
-        #generalized Wald test for whether the set of markers has any correlation (rejecting the complete null)
-        stat=coef(fit)[var.ind] %*% solve(vcov(fit)[var.ind,var.ind]) %*% coef(fit)[var.ind] 
-        p.gwald=pchisq(stat, length(var.ind), lower.tail = FALSE)
-        
-        tab=cbind(est, p)
-        tmp=match(aa, colnames(labels.axis))
-        tmp[is.na(tmp)]=1 # otherwise, labels.axis["Day"%.%tpeak, tmp] would throw an error when tmp is NA
-        rownames(tab)=ifelse(aa %in% colnames(labels.axis), labels.axis["Day"%.%tpeak, tmp], aa)
-        colnames(tab)=c(paste0("HR per ",ifelse(i==1,"sd","10 fold")," incr."), "P value")
-        tab
-        tab=rbind(tab, "Generalized Wald Test"=c("", formatDouble(p.gwald,3, remove.leading0 = F)))
-        
-        mytex(tab, file.name=paste0("CoR_multivariable_svycoxph_pretty", match(a, config$multivariate_assays), if(i==2) "_per10fold"), align="c", include.colnames = T, save2input.only=T, 
-            input.foldername=save.results.to)
-      }
-    }
-    
-}
-
-
-
-###################################################################################################
-# additional_models
-
-if (!is.null(config$additional_models)) {
-    if(verbose) print("Additional models")
-    
-    for (a in config$additional_models) {
-        tmp=gsub("tpeak",tpeak,a)
-        f= update(Surv(EventTimePrimary, EventIndPrimary) ~1, as.formula(paste0("~.+", tmp)))
-        fit=svycoxph(f, design=design.1) 
-        
-        fits=list(fit)
-        est=getFormattedSummary(fits, exp=T, robust=T, type=1)
-        ci= getFormattedSummary(fits, exp=T, robust=T, type=13)
-        est = paste0(est, " ", ci)
-        p=  getFormattedSummary(fits, exp=T, robust=T, type=10)
-        
-        tab=cbind(est, p)
-        colnames(tab)=c("HR", "P value")
-        tab
-    
-        mytex(tab, file.name=paste0("CoR_add_models", match(a, config$additional_models)), align="c", include.colnames = T, save2input.only=T, 
-            input.foldername=save.results.to)
-    }
-    
-}
-
-
-if (attr(config,"config")=="janssen_pooled_EUA") {
-    f=Surv(EventTimePrimary, EventIndPrimary) ~ risk_score + as.factor(Region) * Day29pseudoneutid50    
-    fit=svycoxph(f, design=design.1) 
-    var.ind=5:6
-    
-    fits=list(fit)
-    est=getFormattedSummary(fits, exp=T, robust=T, rows=1:6, type=1)
-    ci= getFormattedSummary(fits, exp=T, robust=T, rows=1:6, type=13)
-    est = paste0(est, " ", ci)
-    p=  getFormattedSummary(fits, exp=T, robust=T, rows=1:6, type=10)
-    
-    #generalized Wald test for whether the set of markers has any correlation (rejecting the complete null)
-    stat=coef(fit)[var.ind] %*% solve(vcov(fit)[var.ind,var.ind]) %*% coef(fit)[var.ind] 
-    p.gwald=pchisq(stat, length(var.ind), lower.tail = FALSE)
-    
-    tab=cbind(est, p)
-    colnames(tab)=c("HR", "P value")
-    tab=rbind(tab, "Generalized Wald Test for Itxn"=c("", formatDouble(p.gwald,3, remove.leading0 = F)))
-    tab
-    
-    mytex(tab, file.name="CoR_region_itxn", align="c", include.colnames = T, save2input.only=T, 
-        input.foldername=save.results.to)
-        
-}
-
-
-###################################################################################################
-# interaction_models
-
-if (!is.null(config$interaction)) {
-    if(verbose) print("Interaction models Cox models")    
-    itxn.pvals=c()      
-    for (ab in config$interaction) {
-        tmp=trim(strsplit(ab, " *\\* *")[[1]])
-        aold=tmp[1]
-        bold=tmp[2]            
-        a=paste0("Day",tpeak,aold)
-        b=paste0("Day",tpeak,bold)
-                
-        # fit the interaction model and save regression results to a table
-        f=as.formula(paste("Surv(EventTimePrimary, EventIndPrimary) ~ RSA + Age + BMI + Riskscore + ",a," + ",b," + ",a,":",b))            
-        fit=svycoxph(f, design=twophase(id=list(~1,~1), strata=list(NULL,~Wstratum), subset=~ph2, data=dat.vac.seroneg)) 
-        fits=list(fit)
-        est=getFormattedSummary(fits, exp=T, robust=T, type=1)
-        ci= getFormattedSummary(fits, exp=T, robust=T, type=13)
-        est = paste0(est, " ", ci)
-        p=  getFormattedSummary(fits, exp=T, robust=T, type=10)
-        # generalized Wald test for whether the set of markers has any correlation (rejecting the complete null)
-        var.ind=5:7
-        stat=coef(fit)[var.ind] %*% solve(vcov(fit)[var.ind,var.ind]) %*% coef(fit)[var.ind] 
-        p.gwald=pchisq(stat, length(var.ind), lower.tail = FALSE)
-        # put together the table
-        tab=cbind(est, p)
-        colnames(tab)=c("HR", "P value")
-        tab=rbind(tab, "Generalized Wald Test for Markers"=c("", formatDouble(p.gwald,3, remove.leading0 = F))); tab
-        mytex(tab, file.name=paste0("CoR_itxn_",aold,"_",bold), align="c", include.colnames = T, save2input.only=T, input.foldername=save.results.to)
-                
-        itxn.pvals=c(itxn.pvals, last(getFixedEf(fit)[,"p.value"]))
-    }    
-    
-    names(itxn.pvals)=config$interaction
-    itxn.pvals=itxn.pvals[!contain(config$interaction, "ICS4AnyEnv")] # remove the ones with ICS4AnyEnv
-    itx.pvals.adj.fdr=p.adjust(itxn.pvals, method="fdr")
-    itx.pvals.adj.hol=p.adjust(itxn.pvals, method="holm")
-    tab=cbind(itxn.pvals, itx.pvals.adj.hol, itx.pvals.adj.fdr)
-    colnames(tab)=c("interaction P value", "FWER", "FDR")
-    mytex(tab, file.name="CoR_itxn_multitesting", align="c", include.colnames = T, save2input.only=T, input.foldername=save.results.to)
-    
-}
-
-
-###################################################################################################
-# special code for janssen LA
-
-if (attr(config,"config")=="janssen_la_partA") {
-    
-}
-
-
-###################################################################################################
-
 save(fits.cont.coef.ls, fits.tri.coef.ls, file=paste0(save.results.to, "coxph_fits.Rdata"))
 
-save (tab.cont, tab.cat, tab.cont.scaled, save.s.1, save.s.2, pvals.adj, file=paste0(save.results.to, "coxph_slopes.Rdata"))
+save (tab.cont, tab.cat, tab.cont.scaled, pvals.adj, file=paste0(save.results.to, "coxph_slopes.Rdata"))
