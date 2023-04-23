@@ -54,7 +54,8 @@ dat.pla.nnaive=subset(dat, Trt==0 & !naive & ph1.BD29)
 
 ###################################################################################################
 # loop through each quadrant
-for (idat in 1:4) {
+# 4 mock data not working yet
+for (idat in 1:3) {
   # idat=1
   myprint(idat)
   if (idat==1) {dat.ph1 = dat.vac.naive;  ilabel="vac_naive"}
@@ -100,7 +101,7 @@ for (idat in 1:4) {
   ###################################################################################################
   # estimate overall marginalized risk (no markers) and VE
   
-  source(here::here("code", "cor_coxph_marginalized_risk_no_marker.R"))
+  # source(here::here("code", "cor_coxph_marginalized_risk_no_marker.R"))
   
 
   ###################################################################################################
