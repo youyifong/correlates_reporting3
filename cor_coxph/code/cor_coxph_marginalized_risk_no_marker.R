@@ -39,7 +39,7 @@ if(!file.exists(paste0(save.results.to, "marginalized.risk.no.marker.Rdata"))) {
         if(config$sampling_scheme=="case_cohort") {
             dat.b = get.bootstrap.data.cor(dat.ph1, ptids.by.stratum, seed) 
         } else if (config$sampling_scheme=="case_control") {
-            dat.b = bootstrap.case.control.samples(dat.ph1, seed, delta.name="EventIndPrimary", strata.name="tps.stratum", ph2.name="ph2", min.cell.size=0) 
+            dat.b = bootstrap.case.control.samples(dat.ph1, seed, delta.name="EventIndPrimary", strata.name="Wstratum", ph2.name="ph2", min.cell.size=0) 
         } else stop("config$sampling_scheme is wrong")
         get.marginalized.risk.no.marker(form.0, dat.b, tfinal.tpeak)
         

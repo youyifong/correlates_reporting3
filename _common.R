@@ -147,6 +147,69 @@ get.labels.x.axis.cor=function(xlim, llox){
 }
 
 
+
+# Start with dat.ph1. Step 1 determines the numbers, the rest do the actual sampling.
+# 1. resample 
+#     if there are less than 16 cases in any of the 8 buckets (4 time periods * 2 trt), re-do sampling because we need at least 16 to sample from in each naive/non-naive pair
+#     if there are less than 8 controls in any of the 16 bucket (4 time periods * 2 trt * 2 naive), re-do sampling 
+# 2. resample ph2 cases from each of 16 buckets
+#     Count the number of ph2 cases for each of 16 buckets (4 time periods * 2 trt * naive). If there are x < 8 cases in nnaive, take x from nnaive and 16-x from naive; otherwise, take 8 from nnaive and 8 from naive.
+#     if sampling 8 and it is possible to sample 2:1:1:2:1:1 by demographics, do it; otherwise, sample without regard to demographics
+# 3. resample non-ph2 cases from each of the 16 buckets 
+# 4. resample 8 ph2 controls from each of 16 buckets
+#     if it is possible to sample 2:1:1:2:1:1 by demographics, do it; otherwise, sample without regard to demographics
+# 5. resample non-ph2 controls from each of 16 buckets
+#
+# Across bootstrap replicates, the number of cases does not stay constant, but the numbers of ph2 cases and controls remain the same.
+
+bootstrap.cove.boost=function(dat.ph1, seed, delta.name="EventIndPrimary", strata.name="tps.stratum", ph2.name="ph2", min.cell.size=1) {
+  #dat.ph1=dat.tmp; delta.name="EventIndPrimary"; strata.name="tps.stratum"; ph2.name="ph2"; min.cell.size=0
+  
+  set.seed(seed)
+  
+  # reduce columns  
+  dat.tmp=subset(dat.ph1, select=c(CalendarBD1Interval, Trt, Naive, ))
+  
+  # 1. 
+  dat.b=dat.tmp[sample.int(nrow(dat.tmp), r=TRUE),]
+  tab.case = with(subset(dat.b, EventIndPrimary==1), table(CalendarBD1Interval, Trt))
+  tab.ctrl = with(subset(dat.b, EventIndPrimary==0), table(CalendarBD1Interval, Trt, Naive))
+  # re-do resampling if some cells are too small
+  while(any(tab.case<16) | any(tab.ctrl<8)) {   
+    dat.b=dat.tmp[sample.int(nrow(dat.tmp), r=TRUE),]
+    tab.case = with(subset(dat.b, EventIndPrimary==1), table(CalendarBD1Interval, Trt))
+    tab.ctrl = with(subset(dat.b, EventIndPrimary==0), table(CalendarBD1Interval, Trt, Naive))
+  }
+  
+  # 2.
+  tab.case = with(subset(dat.b, EventIndPrimary==1), table(CalendarBD1Interval, Trt, Naive))
+  
+  
+  
+  
+  
+  
+    # take the case ptids
+  case.ptids.b = dat.b$ptid[dat.b$delta==1]
+  
+  # 2. resample controls in dat.ph1 (numbers determined by dat.b) stratified by strata and ph2/nonph2
+  # ph2 and non-ph2 controls by strata
+  nn.ctrl.b=with(subset(dat.b, !delta), table(strata, ph2))
+  # sample the control ptids
+  ctrl.ptids.by.stratum.b=lapply(strat, function (i) {
+    c(sample(ctrl.ptids[[i]]$ph2, nn.ctrl.b[i,2], r=T),
+      sample(ctrl.ptids[[i]]$nonph2, nn.ctrl.b[i,1], r=T))
+  })
+  ctrl.ptids.b=do.call(c, ctrl.ptids.by.stratum.b)    
+  
+  # return data frame
+  dat.ph1[c(case.ptids.b, ctrl.ptids.b), ]
+}
+
+
+
+
+
 # bootstrap from case control studies is done by resampling cases, ph2 controls, and non-ph2 controls separately. 
 # Across bootstrap replicates, the number of cases does not stay constant, neither do the numbers of ph2 controls by demographics strata. 
 # Specifically,

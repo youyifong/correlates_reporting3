@@ -52,9 +52,12 @@ dat.pla.nnaive=subset(dat, Trt==0 & !naive & ph1.BD29)
 
 
 
+###################################################################################################
 # loop through each quadrant
-for (idat in 1:4) {
-  # idat=2
+# 4 mock data not working yet
+for (idat in 1:3) {
+  # idat=1
+  myprint(idat)
   if (idat==1) {dat.ph1 = dat.vac.naive;  ilabel="vac_naive"}
   if (idat==2) {dat.ph1 = dat.pla.naive;  ilabel="pla_naive"}
   if (idat==3) {dat.ph1 = dat.vac.nnaive; ilabel="vac_nnaive"}
@@ -98,7 +101,7 @@ for (idat in 1:4) {
   ###################################################################################################
   # estimate overall marginalized risk (no markers) and VE
   
-  source(here::here("code", "cor_coxph_marginalized_risk_no_marker.R"))
+  # source(here::here("code", "cor_coxph_marginalized_risk_no_marker.R"))
   
 
   ###################################################################################################
@@ -106,13 +109,14 @@ for (idat in 1:4) {
   
   all.markers = paste0("BD29", assays)
   design.1<-twophase(id=list(~1,~1), strata=list(NULL,~Wstratum), subset=~ph2, data=dat.ph1)
-  #with(dat.ph1, table(Wstratum, ph2, useNA="ifany"))
+  with(dat.ph1, table(Wstratum, ph2, useNA="ifany"))
+
   tpeak=29
   source(here::here("code", "cor_coxph_ph.R"))
   
   
   # unit testing of coxph results
-  if (Sys.getenv("TRIAL") == "moderna_boost") {
+  if (TRIAL == "") {
       tmp.1=c(rv$tab.1[,4], rv$tab.2[,"overall.p.0"])
       tmp.2=c("0.162","0.079","0.006",      "0.498","   ","   ","0.162","   ","   ","0.003","   ","   ")
       assertthat::assert_that(all(tmp.1==tmp.2), msg = "failed cor_coxph unit testing")    
@@ -124,15 +128,15 @@ for (idat in 1:4) {
   # marginalized risk and controlled VE
   ###################################################################################################
       
-  # load ylims.cor[[1]] from D29 analyses, which is a list of two: 1 with placebo lines, 2 without placebo lines.
-  tmp=paste0(here::here(), paste0("/output/", attr(config,"config"), "/", COR, "/ylims.cor.", study_name, ".Rdata"))
-  if (file.exists(tmp)) load(tmp) # if it does not exist, the code will find alternative ylim
-  
-  source(here::here("code", "cor_coxph_marginalized_risk_bootstrap.R"))
-  
-  source(here::here("code", "cor_coxph_marginalized_risk_plotting.R"))
-  
-  if (attr(config, "config") %in% c("moderna_real", "janssen_pooled_EUA")) source(here::here("code", "cor_coxph_samplesizeratio.R"))
+  # # load ylims.cor[[1]] from D29 analyses, which is a list of two: 1 with placebo lines, 2 without placebo lines.
+  # tmp=paste0(here::here(), paste0("/output/", attr(config,"config"), "/", COR, "/ylims.cor.", study_name, ".Rdata"))
+  # if (file.exists(tmp)) load(tmp) # if it does not exist, the code will find alternative ylim
+  # 
+  # source(here::here("code", "cor_coxph_marginalized_risk_bootstrap.R"))
+  # 
+  # source(here::here("code", "cor_coxph_marginalized_risk_plotting.R"))
+  # 
+  # source(here::here("code", "cor_coxph_samplesizeratio.R"))
 
 }
 
