@@ -7,7 +7,7 @@ The main regression model is the Cox proportional hazards model. All plots are m
 \setlength{\tabcolsep}{.5ex}
   \input{`r pathCoRoutput`/CoR_univariable_svycoxph_pretty_`r study_name`}
 $\ast$Baseline covariates adjusted for: `r covariates_adjusted`.
-$\ast$`r txt.coxph.note2`
+$\ast$`r config$txt.coxph.note2`
 $\ast\ast\ast$q-value and FWER (family-wide error rate) are computed over the set of p-values both for quantitative markers and categorical markers `r if(study_name=="PREVENT19") "(not including categorical bindSpike due to there being no case in the upper tertile)"` using the Westfall and Young permutation method (\protect\input{`r pathCoRoutput`/permutation_replicates_`r study_name`} replicates). 
 `r special.note`
 
@@ -16,7 +16,7 @@ $\ast\ast\ast$q-value and FWER (family-wide error rate) are computed over the se
 \setlength{\tabcolsep}{.5ex}
   \input{`r pathCoRoutput`/CoR_univariable_svycoxph_pretty_scaled_`r study_name`}
 $\ast$Baseline covariates adjusted for: `r covariates_adjusted`. Maximum failure event time in ph2 subjects \input{`r pathCoRoutput`/timepoints_cum_risk_`r study_name`} days.
-$\ast$$\ast$`r txt.coxph.note2`
+$\ast$$\ast$`r config$txt.coxph.note2`
 $\ast$$\ast$$\ast$q-value and FWER (family-wide error rate) are computed over the set of p-values both for quantitative markers and categorical markers using the Westfall and Young permutation method (\protect\input{`r pathCoRoutput`/permutation_replicates_`r study_name`} replicates). 
 `r special.note`
 
@@ -27,7 +27,7 @@ $\ast$$\ast$$\ast$q-value and FWER (family-wide error rate) are computed over th
 \normalsize
 \vspace{-15pt}
 $\ast$Baseline covariates adjusted for: `r covariates_adjusted`. Cutpoints (on the log10 scale): `r concatList(paste0("\\input{", pathCoRoutput, "/cutpoints_", all.markers, "_", study_name, "}"), sep=",")`
-$\ast\ast$`r txt.coxph.note2`
+$\ast\ast$`r config$txt.coxph.note2`
 $\ast\ast$$\ast$Generalized Wald-test p-value of the null hypothesis that the hazard rate is constant across the Lower, Middle, and Upper tertile groups.
 $\dagger$ q-value and FWER (family-wide error rate) are computed over the set of p-values both for quantitative markers and categorical markers using the Westfall and Young permutation method (\protect\input{`r pathCoRoutput`/permutation_replicates_`r study_name`} replicates). 
 `r special.note`

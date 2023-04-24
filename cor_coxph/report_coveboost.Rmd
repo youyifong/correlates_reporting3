@@ -1,13 +1,24 @@
-<!-- add D29start28 for review responses to Benkeser et al -->
+# Disclaimers
+
+
+The data presented in the analysis are provided to NIAID in accordance with Clinical Trial Agreement between the parties. The study was funded in part by BARDA under Government Contract No. 75A50120C00034.
+
+
+\textbf{Statistical Analysis Plan}
+
+The SAP is available at https://doi.org/10.6084/m9.figshare.13198595
+
+
 
 
 ```{r, echo=FALSE, results='asis'}
 
 tpeak <- 29
+COR="vac_naive"
 special.note = paste0("$\\ddagger$ Count cases starting 7 days post BD29.")
 pathCoRoutput <- paste0("cor_coxph/output/", attr(config,"config"), "/vac_naive")
 
-    all.markers=paste0("Day", tpeak, assays)
+    all.markers=paste0("BD", tpeak, assays)
     # all.markers=c(all.markers, paste0("Delta", tpeak, "overB", assays))
     names(all.markers)=all.markers
 
@@ -16,10 +27,11 @@ cat(res, sep = '\n')
 
 
 tpeak <- 29
+COR="pla_naive"
 special.note = paste0("$\\ddagger$ Count cases starting 7 days post BD29.")
 pathCoRoutput <- paste0("cor_coxph/output/", attr(config,"config"), "/pla_naive")
 
-    all.markers=paste0("Day", tpeak, assays)
+    all.markers=paste0("BD", tpeak, assays)
     # all.markers=c(all.markers, paste0("Delta", tpeak, "overB", assays))
     names(all.markers)=all.markers
 

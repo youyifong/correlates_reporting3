@@ -4,6 +4,7 @@ library(dplyr)
 library(marginalizedRisk)
 library(survival)
 library(parallel)
+library(kyotil)
 
 # disable lower level parallelization in favor of higher level of parallelization
 library(RhpcBLASctl)
