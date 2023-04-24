@@ -149,41 +149,53 @@ get.labels.x.axis.cor=function(xlim, llox){
 
 
 
-# Start with dat.ph1. Step 1 determines the numbers, the rest do the actual sampling.
-# 1. resample 
-#     if there are less than 16 cases in any of the 8 buckets (4 time periods * 2 trt), re-do sampling because we need at least 16 to sample from in each naive/non-naive pair
-#     if there are less than 8 controls in any of the 16 bucket (4 time periods * 2 trt * 2 naive), re-do sampling 
-# 2. resample ph2 cases from each of 16 buckets
-#     Count the number of ph2 cases for each of 16 buckets (4 time periods * 2 trt * naive). If there are x < 8 cases in nnaive, take x from nnaive and 16-x from naive; otherwise, take 8 from nnaive and 8 from naive.
-#     if sampling 8 and it is possible to sample 2:1:1:2:1:1 by demographics, do it; otherwise, sample without regard to demographics
-# 3. resample non-ph2 cases from each of the 16 buckets 
-# 4. resample 8 ph2 controls from each of 16 buckets
-#     if it is possible to sample 2:1:1:2:1:1 by demographics, do it; otherwise, sample without regard to demographics
-# 5. resample non-ph2 controls from each of 16 buckets
-#
-# Across bootstrap replicates, the number of cases does not stay constant, but the numbers of ph2 cases and controls remain the same.
+# Within each quadrant (2 Trt * 2 naive status):
+#   1. resample the cohort and count the number of cases and controls: n1 and n0
+#         if n1 < 32 or n0 < 32, redo
+#   2. resample 32 cases and 32 controls from ph2 samples 
+#   3. resample n1-32 cases and n0-32 controls from non-ph2 samples
+#   4. Recompute their inverse probability sampling weights
+# Thus, the number of cases may vary across bootstrap replicates, but the ph2 sample size remains constant
 
-bootstrap.cove.boost=function(dat.ph1, seed, delta.name="EventIndPrimary", strata.name="tps.stratum", ph2.name="ph2", min.cell.size=1) {
-  #dat.ph1=dat.tmp; delta.name="EventIndPrimary"; strata.name="tps.stratum"; ph2.name="ph2"; min.cell.size=0
-  
+bootstrap.cove.boost=function(dat.ph1, seed) {
+
   set.seed(seed)
   
-  # reduce columns  
-  dat.tmp=subset(dat.ph1, select=c(CalendarBD1Interval, Trt, Naive, ))
+  # reduce columns
+  dat.tmp=subset(dat.ph1, select=c(Trt, Naive, EventIndPrimary, ph2))
+  dat.tmp.nph2=subset(dat.tmp, !ph2)
+  dat.tmp.ph2=subset(dat.tmp, ph2)
+  # n1.ph2 and n0.ph2 are expected to be 32 in COVE Boost
+  # we make it data-dependent here to be more flexible
+  n1.ph2 = sum(dat.tmp.ph2$EventIndPrimary)
+  n0.ph2 = sum(1-dat.tmp.ph2$EventIndPrimary)
   
   # 1. 
   dat.b=dat.tmp[sample.int(nrow(dat.tmp), r=TRUE),]
-  tab.case = with(subset(dat.b, EventIndPrimary==1), table(CalendarBD1Interval, Trt))
-  tab.ctrl = with(subset(dat.b, EventIndPrimary==0), table(CalendarBD1Interval, Trt, Naive))
-  # re-do resampling if some cells are too small
-  while(any(tab.case<16) | any(tab.ctrl<8)) {   
+  n1 = nrow(subset(dat.b, EventIndPrimary==1))
+  n0 = nrow(subset(dat.b, EventIndPrimary==0))
+  
+  while(n1<n1.ph2 | n0<n0.ph2) {   
     dat.b=dat.tmp[sample.int(nrow(dat.tmp), r=TRUE),]
-    tab.case = with(subset(dat.b, EventIndPrimary==1), table(CalendarBD1Interval, Trt))
-    tab.ctrl = with(subset(dat.b, EventIndPrimary==0), table(CalendarBD1Interval, Trt, Naive))
+    n1 = nrow(subset(dat.b, EventIndPrimary==1))
+    n0 = nrow(subset(dat.b, EventIndPrimary==0))
   }
   
   # 2.
-  tab.case = with(subset(dat.b, EventIndPrimary==1), table(CalendarBD1Interval, Trt, Naive))
+  dat.ph2.cases=subset(dat.tmp.ph2, EventIndPrimary==1)
+  dat.ph2.cases.b=dat.ph2.cases[sample.int(nrow(dat.ph2.cases), size=n1.ph2, r=TRUE),]
+  
+  dat.ph2.ctrls=subset(dat.tmp.ph2, EventIndPrimary==0)
+  dat.ph2.ctrls.b=dat.ph2.ctrls[sample.int(nrow(dat.ph2.ctrls), size=n0.ph2, r=TRUE),]
+  
+  # 3.
+  dat.nph2.cases=subset(dat.tmp.nph2, EventIndPrimary==1)
+  dat.nph2.cases.b=dat.nph2.cases[sample.int(nrow(dat.nph2.cases), size=n1-n1.ph2, r=TRUE),]
+  
+  dat.nph2.ctrls=subset(dat.tmp.nph2, EventIndPrimary==0)
+  dat.nph2.ctrls.b=dat.nph2.ctrls[sample.int(nrow(dat.nph2.ctrls), size=n0-n0.ph2, r=TRUE),]
+  
+  # 4.
   
   
   
