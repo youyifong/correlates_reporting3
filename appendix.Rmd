@@ -15,7 +15,7 @@ hash_algorithm <- "sha256"
 # get hash of commit at HEAD
 commit_hash <- system("git rev-parse HEAD", intern = TRUE)    
 # get hash of input processed data file based on chosen hashing algorithm
-processed_file_digest <- digest(file = path_to_data, algo = hash_algorithm)
+processed_file_digest <- digest(file = config$data_cleaned, algo = hash_algorithm)
     
 
 
@@ -30,5 +30,5 @@ processed_file_digest <- digest(file = path_to_data, algo = hash_algorithm)
 
 
 * The `r hash_algorithm` hash sum of the processed file,  
-`r paste0(path_to_data)`:  
+`r paste0(config$data_cleaned)`:  
 `r processed_file_digest`

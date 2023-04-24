@@ -8,7 +8,6 @@ library(survey)
 library(plotrix) # weighted.hist
 library(forestplot)
 library(Hmisc) # wtd.quantile, cut2
-library(kyotil)
 
 time.start=Sys.time()
 TRIAL=Sys.getenv("TRIAL")
@@ -55,7 +54,7 @@ dat.pla.nnaive=subset(dat, Trt==0 & !naive & ph1.BD29)
 ###################################################################################################
 # loop through each quadrant
 # 4 mock data not working yet
-for (idat in 1:3) {
+for (idat in 1:2) {
   # idat=1
   myprint(idat)
   if (idat==1) {dat.ph1 = dat.vac.naive;  ilabel="vac_naive"}
@@ -86,7 +85,7 @@ for (idat in 1:3) {
   marker.cutpoints=attr(dat.ph1, "marker.cutpoints")
   for (a in "BD29"%.%assays) {        
       q.a=marker.cutpoints[[a]]
-      to.write = paste0(a, " [", concatList(round(q.a, 2), ", "), ")%")
+      to.write = paste0(gsub("_", "\\\\_",a), " [", concatList(round(q.a, 2), ", "), ")%")
       write(to.write, file=paste0(save.results.to, "cutpoints_", a, "_"%.%study_name))
   }
   
