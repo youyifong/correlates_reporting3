@@ -100,7 +100,7 @@ for (idat in 1:2) {
   ###################################################################################################
   # estimate overall marginalized risk (no markers) and VE
   
-  # source(here::here("code", "cor_coxph_marginalized_risk_no_marker.R"))
+  source(here::here("code", "cor_coxph_marginalized_risk_no_marker.R"))
   
 
   ###################################################################################################

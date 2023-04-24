@@ -148,75 +148,103 @@ get.labels.x.axis.cor=function(xlim, llox){
 }
 
 
-
+# bootstrap for COVE boost
 # Within each quadrant (2 Trt * 2 naive status):
 #   1. resample the cohort and count the number of cases and controls: n1 and n0
 #         if n1 < 32 or n0 < 32, redo
 #   2. resample 32 cases and 32 controls from ph2 samples 
 #   3. resample n1-32 cases and n0-32 controls from non-ph2 samples
-#   4. Recompute their inverse probability sampling weights
+# 4. Collapse strata if needed and compute inverse probability sampling weights
 # Thus, the number of cases may vary across bootstrap replicates, but the ph2 sample size remains constant
 
+# dat.ph1 is ph1 data and need to have, in addition to markers and covariates columns:
+#   Ptid, Trt, naive, EventIndPrimary, ph2, demo.stratum, CalendarBD1Interval
+# return a dataframe with wt column
 bootstrap.cove.boost=function(dat.ph1, seed) {
 
   set.seed(seed)
   
-  # reduce columns
-  dat.tmp=subset(dat.ph1, select=c(Trt, Naive, EventIndPrimary, ph2))
-  dat.tmp.nph2=subset(dat.tmp, !ph2)
-  dat.tmp.ph2=subset(dat.tmp, ph2)
-  # n1.ph2 and n0.ph2 are expected to be 32 in COVE Boost
-  # we make it data-dependent here to be more flexible
-  n1.ph2 = sum(dat.tmp.ph2$EventIndPrimary)
-  n0.ph2 = sum(1-dat.tmp.ph2$EventIndPrimary)
-  
-  # 1. 
-  dat.b=dat.tmp[sample.int(nrow(dat.tmp), r=TRUE),]
-  n1 = nrow(subset(dat.b, EventIndPrimary==1))
-  n0 = nrow(subset(dat.b, EventIndPrimary==0))
-  
-  while(n1<n1.ph2 | n0<n0.ph2) {   
-    dat.b=dat.tmp[sample.int(nrow(dat.tmp), r=TRUE),]
-    n1 = nrow(subset(dat.b, EventIndPrimary==1))
-    n0 = nrow(subset(dat.b, EventIndPrimary==0))
+  # perform bootstrap within each quadrant (2 Trt * 2 naive status)
+  dat.b=NULL
+  for (idat in 1:4) {
+    if (idat==1) {dat.tmp = subset(dat.ph1, Trt==1 & naive==1)}
+    if (idat==2) {dat.tmp = subset(dat.ph1, Trt==0 & naive==1)}
+    if (idat==3) {dat.tmp = subset(dat.ph1, Trt==1 & naive==0)}
+    if (idat==4) {dat.tmp = subset(dat.ph1, Trt==0 & naive==0)}
+    if (nrow(dat.tmp)==0) next
+    
+    dat.tmp.nph2=subset(dat.tmp, !ph2)
+    dat.tmp.ph2=subset(dat.tmp, ph2)
+    
+    # n1.ph2 and n0.ph2 are expected to be 32 in COVE Boost
+    # we make it data-dependent here to be more flexible
+    n1.ph2 = sum(dat.tmp.ph2$EventIndPrimary)
+    n0.ph2 = sum(1-dat.tmp.ph2$EventIndPrimary)
+    
+    # 1. 
+    dat.2=dat.tmp[sample.int(nrow(dat.tmp), r=TRUE),]
+    n1 = nrow(subset(dat.2, EventIndPrimary==1))
+    n0 = nrow(subset(dat.2, EventIndPrimary==0))
+    
+    while(n1<n1.ph2 | n0<n0.ph2) {   
+      dat.2=dat.tmp[sample.int(nrow(dat.tmp), r=TRUE),]
+      n1 = nrow(subset(dat.2, EventIndPrimary==1))
+      n0 = nrow(subset(dat.2, EventIndPrimary==0))
+    }
+    
+    # 2.
+    dat.ph2.cases=subset(dat.tmp.ph2, EventIndPrimary==1)
+    dat.ph2.cases.b=dat.ph2.cases[sample.int(nrow(dat.ph2.cases), size=n1.ph2, r=TRUE),]
+    
+    dat.ph2.ctrls=subset(dat.tmp.ph2, EventIndPrimary==0)
+    dat.ph2.ctrls.b=dat.ph2.ctrls[sample.int(nrow(dat.ph2.ctrls), size=n0.ph2, r=TRUE),]
+    
+    # 3.
+    dat.nph2.cases=subset(dat.tmp.nph2, EventIndPrimary==1)
+    dat.nph2.cases.b=dat.nph2.cases[sample.int(nrow(dat.nph2.cases), size=n1-n1.ph2, r=TRUE),]
+    
+    dat.nph2.ctrls=subset(dat.tmp.nph2, EventIndPrimary==0)
+    dat.nph2.ctrls.b=dat.nph2.ctrls[sample.int(nrow(dat.nph2.ctrls), size=n0-n0.ph2, r=TRUE),]
+    
+    dat.b=rbind(dat.b, dat.ph2.cases.b, dat.ph2.ctrls.b, dat.nph2.cases.b, dat.nph2.ctrls.b)
   }
   
-  # 2.
-  dat.ph2.cases=subset(dat.tmp.ph2, EventIndPrimary==1)
-  dat.ph2.cases.b=dat.ph2.cases[sample.int(nrow(dat.ph2.cases), size=n1.ph2, r=TRUE),]
   
-  dat.ph2.ctrls=subset(dat.tmp.ph2, EventIndPrimary==0)
-  dat.ph2.ctrls.b=dat.ph2.ctrls[sample.int(nrow(dat.ph2.ctrls), size=n0.ph2, r=TRUE),]
+  # 4. 
+  n.demo = length(table(dat.b$demo.stratum))
+  assertthat::assert_that(n.demo==6, msg = "n.demo != 6")
   
-  # 3.
-  dat.nph2.cases=subset(dat.tmp.nph2, EventIndPrimary==1)
-  dat.nph2.cases.b=dat.nph2.cases[sample.int(nrow(dat.nph2.cases), size=n1-n1.ph2, r=TRUE),]
+  # there is not a need to compute these because they are determined within each row
+  # dat.b$sampling_bucket = with(dat.b, 
+  #                                   strtoi(paste0(
+  #                                     Trt, 
+  #                                     naive,
+  #                                     EventIndPrimary,
+  #                                     dec_to_binary(CalendarBD1Interval-1, 2)
+  #                                   ), base = 2))
+  # dat.b$sampling_bucket_formergingstrata = with(dat.b, 
+  #                                                    strtoi(paste0(
+  #                                                      Trt, 
+  #                                                      naive,
+  #                                                      EventIndPrimary
+  #                                                    ), base = 2))
+  # dat.b$Wstratum = with(dat.b, demo.stratum + sampling_bucket * n.demo)
   
-  dat.nph2.ctrls=subset(dat.tmp.nph2, EventIndPrimary==0)
-  dat.nph2.ctrls.b=dat.nph2.ctrls[sample.int(nrow(dat.nph2.ctrls), size=n0-n0.ph2, r=TRUE),]
   
-  # 4.
+  # adjust Wstratum
+  dat.b = cove.boost.collapse.strata (dat.b, n.demo)
+
+  # compute inverse probability sampling weights
+  tmp = with(dat.b, ph1)
+  wts_table <- with(dat.b[tmp,], table(Wstratum, ph2))
+  wts_norm <- rowSums(wts_table) / wts_table[, 2]
+  dat.b[["wt"]] = ifelse(dat.b$ph1, wts_norm[dat.b$Wstratum %.% ""], NA)
   
+  assertthat::assert_that(
+    all(!is.na(subset(dat.b, tmp & !is.na(Wstratum))[["wt"]])),
+    msg = "missing wt.BD for D analyses ph1 subjects")
   
-  
-  
-  
-  
-    # take the case ptids
-  case.ptids.b = dat.b$ptid[dat.b$delta==1]
-  
-  # 2. resample controls in dat.ph1 (numbers determined by dat.b) stratified by strata and ph2/nonph2
-  # ph2 and non-ph2 controls by strata
-  nn.ctrl.b=with(subset(dat.b, !delta), table(strata, ph2))
-  # sample the control ptids
-  ctrl.ptids.by.stratum.b=lapply(strat, function (i) {
-    c(sample(ctrl.ptids[[i]]$ph2, nn.ctrl.b[i,2], r=T),
-      sample(ctrl.ptids[[i]]$nonph2, nn.ctrl.b[i,1], r=T))
-  })
-  ctrl.ptids.b=do.call(c, ctrl.ptids.by.stratum.b)    
-  
-  # return data frame
-  dat.ph1[c(case.ptids.b, ctrl.ptids.b), ]
+  return (dat.b)
 }
 
 

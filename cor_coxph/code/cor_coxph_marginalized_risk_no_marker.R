@@ -31,19 +31,26 @@ if(!file.exists(paste0(save.results.to, "marginalized.risk.no.marker.Rdata"))) {
     save.seed <- try(get(".Random.seed", .GlobalEnv), silent=TRUE) 
     if (class(save.seed)=="try-error") {set.seed(1); save.seed <- get(".Random.seed", .GlobalEnv) }   
     
-    if(config$sampling_scheme=="case_cohort") ptids.by.stratum=get.ptids.by.stratum.for.bootstrap (dat.ph1) 
-
+    # prepare for bootstrapping
+    if(config$sampling_scheme=="case_cohort") {
+      ptids.by.stratum=get.ptids.by.stratum.for.bootstrap (dat.ph1) 
+    }
+    
     # if mc.cores is >1 here, the process will be stuck in coxph for some unknown reason
     out=mclapply(1:B, mc.cores = 1, FUN=function(seed) {  
-        if (verbose>=2) myprint(seed) 
-        if(config$sampling_scheme=="case_cohort") {
-            dat.b = get.bootstrap.data.cor(dat.ph1, ptids.by.stratum, seed) 
-        } else if (config$sampling_scheme=="case_control") {
-            dat.b = bootstrap.case.control.samples(dat.ph1, seed, delta.name="EventIndPrimary", strata.name="Wstratum", ph2.name="ph2", min.cell.size=0) 
-        } else stop("config$sampling_scheme is wrong")
-        get.marginalized.risk.no.marker(form.0, dat.b, tfinal.tpeak)
+      if (verbose>=2) myprint(seed) 
+      
+      if (TRIAL=="moderna_boost") {
+        dat.b = bootstrap.cove.boost(dat.ph1, seed)
         
+      } else if(config$sampling_scheme=="case_cohort") {
+        dat.b = get.bootstrap.data.cor(dat.ph1, ptids.by.stratum, seed)
+            
+      } else stop("not sure which bootstrap function to use")
+
+      get.marginalized.risk.no.marker(form.0, dat.b, tfinal.tpeak)
     })
+    
     boot=do.call(cbind, out)
     
     # restore rng state 
