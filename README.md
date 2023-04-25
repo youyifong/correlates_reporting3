@@ -14,35 +14,19 @@ processing](https://github.com/CoVPN/correlates_processing) module serving as an
 upstream component.
 
 
-[![Build Status](https://app.travis-ci.com/CoVPN/correlates_reporting2.svg?branch=master)](https://app.travis-ci.com/CoVPN/correlates_reporting2)
-_Note:_ automated builds of the correlates of risk and protection analyses are
-evaluated by the [Travis CI](https://travis-ci.org/) continuous integration
-service and the PDF reports posted to this repository's [`gh-pages`
-branch](https://github.com/CoVPN/correlates_reporting2/tree/gh-pages).
-
-## List of Analysis Modules
-
-* Correlates of Risk (CoR) Analyses
-  * `cor_tabular`: Tabular descriptions of correlates of risk.
-  * `cor_graphical`: Graphical descriptions of correlates of risk.
-  * `cor_coxph`: Cox proportional hazards modeling of risk.
-  * `cor_threshold`: Risk modeling based on correlate thresholds.
-  * `cor_nonlinear`: Nonlinear modeling and evaluation.
-  * `cor_surrogates`: Optimal surrogates analyses.
-* Correlates of Protection (CoP) Analyses
-  * `cop_prinstrat`: Principal stratification analyses.
-  * `cop_stochastic`: Stochastic risk and vaccine efficacy evaluation.
-  * `cop_mediation`: Correlate-mediated vaccine efficacy and risk.
-
-
 ## Design notes
 
 The correlates_reporting3 repo is more flexible compared to correlates_reporting2 (design doc). Reporting2 was designed such that each time the “button” was pressed, a correlates analysis was run for one endpoint/analysis population/dataset combination, e.g., correlates for the severe endpoint starting seven days post the D29 visit in the US part of the ENSEMBLE trial. A new analysis can be specific by adding a new TRIAL section and a new COR section in config.yml with minimal coding. Reporting3 is designed to facilitate implementation of more complex objectives, e.g., to assess whether a correlate is modified by naïve/non-naïve status. This is primarily achieved by pushing the logic concerning COR from _common.R into a new top layer within an analysis module, see cor_coxph_cove_boost.R for an example. 
 
-In addition, correlates_reporting3 makes some improvements over correlates_reporting2. One of the most important one is that assay metadata such as LLOQs, ULOQs, llox_label etc are stored in a csv file and used in data mapping, correlates_processing, and correlates_reportings. 
+correlates_reporting3 makes some improvements over correlates_reporting2:
 
-The basic structure hasn’t changed from the correlates_reporting2 repo. We still use config.yml and _common.R to offer common support for all analysis modules. Each section in the config.yml describes one data file. _common.R contains functions that implement shared logic.
+* Assay metadata such as LLOQs, ULOQs, llox_label etc are stored in a csv file and used in data mapping, correlates_processing, and correlates_reportings. 
 
+The basic structure hasn’t changed from the correlates_reporting2 repo. 
+
+* config.yml Each section in the file describes one data file. 
+
+* _common.R It acts as like a package and contains functions that implement shared logic such as making bootstrap samples, trichotomizing assay markers, define followup days for risk etc. Keeping these functions in _common.R is more nimble than spinning them off to a package and faster development cycle. The one exception is the cove.boost.collapse.strata function, which is used by both reporting3 and processing repos and is contained in the kyotil package.
 
 
 ## Quick start
@@ -86,6 +70,21 @@ bash _build_chapter.sh cor_coxph
 
 * Package version control and virtual environments using
   [`renv`](https://rstudio.github.io/renv/).
+
+
+## List of Analysis Modules
+
+* Correlates of Risk (CoR) Analyses
+  * `cor_tabular`: Tabular descriptions of correlates of risk.
+  * `cor_graphical`: Graphical descriptions of correlates of risk.
+  * `cor_coxph`: Cox proportional hazards modeling of risk.
+  * `cor_threshold`: Risk modeling based on correlate thresholds.
+  * `cor_nonlinear`: Nonlinear modeling and evaluation.
+  * `cor_surrogates`: Optimal surrogates analyses.
+* Correlates of Protection (CoP) Analyses
+  * `cop_prinstrat`: Principal stratification analyses.
+  * `cop_stochastic`: Stochastic risk and vaccine efficacy evaluation.
+  * `cop_mediation`: Correlate-mediated vaccine efficacy and risk.
 
 
 ---

@@ -51,7 +51,7 @@ dat.pla.naive=subset(dat,  Trt==0 & naive & ph1.BD29)
 dat.vac.nnaive=subset(dat, Trt==1 & !naive & ph1.BD29)
 dat.pla.nnaive=subset(dat, Trt==0 & !naive & ph1.BD29)
 
-idat=4
+idat=1
 myprint(idat)
 if (idat==1) {dat.ph1 = dat.vac.naive;  ilabel="vac_naive"}
 if (idat==2) {dat.ph1 = dat.pla.naive;  ilabel="pla_naive"}
@@ -79,6 +79,8 @@ mytex(tab, file.name="tab1", save2input.only=T, input.foldername=save.results.to
 design.1<-twophase(id=list(~1,~1), strata=list(NULL,~Wstratum), subset=~ph2, data=dat.ph1)
 
 f=Surv(EventTimePrimary, EventIndPrimary) ~ MinorityInd + HighRiskInd + risk_score + BD29bindSpike
+# or 
+f=Surv(EventTimePrimary, EventIndPrimary) ~ MinorityInd + HighRiskInd + risk_score + BD29pseudoneutid50
 
 fit=svycoxph(f, design=design.1); fit
 
@@ -86,8 +88,9 @@ dat.ph2=subset(dat.ph1, ph2)
 coxph(f, dat.ph2, weights=dat.ph2$wt) # same est as fit
 
 
+# 50 sec for 100 replicates
 time.start=Sys.time()
-out=mclapply(1:100, mc.cores = 1, FUN=function(seed) {  
+out=mclapply(1:1000, mc.cores = 10, FUN=function(seed) {  
   myprint(seed) 
   # dat.b = try(bootstrap.cove.boost(dat.ph1, seed))
   # if (inherits (dat.b, "try-error")) return (NULL)
@@ -98,8 +101,23 @@ out=mclapply(1:100, mc.cores = 1, FUN=function(seed) {
   if(!inherits(fit,"try-error")) fit$coefficients else NULL
 })
 boot=do.call(cbind, out)
-print("run time: "%.%format(Sys.time()-time.start, digits=1)) # 50 sec for 100 replicates
+print("run time: "%.%format(Sys.time()-time.start, digits=1)) 
 
+
+# 19 sec for 100 replicates
+time.start=Sys.time()
+out.2=mclapply(1:1000, mc.cores = 10, FUN=function(seed) {  
+  myprint(seed) 
+  # dat.b = try(bootstrap.cove.boost(dat.ph1, seed))
+  # if (inherits (dat.b, "try-error")) return (NULL)
+  dat.b = bootstrap.cove.boost.2(dat.ph1, seed)
+  
+  dat.ph2.b=subset(dat.b, ph2)
+  fit=try(do.call("coxph", list(formula=f, data=dat.ph2.b, weights=dat.ph2.b$wt)))
+  if(!inherits(fit,"try-error")) fit$coefficients else NULL
+})
+boot.2=do.call(cbind, out.2)
+print("run time: "%.%format(Sys.time()-time.start, digits=1))
 
 
 # without calling cove.boost.collapse.strata. does not work well
@@ -134,23 +152,6 @@ bootstrap.cove.boost.3=function(dat.ph1, seed) {
   return (ret)
 }
 
-
-
-time.start=Sys.time()
-out.2=mclapply(1:100, mc.cores = 1, FUN=function(seed) {  
-  myprint(seed) 
-  # dat.b = try(bootstrap.cove.boost(dat.ph1, seed))
-  # if (inherits (dat.b, "try-error")) return (NULL)
-  dat.b = bootstrap.cove.boost.2(dat.ph1, seed)
-  
-  dat.ph2.b=subset(dat.b, ph2)
-  fit=try(do.call("coxph", list(formula=f, data=dat.ph2.b, weights=dat.ph2.b$wt)))
-  if(!inherits(fit,"try-error")) fit$coefficients else NULL
-})
-boot.2=do.call(cbind, out.2)
-print("run time: "%.%format(Sys.time()-time.start, digits=1))# 19 sec for 100 replicates
-
-
 time.start=Sys.time()
 out.3=mclapply(1:100, mc.cores = 1, FUN=function(seed) {  
   myprint(seed) 
@@ -170,11 +171,16 @@ print("run time: "%.%format(Sys.time()-time.start, digits=1))# 9 sec for 100 rep
 # version 1 and 2 work similary
 # version 3 does not work as well
 fit
-sd(boot["BD29bindSpike",])
-summary(boot["BD29bindSpike",])
-sd(boot.2["BD29bindSpike",])
-summary(boot.2["BD29bindSpike",])
-sd(boot.3["BD29bindSpike",])
-summary(boot.3["BD29bindSpike",])
+
+sd(boot[4,])
+summary(boot[4,])
+quantile(boot[4,], c(.025,.975))
+
+sd(boot.2[4,])
+summary(boot.2[4,])
+quantile(boot.2[4,], c(.025,.975))
+
+sd(boot.3[4,])
+quantile(boot.3[4,], c(.025,.975))
 
 
