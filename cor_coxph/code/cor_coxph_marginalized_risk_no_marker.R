@@ -30,8 +30,7 @@ if(!file.exists(paste0(save.results.to, "marginalized.risk.no.marker.Rdata"))) {
       ptids.by.stratum=get.ptids.by.stratum.for.bootstrap (dat.ph1) 
     }
     
-    # if mc.cores is >1 here, the process will be stuck in coxph for some unknown reason
-    out=mclapply(1:B, mc.cores = 1, FUN=function(seed) {  
+    out=mclapply(1:B, mc.cores = numCores, FUN=function(seed) {  
       if (verbose>=2) myprint(seed) 
       
       if (TRIAL=="moderna_boost") {
