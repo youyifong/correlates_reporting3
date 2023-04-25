@@ -1,12 +1,6 @@
-
-#fit.ve = coxph(Surv(EventTimePrimary, EventIndPrimary) ~ Trt, subset(dat.mock, ph1==1)) 
-#summary(fit.ve)
-
-
-
 ## these results are close to bootstrap results. they are not used later and only for sanity check
 ## compute overall risk regardless of markers in both arms by integrating over form.0. 
-## the point estimate matche the results from bootstrap
+## the point estimate matches the results from bootstrap
 ## the variance is asymptotic and still needs to be figured out
 #prevs=sapply (c(placebo=0, vaccine=1), function(i) {
 #    dat.ph1=subset(dat.mock, Trt==i & Bserostatus==0 & ph1)

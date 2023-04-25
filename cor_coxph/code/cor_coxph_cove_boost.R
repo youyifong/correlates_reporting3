@@ -76,7 +76,7 @@ for (idat in 1:2) {
 
   dat.ph2 = subset(dat.ph1, ph2)
   
-  tfinal.tpeak=get.tfinal.tpeak.case.control.rule1 (dat.ph2) 
+  tfinal.tpeak=get.tfinal.tpeak.1 (dat.ph2) 
   myprint(tfinal.tpeak)
   write(tfinal.tpeak, file=paste0(save.results.to, "timepoints_cum_risk_"%.%study_name))
 
