@@ -160,6 +160,9 @@ get.labels.x.axis.cor=function(xlim, llox){
 # dat.ph1 is ph1 data and need to have, in addition to markers and covariates columns:
 #   Ptid, Trt, naive, EventIndPrimary, ph2, demo.stratum, CalendarBD1Interval
 # return a dataframe with wt column
+
+# may throw exception, need to put in try
+
 bootstrap.cove.boost=function(dat.ph1, seed) {
 
   set.seed(seed)
@@ -232,6 +235,7 @@ bootstrap.cove.boost=function(dat.ph1, seed) {
   
   
   # adjust Wstratum
+  # this call may throw exceptions
   dat.b = cove.boost.collapse.strata (dat.b, n.demo)
 
   # compute inverse probability sampling weights
