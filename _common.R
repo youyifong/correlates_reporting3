@@ -235,7 +235,45 @@ bootstrap.cove.boost=function(dat.ph1, seed) {
 
 
 
-# bootstrap from case control studies is done by resampling cases, ph2 controls, and non-ph2 controls separately. 
+# a second version, simpler, faster, results are close to bootstrap.cove.boost
+bootstrap.cove.boost.2=function(dat.ph1, seed) {
+  
+  set.seed(seed)
+  
+  # perform bootstrap within each quadrant (2 Trt * 2 naive status)
+  dat.b=NULL
+  for (idat in 1:4) {
+    if (idat==1) {dat.tmp = subset(dat.ph1, Trt==1 & naive==1)}
+    if (idat==2) {dat.tmp = subset(dat.ph1, Trt==0 & naive==1)}
+    if (idat==3) {dat.tmp = subset(dat.ph1, Trt==1 & naive==0)}
+    if (idat==4) {dat.tmp = subset(dat.ph1, Trt==0 & naive==0)}
+    if (nrow(dat.tmp)==0) next
+    
+    dat.b=dat.tmp[sample.int(nrow(dat.tmp), r=TRUE),]
+  }
+  
+  # 4. adjust Wstratum
+  n.demo = length(table(dat.b$demo.stratum))
+  assertthat::assert_that(n.demo==6, msg = "n.demo != 6")
+  ret = cove.boost.collapse.strata (dat.b, n.demo)
+  
+  # compute inverse probability sampling weights
+  tmp = with(ret, ph1)
+  wts_table <- with(ret[tmp,], table(Wstratum, ph2))
+  wts_norm <- rowSums(wts_table) / wts_table[, 2]
+  ret[["wt"]] = ifelse(ret$ph1, wts_norm[ret$Wstratum %.% ""], NA)
+  
+  assertthat::assert_that(
+    all(!is.na(subset(ret, tmp & !is.na(Wstratum))[["wt"]])),
+    msg = "missing wt.BD for D analyses ph1 subjects")
+  
+  return (ret)
+}
+
+
+
+
+# when all cases are sampled, bootstrap from case control studies is done by resampling cases, ph2 controls, and non-ph2 controls separately. 
 # Across bootstrap replicates, the number of cases does not stay constant, neither do the numbers of ph2 controls by demographics strata. 
 # Specifically,
 # 1) sample with replacement to get dat.b. From this dataset, take the cases and count ph2 and non-ph2 controls by strata

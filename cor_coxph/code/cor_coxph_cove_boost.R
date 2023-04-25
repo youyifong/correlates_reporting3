@@ -55,7 +55,7 @@ dat.pla.nnaive=subset(dat, Trt==0 & !naive & ph1.BD29)
 # loop through each quadrant
 # 4 mock data not working yet
 for (idat in 1:2) {
-  # idat=4
+  # idat=1
   myprint(idat)
   if (idat==1) {dat.ph1 = dat.vac.naive;  ilabel="vac_naive"}
   if (idat==2) {dat.ph1 = dat.pla.naive;  ilabel="pla_naive"}
@@ -84,9 +84,9 @@ for (idat in 1:2) {
   dat.ph1 = add.trichotomized.markers (dat.ph1, "BD29"%.%assays)
   marker.cutpoints=attr(dat.ph1, "marker.cutpoints")
   for (a in "BD29"%.%assays) {        
-      q.a=marker.cutpoints[[a]]
-      to.write = paste0(gsub("_", "\\\\_",a), " [", concatList(round(q.a, 2), ", "), ")%")
-      write(to.write, file=paste0(save.results.to, "cutpoints_", a, "_"%.%study_name))
+    q.a=marker.cutpoints[[a]]
+    to.write = paste0(gsub("_", "\\\\_",a), " [", concatList(round(q.a, 2), ", "), ")%")
+    write(to.write, file=paste0(save.results.to, "cutpoints_", a, "_"%.%study_name))
   }
   
   # table of ph1 and ph2 cases
@@ -95,38 +95,38 @@ for (idat in 1:2) {
   print(tab)
   mytex(tab, file.name="tab1", save2input.only=T, input.foldername=save.results.to)
   
-
+  
   
   ###################################################################################################
   # estimate overall marginalized risk (no markers) and VE
   
   source(here::here("code", "cor_coxph_marginalized_risk_no_marker.R"))
   
-
+  
   ###################################################################################################
   # run PH models
   
   all.markers = paste0("BD29", assays)
   design.1<-twophase(id=list(~1,~1), strata=list(NULL,~Wstratum), subset=~ph2, data=dat.ph1)
   with(dat.ph1, table(Wstratum, ph2, useNA="ifany"))
-
+  
   tpeak=29
   source(here::here("code", "cor_coxph_ph.R"))
   
   
   # unit testing of coxph results
   if (TRIAL == "") {
-      tmp.1=c(rv$tab.1[,4], rv$tab.2[,"overall.p.0"])
-      tmp.2=c("0.162","0.079","0.006",      "0.498","   ","   ","0.162","   ","   ","0.003","   ","   ")
-      assertthat::assert_that(all(tmp.1==tmp.2), msg = "failed cor_coxph unit testing")    
-      
+    tmp.1=c(rv$tab.1[,4], rv$tab.2[,"overall.p.0"])
+    tmp.2=c("0.162","0.079","0.006",      "0.498","   ","   ","0.162","   ","   ","0.003","   ","   ")
+    assertthat::assert_that(all(tmp.1==tmp.2), msg = "failed cor_coxph unit testing")    
+    
   } 
   print("Passed cor_coxph unit testing")    
   
   ###################################################################################################
   # marginalized risk and controlled VE
   ###################################################################################################
-      
+  
   # # load ylims.cor[[1]] from D29 analyses, which is a list of two: 1 with placebo lines, 2 without placebo lines.
   # tmp=paste0(here::here(), paste0("/output/", attr(config,"config"), "/", COR, "/ylims.cor.", study_name, ".Rdata"))
   # if (file.exists(tmp)) load(tmp) # if it does not exist, the code will find alternative ylim
@@ -136,7 +136,7 @@ for (idat in 1:2) {
   # source(here::here("code", "cor_coxph_marginalized_risk_plotting.R"))
   # 
   # source(here::here("code", "cor_coxph_samplesizeratio.R"))
-
+  
 }
 
 

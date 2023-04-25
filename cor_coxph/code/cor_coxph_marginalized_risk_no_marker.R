@@ -37,11 +37,11 @@ if(!file.exists(paste0(save.results.to, "marginalized.risk.no.marker.Rdata"))) {
     }
     
     # if mc.cores is >1 here, the process will be stuck in coxph for some unknown reason
-    out=mclapply(1:B, mc.cores = 10, FUN=function(seed) {  
+    out=mclapply(1:B, mc.cores = 1, FUN=function(seed) {  
       if (verbose>=2) myprint(seed) 
       
       if (TRIAL=="moderna_boost") {
-        dat.b = bootstrap.cove.boost(dat.ph1, seed)
+        dat.b = bootstrap.cove.boost.2(dat.ph1, seed)
         
       } else if(config$sampling_scheme=="case_cohort") {
         dat.b = get.bootstrap.data.cor(dat.ph1, ptids.by.stratum, seed)
@@ -50,7 +50,6 @@ if(!file.exists(paste0(save.results.to, "marginalized.risk.no.marker.Rdata"))) {
 
       get.marginalized.risk.no.marker(form.0, dat.b, tfinal.tpeak)
     })
-    
     boot=do.call(cbind, out)
     
     # restore rng state 
