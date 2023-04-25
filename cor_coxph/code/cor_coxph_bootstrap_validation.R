@@ -51,7 +51,7 @@ dat.pla.naive=subset(dat,  Trt==0 & naive & ph1.BD29)
 dat.vac.nnaive=subset(dat, Trt==1 & !naive & ph1.BD29)
 dat.pla.nnaive=subset(dat, Trt==0 & !naive & ph1.BD29)
 
-idat=1
+idat=4
 myprint(idat)
 if (idat==1) {dat.ph1 = dat.vac.naive;  ilabel="vac_naive"}
 if (idat==2) {dat.ph1 = dat.pla.naive;  ilabel="pla_naive"}
@@ -85,7 +85,9 @@ fit=svycoxph(f, design=design.1); fit
 dat.ph2=subset(dat.ph1, ph2)
 coxph(f, dat.ph2, weights=dat.ph2$wt) # same est as fit
 
-out=mclapply(1:1000, mc.cores = 1, FUN=function(seed) {  
+
+time.start=Sys.time()
+out=mclapply(1:100, mc.cores = 1, FUN=function(seed) {  
   myprint(seed) 
   # dat.b = try(bootstrap.cove.boost(dat.ph1, seed))
   # if (inherits (dat.b, "try-error")) return (NULL)
@@ -96,49 +98,11 @@ out=mclapply(1:1000, mc.cores = 1, FUN=function(seed) {
   if(!inherits(fit,"try-error")) fit$coefficients else NULL
 })
 boot=do.call(cbind, out)
+print("run time: "%.%format(Sys.time()-time.start, digits=1)) # 50 sec for 100 replicates
 
 
 
-# a second version, simpler, faster, results are close to bootstrap.cove.boost
-bootstrap.cove.boost.2=function(dat.ph1, seed) {
-  
-  set.seed(seed)
-  
-  # perform bootstrap within each quadrant (2 Trt * 2 naive status)
-  dat.b=NULL
-  for (idat in 1:4) {
-    if (idat==1) {dat.tmp = subset(dat.ph1, Trt==1 & naive==1)}
-    if (idat==2) {dat.tmp = subset(dat.ph1, Trt==0 & naive==1)}
-    if (idat==3) {dat.tmp = subset(dat.ph1, Trt==1 & naive==0)}
-    if (idat==4) {dat.tmp = subset(dat.ph1, Trt==0 & naive==0)}
-    if (nrow(dat.tmp)==0) next
-    
-    dat.b=dat.tmp[sample.int(nrow(dat.tmp), r=TRUE),]
-  }
-  
-  
-  # 4. 
-  n.demo = length(table(dat.b$demo.stratum))
-  assertthat::assert_that(n.demo==6, msg = "n.demo != 6")
-  
-  # adjust Wstratum
-  ret = cove.boost.collapse.strata (dat.b, n.demo)
-  
-  # compute inverse probability sampling weights
-  tmp = with(ret, ph1)
-  wts_table <- with(ret[tmp,], table(Wstratum, ph2))
-  wts_norm <- rowSums(wts_table) / wts_table[, 2]
-  ret[["wt"]] = ifelse(ret$ph1, wts_norm[ret$Wstratum %.% ""], NA)
-  
-  assertthat::assert_that(
-    all(!is.na(subset(ret, tmp & !is.na(Wstratum))[["wt"]])),
-    msg = "missing wt.BD for D analyses ph1 subjects")
-  
-  return (ret)
-}
-
-
-
+# without calling cove.boost.collapse.strata. does not work well
 bootstrap.cove.boost.3=function(dat.ph1, seed) {
   
   set.seed(seed)
@@ -172,7 +136,8 @@ bootstrap.cove.boost.3=function(dat.ph1, seed) {
 
 
 
-out.2=mclapply(1:1000, mc.cores = 1, FUN=function(seed) {  
+time.start=Sys.time()
+out.2=mclapply(1:100, mc.cores = 1, FUN=function(seed) {  
   myprint(seed) 
   # dat.b = try(bootstrap.cove.boost(dat.ph1, seed))
   # if (inherits (dat.b, "try-error")) return (NULL)
@@ -183,8 +148,11 @@ out.2=mclapply(1:1000, mc.cores = 1, FUN=function(seed) {
   if(!inherits(fit,"try-error")) fit$coefficients else NULL
 })
 boot.2=do.call(cbind, out.2)
+print("run time: "%.%format(Sys.time()-time.start, digits=1))# 19 sec for 100 replicates
 
-out.3=mclapply(1:1000, mc.cores = 1, FUN=function(seed) {  
+
+time.start=Sys.time()
+out.3=mclapply(1:100, mc.cores = 1, FUN=function(seed) {  
   myprint(seed) 
   # dat.b = try(bootstrap.cove.boost(dat.ph1, seed))
   # if (inherits (dat.b, "try-error")) return (NULL)
@@ -195,6 +163,8 @@ out.3=mclapply(1:1000, mc.cores = 1, FUN=function(seed) {
   if(!inherits(fit,"try-error")) fit$coefficients else NULL
 })
 boot.3=do.call(cbind, out.3)
+print("run time: "%.%format(Sys.time()-time.start, digits=1))# 9 sec for 100 replicates
+
 
 # comparing analytical stderr and bootstrap ones
 # version 1 and 2 work similary
@@ -208,5 +178,3 @@ sd(boot.3["BD29bindSpike",])
 summary(boot.3["BD29bindSpike",])
 
 
-print(date())
-print("cor_coxph run time: "%.%format(Sys.time()-time.start, digits=1))
