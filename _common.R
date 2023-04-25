@@ -26,7 +26,9 @@ blas_set_num_threads(1L)
 omp_set_num_threads(1L)
 stopifnot(omp_get_max_threads() == 1L)
     
-    
+# for mclapply etc
+numCores <- unname(ifelse(Sys.info()["sysname"] == "Windows", 1, as.integer(future::availableCores()/2)))
+
 
 ###################################################################################################
 # load config, assay metadata, define common variables and labels
