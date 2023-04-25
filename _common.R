@@ -161,8 +161,6 @@ get.labels.x.axis.cor=function(xlim, llox){
 #   Ptid, Trt, naive, EventIndPrimary, ph2, demo.stratum, CalendarBD1Interval
 # return a dataframe with wt column
 
-# may throw exception, need to put in try
-
 bootstrap.cove.boost=function(dat.ph1, seed) {
 
   set.seed(seed)
@@ -217,40 +215,22 @@ bootstrap.cove.boost=function(dat.ph1, seed) {
   n.demo = length(table(dat.b$demo.stratum))
   assertthat::assert_that(n.demo==6, msg = "n.demo != 6")
   
-  # there is not a need to compute these because they are determined within each row
-  # dat.b$sampling_bucket = with(dat.b, 
-  #                                   strtoi(paste0(
-  #                                     Trt, 
-  #                                     naive,
-  #                                     EventIndPrimary,
-  #                                     dec_to_binary(CalendarBD1Interval-1, 2)
-  #                                   ), base = 2))
-  # dat.b$sampling_bucket_formergingstrata = with(dat.b, 
-  #                                                    strtoi(paste0(
-  #                                                      Trt, 
-  #                                                      naive,
-  #                                                      EventIndPrimary
-  #                                                    ), base = 2))
-  # dat.b$Wstratum = with(dat.b, demo.stratum + sampling_bucket * n.demo)
-  
-  
   # adjust Wstratum
   # this call may throw exceptions
-  dat.b = cove.boost.collapse.strata (dat.b, n.demo)
+  ret = cove.boost.collapse.strata (dat.b, n.demo)
 
   # compute inverse probability sampling weights
-  tmp = with(dat.b, ph1)
-  wts_table <- with(dat.b[tmp,], table(Wstratum, ph2))
+  tmp = with(ret, ph1)
+  wts_table <- with(ret[tmp,], table(Wstratum, ph2))
   wts_norm <- rowSums(wts_table) / wts_table[, 2]
-  dat.b[["wt"]] = ifelse(dat.b$ph1, wts_norm[dat.b$Wstratum %.% ""], NA)
+  ret[["wt"]] = ifelse(ret$ph1, wts_norm[ret$Wstratum %.% ""], NA)
   
   assertthat::assert_that(
-    all(!is.na(subset(dat.b, tmp & !is.na(Wstratum))[["wt"]])),
+    all(!is.na(subset(ret, tmp & !is.na(Wstratum))[["wt"]])),
     msg = "missing wt.BD for D analyses ph1 subjects")
   
-  return (dat.b)
+  return (ret)
 }
-
 
 
 

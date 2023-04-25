@@ -51,8 +51,6 @@ dat.pla.naive=subset(dat,  Trt==0 & naive & ph1.BD29)
 dat.vac.nnaive=subset(dat, Trt==1 & !naive & ph1.BD29)
 dat.pla.nnaive=subset(dat, Trt==0 & !naive & ph1.BD29)
 
-
-
 idat=1
 myprint(idat)
 if (idat==1) {dat.ph1 = dat.vac.naive;  ilabel="vac_naive"}
@@ -60,9 +58,6 @@ if (idat==2) {dat.ph1 = dat.pla.naive;  ilabel="pla_naive"}
 if (idat==3) {dat.ph1 = dat.vac.nnaive; ilabel="vac_nnaive"}
 if (idat==4) {dat.ph1 = dat.pla.nnaive; ilabel="pla_nnaive"}
 
-save.results.to = paste0(save.results.to.0, "/", ilabel, "/") 
-if (!dir.exists(save.results.to))  dir.create(save.results.to)
-print(paste0("save results to ", save.results.to))
 
 dat.ph1$ph1=dat.ph1$ph1.BD29
 dat.ph1$ph2=dat.ph1$ph2.BD29
@@ -74,18 +69,6 @@ dat.ph1$yy=dat.ph1$EventIndPrimary
 
 dat.ph2 = subset(dat.ph1, ph2)
 
-tfinal.tpeak=get.tfinal.tpeak.case.control.rule1 (dat.ph2) 
-myprint(tfinal.tpeak)
-write(tfinal.tpeak, file=paste0(save.results.to, "timepoints_cum_risk_"%.%study_name))
-
-# define trichotomized markers
-dat.ph1 = add.trichotomized.markers (dat.ph1, "BD29"%.%assays)
-marker.cutpoints=attr(dat.ph1, "marker.cutpoints")
-for (a in "BD29"%.%assays) {        
-  q.a=marker.cutpoints[[a]]
-  to.write = paste0(gsub("_", "\\\\_",a), " [", concatList(round(q.a, 2), ", "), ")%")
-  write(to.write, file=paste0(save.results.to, "cutpoints_", a, "_"%.%study_name))
-}
 
 # table of ph1 and ph2 cases
 tab=with(dat.ph1, table(ph2, EventIndPrimary))
@@ -102,23 +85,128 @@ fit=svycoxph(f, design=design.1); fit
 dat.ph2=subset(dat.ph1, ph2)
 coxph(f, dat.ph2, weights=dat.ph2$wt) # same est as fit
 
-# when mc.cores is >1, would get some strang results. some fits will be error when it will fit when run individually
-out=mclapply(1:1000, mc.cores = 10, FUN=function(seed) {  
-  if (verbose>=2) myprint(seed) 
-  dat.b = try(bootstrap.cove.boost(dat.ph1, seed))
-  if (inherits (dat.b, "try-error")) return (NULL)
+out=mclapply(1:1000, mc.cores = 1, FUN=function(seed) {  
+  myprint(seed) 
+  # dat.b = try(bootstrap.cove.boost(dat.ph1, seed))
+  # if (inherits (dat.b, "try-error")) return (NULL)
+  dat.b = bootstrap.cove.boost(dat.ph1, seed)
   
   dat.ph2.b=subset(dat.b, ph2)
   fit=try(do.call("coxph", list(formula=f, data=dat.ph2.b, weights=dat.ph2.b$wt)))
   if(!inherits(fit,"try-error")) fit$coefficients else NULL
 })
-
 boot=do.call(cbind, out)
-sd(boot["BD29bindSpike",])
+
+
+
+# a second version, simpler, faster, results are close to bootstrap.cove.boost
+bootstrap.cove.boost.2=function(dat.ph1, seed) {
+  
+  set.seed(seed)
+  
+  # perform bootstrap within each quadrant (2 Trt * 2 naive status)
+  dat.b=NULL
+  for (idat in 1:4) {
+    if (idat==1) {dat.tmp = subset(dat.ph1, Trt==1 & naive==1)}
+    if (idat==2) {dat.tmp = subset(dat.ph1, Trt==0 & naive==1)}
+    if (idat==3) {dat.tmp = subset(dat.ph1, Trt==1 & naive==0)}
+    if (idat==4) {dat.tmp = subset(dat.ph1, Trt==0 & naive==0)}
+    if (nrow(dat.tmp)==0) next
+    
+    dat.b=dat.tmp[sample.int(nrow(dat.tmp), r=TRUE),]
+  }
+  
+  
+  # 4. 
+  n.demo = length(table(dat.b$demo.stratum))
+  assertthat::assert_that(n.demo==6, msg = "n.demo != 6")
+  
+  # adjust Wstratum
+  ret = cove.boost.collapse.strata (dat.b, n.demo)
+  
+  # compute inverse probability sampling weights
+  tmp = with(ret, ph1)
+  wts_table <- with(ret[tmp,], table(Wstratum, ph2))
+  wts_norm <- rowSums(wts_table) / wts_table[, 2]
+  ret[["wt"]] = ifelse(ret$ph1, wts_norm[ret$Wstratum %.% ""], NA)
+  
+  assertthat::assert_that(
+    all(!is.na(subset(ret, tmp & !is.na(Wstratum))[["wt"]])),
+    msg = "missing wt.BD for D analyses ph1 subjects")
+  
+  return (ret)
+}
+
+
+
+bootstrap.cove.boost.3=function(dat.ph1, seed) {
+  
+  set.seed(seed)
+  
+  # perform bootstrap within each quadrant (2 Trt * 2 naive status)
+  dat.b=NULL
+  for (idat in 1:4) {
+    if (idat==1) {dat.tmp = subset(dat.ph1, Trt==1 & naive==1)}
+    if (idat==2) {dat.tmp = subset(dat.ph1, Trt==0 & naive==1)}
+    if (idat==3) {dat.tmp = subset(dat.ph1, Trt==1 & naive==0)}
+    if (idat==4) {dat.tmp = subset(dat.ph1, Trt==0 & naive==0)}
+    if (nrow(dat.tmp)==0) next
+    
+    dat.b=dat.tmp[sample.int(nrow(dat.tmp), r=TRUE),]
+  }
+  
+  ret=dat.b
+  
+  # compute inverse probability sampling weights
+  tmp = with(ret, ph1)
+  wts_table <- with(ret[tmp,], table(Wstratum, ph2))
+  wts_norm <- rowSums(wts_table) / wts_table[, 2]
+  ret[["wt"]] = ifelse(ret$ph1, wts_norm[ret$Wstratum %.% ""], NA)
+  
+  assertthat::assert_that(
+    all(!is.na(subset(ret, tmp & !is.na(Wstratum))[["wt"]])),
+    msg = "missing wt.BD for D analyses ph1 subjects")
+  
+  return (ret)
+}
+
+
+
+out.2=mclapply(1:1000, mc.cores = 1, FUN=function(seed) {  
+  myprint(seed) 
+  # dat.b = try(bootstrap.cove.boost(dat.ph1, seed))
+  # if (inherits (dat.b, "try-error")) return (NULL)
+  dat.b = bootstrap.cove.boost.2(dat.ph1, seed)
+  
+  dat.ph2.b=subset(dat.b, ph2)
+  fit=try(do.call("coxph", list(formula=f, data=dat.ph2.b, weights=dat.ph2.b$wt)))
+  if(!inherits(fit,"try-error")) fit$coefficients else NULL
+})
+boot.2=do.call(cbind, out.2)
+
+out.3=mclapply(1:1000, mc.cores = 1, FUN=function(seed) {  
+  myprint(seed) 
+  # dat.b = try(bootstrap.cove.boost(dat.ph1, seed))
+  # if (inherits (dat.b, "try-error")) return (NULL)
+  dat.b = bootstrap.cove.boost.3(dat.ph1, seed)
+  
+  dat.ph2.b=subset(dat.b, ph2)
+  fit=try(do.call("coxph", list(formula=f, data=dat.ph2.b, weights=dat.ph2.b$wt)))
+  if(!inherits(fit,"try-error")) fit$coefficients else NULL
+})
+boot.3=do.call(cbind, out.3)
 
 # comparing analytical stderr and bootstrap ones
+# version 1 and 2 work similary
+# version 3 does not work as well
+fit
+sd(boot["BD29bindSpike",])
+summary(boot["BD29bindSpike",])
+sd(boot.2["BD29bindSpike",])
+summary(boot.2["BD29bindSpike",])
+sd(boot.3["BD29bindSpike",])
+summary(boot.3["BD29bindSpike",])
 
-  
 
 print(date())
 print("cor_coxph run time: "%.%format(Sys.time()-time.start, digits=1))
