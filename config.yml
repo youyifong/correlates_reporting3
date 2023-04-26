@@ -1,5 +1,4 @@
 default: &default
-  is_ows_trial: no
   case_cohort: no
   use_ensemble_sl: no
   

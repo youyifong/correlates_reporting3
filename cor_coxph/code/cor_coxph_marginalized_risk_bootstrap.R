@@ -6,8 +6,9 @@
 #    3 for categorical S
 # data: ph1 data
 # t: a time point near to the time of the last observed outcome will be defined
+
 marginalized.risk.svycoxph.boot=function(marker.name, type, data, t, B, ci.type="quantile", numCores=1) {  
-  # marker.name=a; type=2; data=dat.vac.seroneg; t=tfinal.tpeak; B=B; ci.type="quantile"; numCores=1
+  # marker.name=a; type=2; data=dat.ph1; t=tfinal.tpeak; B=B; ci.type="quantile"; numCores=1
   
   # store the current rng state 
   save.seed <- try(get(".Random.seed", .GlobalEnv), silent=TRUE) 
@@ -112,11 +113,13 @@ marginalized.risk.svycoxph.boot=function(marker.name, type, data, t, B, ci.type=
     seed=seed+560
     if (verbose>=2) myprint(seed)
     
-    if(config$case_cohort) {
+    if (TRIAL=="moderna_boost") {
+      dat.b = bootstrap.cove.boost.2(data, seed)
+    } else if(config$sampling_scheme=="case_cohort") {
       dat.b = get.bootstrap.data.cor (data, ptids.by.stratum, seed) 
-    } else {
+    } else if(TRIAL=="hvtn705") {
       dat.b = bootstrap.case.control.samples(data, seed, delta.name="EventIndPrimary", strata.name="tps.stratum", ph2.name="ph2") 
-    }        
+    } else stop("not sure which bootstrap function to use")
     dat.b.ph2=subset(dat.b, ph2==1)     
     
     if(type==1) {
@@ -174,21 +177,21 @@ if(!file.exists(paste0(save.results.to, "marginalized.risk.Rdata"))) {
   if (verbose) print("create risks.all.1")
   risks.all.1=lapply(all.markers, function (a) {
     if(verbose) myprint(a)
-    marginalized.risk.svycoxph.boot(marker.name=a, type=1, data=dat.vac.seroneg, tfinal.tpeak, B=B, ci.type="quantile", numCores=numCores)                
+    marginalized.risk.svycoxph.boot(marker.name=a, type=1, data=dat.ph1, tfinal.tpeak, B=B, ci.type="quantile", numCores=numCores)                
   })
   
   # vaccine arm, conditional on S>=s
   if (verbose) print("create risks.all.2")
   risks.all.2=lapply(all.markers, function (a) {
     if(verbose) myprint(a)
-    marginalized.risk.svycoxph.boot(marker.name=a, type=2, data=dat.vac.seroneg, tfinal.tpeak, B=B, ci.type="quantile", numCores=numCores)        
+    marginalized.risk.svycoxph.boot(marker.name=a, type=2, data=dat.ph1, tfinal.tpeak, B=B, ci.type="quantile", numCores=numCores)        
   }) 
   
   # vaccine arm, conditional on categorical S
   if (verbose) print("create risks.all.3")
   risks.all.3=lapply(all.markers, function (a) {
     if(verbose) myprint(a)
-    marginalized.risk.svycoxph.boot(marker.name=a%.%"cat", type=3, data=dat.vac.seroneg, tfinal.tpeak, B=B, ci.type="quantile", numCores=numCores)                
+    marginalized.risk.svycoxph.boot(marker.name=a%.%"cat", type=3, data=dat.ph1, tfinal.tpeak, B=B, ci.type="quantile", numCores=numCores)                
   })    
   
   save(risks.all.1, risks.all.2, risks.all.3, file=paste0(save.results.to, "marginalized.risk.Rdata"))
@@ -222,7 +225,7 @@ if (!is.null(config$interaction)) {
       b=paste0("Day",tpeak,bold)
       
       # idx=2: only use vaccine arm. idx=1 uses placebo data and structural knowledge; it is commented out and moved to the end of the file
-      dat.ph1=dat.vac.seroneg            
+      dat.ph1=dat.ph1            
       data.ph2=subset(dat.ph1, ph2==1)     
       
       # fit the interaction model and save regression results to a table
