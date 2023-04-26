@@ -17,11 +17,8 @@ tpeak <- 29
 COR="vac_naive"
 special.note = paste0("$\\ddagger$ Count cases starting 7 days post BD29.")
 pathCoRoutput <- paste0("cor_coxph/output/", attr(config,"config"), "/vac_naive")
-
-    all.markers=paste0("BD", tpeak, assays)
-    # all.markers=c(all.markers, paste0("Delta", tpeak, "overB", assays))
-    names(all.markers)=all.markers
-
+all.markers=paste0("BD", tpeak, assays)
+names(all.markers)=all.markers
 res = knitr::knit_child(c(here::here('cor_coxph', 'report_by_COR.Rmd')), quiet = TRUE)
 cat(res, sep = '\n')
 
@@ -30,11 +27,28 @@ tpeak <- 29
 COR="pla_naive"
 special.note = paste0("$\\ddagger$ Count cases starting 7 days post BD29.")
 pathCoRoutput <- paste0("cor_coxph/output/", attr(config,"config"), "/pla_naive")
+all.markers=paste0("BD", tpeak, assays)
+names(all.markers)=all.markers
+res = knitr::knit_child(c(here::here('cor_coxph', 'report_by_COR.Rmd')), quiet = TRUE)
+cat(res, sep = '\n')
 
-    all.markers=paste0("BD", tpeak, assays)
-    # all.markers=c(all.markers, paste0("Delta", tpeak, "overB", assays))
-    names(all.markers)=all.markers
 
+tpeak <- 29
+COR="vac_naive"
+special.note = paste0("$\\ddagger$ Count cases starting 7 days post BD29.")
+pathCoRoutput <- paste0("cor_coxph/output/", attr(config,"config"), "/vac_nnaive")
+all.markers=paste0("BD", tpeak, assays)
+names(all.markers)=all.markers
+res = knitr::knit_child(c(here::here('cor_coxph', 'report_by_COR.Rmd')), quiet = TRUE)
+cat(res, sep = '\n')
+
+
+tpeak <- 29
+COR="pla_naive"
+special.note = paste0("$\\ddagger$ Count cases starting 7 days post BD29.")
+pathCoRoutput <- paste0("cor_coxph/output/", attr(config,"config"), "/pla_nnaive")
+all.markers=paste0("BD", tpeak, assays)
+names(all.markers)=all.markers
 res = knitr::knit_child(c(here::here('cor_coxph', 'report_by_COR.Rmd')), quiet = TRUE)
 cat(res, sep = '\n')
 
