@@ -55,7 +55,7 @@ dat.pla.nnaive=subset(dat, Trt==0 & !naive & ph1.BD29)
 # loop through each quadrant
 # 4 mock data not working yet
 for (idat in 1:2) {
-  # idat=1
+  # idat=3
   myprint(idat)
   if (idat==1) {dat.ph1 = dat.vac.naive;  ilabel="vac_naive"}
   if (idat==2) {dat.ph1 = dat.pla.naive;  ilabel="pla_naive"}
