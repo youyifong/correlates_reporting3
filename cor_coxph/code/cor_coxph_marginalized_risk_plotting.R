@@ -31,8 +31,8 @@ for (w.wo.plac in 2:2) { # 1 with placebo lines, 2 without placebo lines. Implem
       assay=marker.name.to.assay(a)
       mypdf(oma=c(0,0,0,0), onefile=F, file=paste0(save.results.to, a, "_marginalized_risks", ifelse(eq.geq==1,"_eq","_geq"), ifelse(w.wo.plac==1,"","_woplacebo"), "_"%.%study_name), mfrow=.mfrow)
         par(las=1, cex.axis=0.9, cex.lab=1)# axis label orientation
-        # risks=risks.all[[a]]
-        risks=risks.all[[match(a, all.markers)]]
+        risks=risks.all[[a]]
+        # risks=risks.all[[match(a, all.markers)]]
         is.delta=startsWith(a,"Delta")
         
         ncases=sapply(risks$marker, function(s) sum(dat.ph1$yy[dat.ph1[[a]]>=s], na.rm=T))
@@ -103,8 +103,8 @@ for (w.wo.plac in 2:2) { # 1 with placebo lines, 2 without placebo lines. Implem
 risks.all=get("risks.all.1") 
 for (a in all.markers) {
   assay=marker.name.to.assay(a)
-  # risks=risks.all[[a]]
-  risks=risks.all[[match(a, all.markers)]]
+  risks=risks.all[[a]]
+  # risks=risks.all[[match(a, all.markers)]]
   table.order=which(names(risks$marker) %in% c(" 2.5%", " 5.0%", "95.0%", "97.5%")); table.order=c(setdiff(1:length(risks$marker), table.order), table.order)
   tmp=10**risks$marker[table.order]
   tmp=ifelse(tmp<100, signif(tmp,3), round(tmp))
@@ -332,8 +332,8 @@ for (a in all.markers) {
 # trichotomized markers, marginalized risk and controlled risk table
     
 res=sapply (all.markers, function(a) {        
-    # risks=risks.all.3[[a]]
-    risks=risks.all.3[[match(a, all.markers)]]
+    risks=risks.all.3[[a]]
+    # risks=risks.all.3[[match(a, all.markers)]]
     with(risks, c(prob[3]/prob[1], quantile(boot[3,]/boot[1,], c(.025,.975), na.rm=T)))
 })
 #    
