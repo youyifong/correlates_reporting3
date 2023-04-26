@@ -36,8 +36,17 @@ numCores <- unname(ifelse(Sys.info()["sysname"] == "Windows", 1, as.integer(futu
 config <- config::get(config = Sys.getenv("TRIAL"))
 study_name=config$study_name
 
+
+# created named lists for assay metadata to easier access, e.g. assay_labels_short["bindSpike"]
 assay_metadata = read.csv(config$assay_metadata)
 assays=assay_metadata$assay
+assay_labels=assay_metadata$assay_label; names(assay_labels)=assays
+assay_labels_short=assay_metadata$assay_label_short; names(assay_labels_short)=assays
+llox_labels=assay_metadata$llox_label; names(llox_labels)=assays
+lloqs=assay_metadata$lloq; names(lloqs)=assays
+lods=assay_metadata$lod; names(lods)=assays
+lloxs=ifelse(llox_labels=="lloq", lloqs, lods)
+
 
 form.s = Surv(EventTimePrimary, EventIndPrimary) ~ 1
 form.0 = update (form.s, as.formula(config$covariates))
@@ -108,41 +117,6 @@ get.marginalized.risk.no.marker=function(formula, dat.ph1, followup.day){
 ###################################################################################################
 # shared functions: misc
 
-# extract assay name from marker names, which include Day, e.g.
-# BD29pseudoneutid50 => pseudoneutid50
-# Day22pseudoneutid50 => pseudoneutid50 
-# Delta22overBpseudoneutid50 => pseudoneutid50
-get.assay.from.name=function(a) {
-  if (startsWith(a,"Day")) {
-    sub("Day[[0123456789]+", "", a)
-  } else if (startsWith(a,"BD")) {
-    sub("BD[[0123456789]+", "", a)
-  } else if (contain(a,"overB")) {
-    sub("Delta[[0123456789]+overB", "", a)
-  } else if (contain(a,"over")) {
-    sub("Delta[[0123456789]+over[[0123456789]+", "", a)
-  } else stop("get.assay.from.name: not sure what to do")
-}
-
-
-# extract assay from marker name such as Day57pseudoneutid80, Bpseudoneutid80
-marker.name.to.assay=function(marker.name) {
-  if(endsWith(marker.name, "bindSpike")) {
-    "bindSpike"
-  } else if(endsWith(marker.name, "bindRBD")) {
-    "bindRBD"
-  } else if(endsWith(marker.name, "bindN")) {
-    "bindN"
-  } else if(endsWith(marker.name, "pseudoneutid50")) {
-    "pseudoneutid50"
-  } else if(endsWith(marker.name, "pseudoneutid80")) {
-    "pseudoneutid80"
-  } else if(endsWith(marker.name, "liveneutmn50")) {
-    "liveneutmn50"
-  } else stop("marker.name.to.assay: wrong marker.name")
-}
-
-
 add.trichotomized.markers=function(dat, markers, ph2.col.name="ph2", wt.col.name="wt") {
   
   if(verbose) print("add.trichotomized.markers ...")
@@ -160,7 +134,7 @@ add.trichotomized.markers=function(dat, markers, ph2.col.name="ph2", wt.col.name
       q.a <- wtd.quantile(tmp.a[flag], weights = dat[[wt.col.name]][flag], probs = c(1/3, 2/3))
     } else {
       # not fold change
-      uloq=assay_metadata$uloq[assay_metadata$assay==get.assay.from.name(a)]
+      uloq=assay_metadata$uloq[assay_metadata$assay==marker.name.to.assay(a)]
       
       uppercut=log10(uloq); uppercut=uppercut*ifelse(uppercut>0,.9999,1.0001)
       lowercut=min(tmp.a, na.rm=T)*1.0001; lowercut=lowercut*ifelse(lowercut>0,1.0001,.9999)

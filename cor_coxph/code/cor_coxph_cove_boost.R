@@ -43,19 +43,45 @@ for (a in assays) {
   }
 }    
 
+
+dat$ph1=dat$ph1.BD29
+dat$ph2=dat$ph2.BD29
+dat$wt=dat$wt.BD29
+dat$EventIndPrimary =dat$EventIndOmicronBD29
+dat$EventTimePrimary=dat$EventTimeOmicronBD29
+
+
 # define subsets of data    
 dat.vac.naive=subset(dat,  Trt==1 & naive & ph1.BD29)
 dat.pla.naive=subset(dat,  Trt==0 & naive & ph1.BD29)
 dat.vac.nnaive=subset(dat, Trt==1 & !naive & ph1.BD29)
 dat.pla.nnaive=subset(dat, Trt==0 & !naive & ph1.BD29)
 
+# compute tfinal.tpeak as the minimum of the four quadrants and no larger than 105 days
+tfinal.tpeaks=c(
+  get.tfinal.tpeak.1 (subset(dat.vac.naive, ph2.BD29)),
+  get.tfinal.tpeak.1 (subset(dat.pla.naive, ph2.BD29)),
+  get.tfinal.tpeak.1 (subset(dat.vac.nnaive, ph2.BD29)),
+  get.tfinal.tpeak.1 (subset(dat.pla.nnaive, ph2.BD29)),
+  105)
+myprint(tfinal.tpeaks)
+tfinal.tpeak=min(tfinal.tpeaks)
+
+# compute overall risk in each quadrant
+prev.vac.naive = get.marginalized.risk.no.marker(form.0, dat.vac.naive, tfinal.tpeak)
+prev.pla.naive = get.marginalized.risk.no.marker(form.0, dat.pla.naive, tfinal.tpeak)
+prev.vac.nnaive= get.marginalized.risk.no.marker(form.0, dat.vac.nnaive, tfinal.tpeak)
+prev.pla.nnaive= get.marginalized.risk.no.marker(form.0, dat.pla.nnaive, tfinal.tpeak)
+overall.risks=list(prev.vac.naive, prev.pla.naive, prev.vac.nnaive, prev.pla.nnaive)
+myprint(prev.vac.naive, prev.pla.naive, prev.vac.nnaive, prev.pla.nnaive)
+
 
 
 ###################################################################################################
 # loop through each quadrant
 # 4 mock data not working yet
-for (idat in 1:2) {
-  # idat=3
+for (idat in 1:4) {
+  # idat=2
   myprint(idat)
   if (idat==1) {dat.ph1 = dat.vac.naive;  ilabel="vac_naive"}
   if (idat==2) {dat.ph1 = dat.pla.naive;  ilabel="pla_naive"}
@@ -76,10 +102,9 @@ for (idat in 1:2) {
 
   dat.ph2 = subset(dat.ph1, ph2)
   
-  tfinal.tpeak=get.tfinal.tpeak.1 (dat.ph2) 
   myprint(tfinal.tpeak)
   write(tfinal.tpeak, file=paste0(save.results.to, "timepoints_cum_risk_"%.%study_name))
-
+  
   # define trichotomized markers
   dat.ph1 = add.trichotomized.markers (dat.ph1, "BD29"%.%assays)
   marker.cutpoints=attr(dat.ph1, "marker.cutpoints")
@@ -102,39 +127,44 @@ for (idat in 1:2) {
   
   source(here::here("code", "cor_coxph_marginalized_risk_no_marker.R"))
   
+
+  ###################################################################################################
+  # prepare for Cox models runs and margialized risks
+
+  tpeak=29
+  # the origin of followup days, may be different from tpeak, e.g., D43start48
+  tpeak1 = 29
+  
+  all.markers = paste0("BD29", assays); names(all.markers)=all.markers
+  
   
   ###################################################################################################
   # run PH models
   
-  all.markers = paste0("BD29", assays)
   design.1<-twophase(id=list(~1,~1), strata=list(NULL,~Wstratum), subset=~ph2, data=dat.ph1)
   with(dat.ph1, table(Wstratum, ph2, useNA="ifany"))
   
-  tpeak=29
   source(here::here("code", "cor_coxph_ph.R"))
   
-  
-  # unit testing of coxph results
+  # unit testing
   if (TRIAL == "") {
     tmp.1=c(rv$tab.1[,4], rv$tab.2[,"overall.p.0"])
     tmp.2=c("0.162","0.079","0.006",      "0.498","   ","   ","0.162","   ","   ","0.003","   ","   ")
     assertthat::assert_that(all(tmp.1==tmp.2), msg = "failed cor_coxph unit testing")    
-    
+    print("Passed cor_coxph unit testing")    
   } 
-  print("Passed cor_coxph unit testing")    
   
+    
   ###################################################################################################
   # marginalized risk and controlled VE
-  ###################################################################################################
+
+  comp.risk=F
   
-  # # load ylims.cor[[1]] from D29 analyses, which is a list of two: 1 with placebo lines, 2 without placebo lines.
-  # tmp=paste0(here::here(), paste0("/output/", attr(config,"config"), "/", COR, "/ylims.cor.", study_name, ".Rdata"))
-  # if (file.exists(tmp)) load(tmp) # if it does not exist, the code will find alternative ylim
-  # 
-  # source(here::here("code", "cor_coxph_marginalized_risk_bootstrap.R"))
-  # 
-  # source(here::here("code", "cor_coxph_marginalized_risk_plotting.R"))
-  # 
+  source(here::here("code", "cor_coxph_marginalized_risk_bootstrap.R"))
+  
+  COR=idat # only used in table figure labels
+  source(here::here("code", "cor_coxph_marginalized_risk_plotting.R"))
+
   # source(here::here("code", "cor_coxph_samplesizeratio.R"))
   
 }
