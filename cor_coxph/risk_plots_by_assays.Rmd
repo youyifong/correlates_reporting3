@@ -1,5 +1,7 @@
 ### `r a`
 
+<!-- comments cannot be nested inside latex begin and end -->
+
 
 \begin{figure}
 \center
