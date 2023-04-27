@@ -26,7 +26,11 @@ The basic structure hasn’t changed from the correlates_reporting2 repo.
 
 * config.yml Each section in the file describes one data file. 
 
-* _common.R It acts as like a package and contains functions that implement shared logic such as making bootstrap samples, trichotomizing assay markers, define followup days for risk etc. Keeping these functions in _common.R is more nimble than spinning them off to a package and faster development cycle. The one exception is the cove.boost.collapse.strata function, which is used by both reporting3 and processing repos and is contained in the kyotil package.
+* _common.R performs certain tasks that are shared across modules, partly to ensure that they are handled in the same way in the whole repo. The tasks include:
+    * Read the data into a data frame named dat
+    * Read assay metadata into a dataframe named assay_metadata. Define several assay-related named lists
+    * Define tfinal.tpeak
+    * It also acts as like a package and contains functions that implement shared logic such as making bootstrap samples, trichotomizing assay markers, etc. Keeping these functions in _common.R is more nimble than spinning them off to a package and faster development cycle. The one exception is the cove.boost.collapse.strata function, which is used by both reporting3 and processing repos and is contained in the kyotil package.
 
 
 ## Quick start

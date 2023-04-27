@@ -10,7 +10,6 @@ library(forestplot)
 library(Hmisc) # wtd.quantile, cut2
 
 time.start=Sys.time()
-TRIAL=Sys.getenv("TRIAL")
 myprint(TRIAL)
 myprint(verbose)
 begin=Sys.time()
@@ -22,8 +21,6 @@ run.svycoxph=function(f, design) {
   if (class(fit)[1]=="try-error") NA else fit
 }
 
-# read analysis ready data
-dat = read.csv(config$data_cleaned)
 
 # path for figures and tables etc
 save.results.to.0 = here::here("output");                                if (!dir.exists(save.results.to.0))  dir.create(save.results.to.0)
@@ -33,6 +30,7 @@ save.results.to.0 = paste0(save.results.to.0, "/", attr(config,"config")); if (!
 B <-       config$num_boot_replicates 
 numPerm <- config$num_perm_replicates # number permutation replicates 1e4
 myprint(B, numPerm)
+
 
 # uloq censoring, done here b/c should not be done for immunogenicity reports
 # note that if delta are used, delta needs to be recomputed
@@ -49,6 +47,7 @@ dat$ph2=dat$ph2.BD29
 dat$wt=dat$wt.BD29
 dat$EventIndPrimary =dat$EventIndOmicronBD29
 dat$EventTimePrimary=dat$EventTimeOmicronBD29
+dat$yy=dat$EventIndPrimary
 
 
 # define subsets of data    
@@ -57,15 +56,6 @@ dat.pla.naive=subset(dat,  Trt==0 & naive & ph1.BD29)
 dat.vac.nnaive=subset(dat, Trt==1 & !naive & ph1.BD29)
 dat.pla.nnaive=subset(dat, Trt==0 & !naive & ph1.BD29)
 
-# compute tfinal.tpeak as the minimum of the four quadrants and no larger than 105 days
-tfinal.tpeaks=c(
-  get.tfinal.tpeak.1 (subset(dat.vac.naive, ph2.BD29)),
-  get.tfinal.tpeak.1 (subset(dat.pla.naive, ph2.BD29)),
-  get.tfinal.tpeak.1 (subset(dat.vac.nnaive, ph2.BD29)),
-  get.tfinal.tpeak.1 (subset(dat.pla.nnaive, ph2.BD29)),
-  105)
-myprint(tfinal.tpeaks)
-tfinal.tpeak=min(tfinal.tpeaks)
 
 # compute overall risk in each quadrant
 prev.vac.naive = get.marginalized.risk.no.marker(form.0, dat.vac.naive, tfinal.tpeak)
@@ -81,7 +71,7 @@ myprint(prev.vac.naive, prev.pla.naive, prev.vac.nnaive, prev.pla.nnaive)
 # loop through each quadrant
 # 4 mock data not working yet
 for (idat in 1:4) {
-  # idat=2
+  # idat=1
   myprint(idat)
   if (idat==1) {dat.ph1 = dat.vac.naive;  ilabel="vac_naive"}
   if (idat==2) {dat.ph1 = dat.pla.naive;  ilabel="pla_naive"}
@@ -92,20 +82,8 @@ for (idat in 1:4) {
   if (!dir.exists(save.results.to))  dir.create(save.results.to)
   print(paste0("save results to ", save.results.to))
   
-  dat.ph1$ph1=dat.ph1$ph1.BD29
-  dat.ph1$ph2=dat.ph1$ph2.BD29
-  dat.ph1$wt=dat.ph1$wt.BD29
-  dat.ph1$EventIndPrimary =dat.ph1$EventIndOmicronBD29
-  dat.ph1$EventTimePrimary=dat.ph1$EventTimeOmicronBD29
-
-  dat.ph1$yy=dat.ph1$EventIndPrimary
-
-  dat.ph2 = subset(dat.ph1, ph2)
-  
-  myprint(tfinal.tpeak)
-  write(tfinal.tpeak, file=paste0(save.results.to, "timepoints_cum_risk_"%.%study_name))
-  
-  # define trichotomized markers
+  #??? move out of this loop
+  # add trichotomized markers. use the same cutpoints for all 4 quadrants
   dat.ph1 = add.trichotomized.markers (dat.ph1, "BD29"%.%assays)
   marker.cutpoints=attr(dat.ph1, "marker.cutpoints")
   for (a in "BD29"%.%assays) {        
@@ -113,6 +91,10 @@ for (idat in 1:4) {
     to.write = paste0(gsub("_", "\\\\_",a), " [", concatList(round(q.a, 2), ", "), ")%")
     write(to.write, file=paste0(save.results.to, "cutpoints_", a, "_"%.%study_name))
   }
+  
+  dat.ph2 = subset(dat.ph1, ph2)
+  
+  write(tfinal.tpeak, file=paste0(save.results.to, "timepoints_cum_risk_"%.%study_name))
   
   # table of ph1 and ph2 cases
   tab=with(dat.ph1, table(ph2, EventIndPrimary))
@@ -159,10 +141,10 @@ for (idat in 1:4) {
   # marginalized risk and controlled VE
 
   comp.risk=F
+  COR=idat # only used in table figure labels
   
   source(here::here("code", "cor_coxph_marginalized_risk_bootstrap.R"))
   
-  COR=idat # only used in table figure labels
   source(here::here("code", "cor_coxph_marginalized_risk_plotting.R"))
 
   # source(here::here("code", "cor_coxph_samplesizeratio.R"))
