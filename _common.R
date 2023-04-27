@@ -7,6 +7,7 @@ library(parallel)
 library(kyotil)
 
 if(Sys.getenv("TRIAL")=="") stop("Environmental variable TRIAL not defined!!!!!!!!!!!!!!")
+TRIAL=Sys.getenv("TRIAL")
 
 set.seed(98109)
 
@@ -52,40 +53,12 @@ form.s = Surv(EventTimePrimary, EventIndPrimary) ~ 1
 form.0 = update (form.s, as.formula(config$covariates))
 print(form.0)
 
-# race labeling
-labels.race <- c(
-  "White", 
-  "Black or African American",
-  "Asian", 
-  if ((study_name=="ENSEMBLE" | study_name=="MockENSEMBLE") & startsWith(attr(config, "config"),"janssen_la")) "Indigenous South American" else "American Indian or Alaska Native",
-  "Native Hawaiian or Other Pacific Islander", 
-  "Multiracial",
-  if ((study_name=="COVE" | study_name=="MockCOVE")) "Other", 
-  "Not reported and unknown"
-)
-
-# ethnicity labeling
-labels.ethnicity <- c(
-  "Hispanic or Latino", "Not Hispanic or Latino",
-  "Not reported and unknown"
-)
-
-# baseline stratum labeling
-if (study_name=="COVEBoost") {
-  demo.stratum.labels <- c(
-    "Age >= 65, URM",
-    "Age < 65, At risk, URM",
-    "Age < 65, Not at risk, URM",
-    "Age >= 65, White non-Hisp",
-    "Age < 65, At risk, White non-Hisp",
-    "Age < 65, Not at risk, White non-Hisp"
-  )
-} else stop("unknown study_name 1")
+# read analysis ready data
+dat = read.csv(config$data_cleaned)
 
 
-
-###################################################################################################
-# shared functions: survival analysis
+###############################################################################
+# compute tfinal.tpeak
 
 # returns smaller of the two: 1) time of the last case, 2) last time to have 15 at risk
 # use case: 1) dat.ph2 is the ph2 dataset from a case control study
@@ -95,6 +68,25 @@ get.tfinal.tpeak.1 = function(dat.ph2, event.ind.col="EventIndPrimary", event.ti
     sort(dat.ph2[[event.time.col]], decreasing=T)[15]-1
   )
 }
+
+if (TRIAL=="moderna_boost") {
+  # compute tfinal.tpeak as the minimum of the four quadrants and no larger than 105 days
+  tfinal.tpeaks=c(
+    get.tfinal.tpeak.1(subset(dat, Trt==1 &  naive & ph2.BD29), event.ind.col="EventIndOmicronBD29", event.time.col="EventTimeOmicronBD29"),
+    get.tfinal.tpeak.1(subset(dat, Trt==1 &  naive & ph2.BD29), event.ind.col="EventIndOmicronBD29", event.time.col="EventTimeOmicronBD29"),
+    get.tfinal.tpeak.1(subset(dat, Trt==1 & !naive & ph2.BD29), event.ind.col="EventIndOmicronBD29", event.time.col="EventTimeOmicronBD29"),
+    get.tfinal.tpeak.1(subset(dat, Trt==1 & !naive & ph2.BD29), event.ind.col="EventIndOmicronBD29", event.time.col="EventTimeOmicronBD29"),
+    105)
+  myprint(tfinal.tpeaks)
+  tfinal.tpeak=min(tfinal.tpeaks)
+  myprint(tfinal.tpeak)
+}
+
+
+
+
+###################################################################################################
+# shared functions: survival analysis
 
 # get marginalized risk to the followup followup.day without marker
 get.marginalized.risk.no.marker=function(formula, dat.ph1, followup.day){
@@ -436,23 +428,24 @@ get.bootstrap.data.cor = function(data, ptids.by.stratum, seed) {
 # shared functions: plotting
 
 # get plotting range
-get.range.cor=function(dat, assay, time) {
-    if(assay %in% c("bindSpike", "bindRBD") & all(c("pseudoneutid50", "pseudoneutid80") %in% assays)) {
-        ret=range(dat[["Day"%.%time%.%"bindSpike"]], 
-                  dat[["Day"%.%time%.%"bindRBD"]], 
-                  log10(lloxs[c("bindSpike","bindRBD")]/2), na.rm=T)
-        
-    } else if(assay %in% c("pseudoneutid50", "pseudoneutid80") & all(c("pseudoneutid50", "pseudoneutid80") %in% assays)) {
-        ret=range(dat[["Day"%.%time%.%"pseudoneutid50"]], 
-                  dat[["Day"%.%time%.%"pseudoneutid80"]], 
-                  #log10(uloqs[c("pseudoneutid50","pseudoneutid80")]),
-                  log10(lloxs[c("pseudoneutid50","pseudoneutid80")]/2), na.rm=T) 
-    } else {
-        ret=range(dat[["Day"%.%time%.%assay]], 
-        log10(lloxs[assay]/2), na.rm=T)        
-    }
-    delta=(ret[2]-ret[1])/20     
-    c(ret[1]-delta, ret[2]+delta)
+get.xlim=function(dat, marker) {
+  assay=marker.name.to.assay(a)
+  
+  # the default
+  ret=range(dat[[marker]], log10(lloxs[assay]/2), na.rm=T)
+  
+  # may be customized, e.g. to have the same xlim for different variants in the same type of assay
+  # if (TRIAL=="moderna_boost") {
+  #   if(assay %in% c("bindSpike", "bindRBD")) {
+  #     ret=range(dat[["Day"%.%time%.%"bindSpike"]], 
+  #               dat[["Day"%.%time%.%"bindRBD"]], 
+  #               log10(lloxs[c("bindSpike","bindRBD")]/2), na.rm=T)
+  #     
+  #   } 
+  # }
+
+  delta=(ret[2]-ret[1])/20     
+  c(ret[1]-delta, ret[2]+delta)
 }
 
 draw.x.axis.cor=function(xlim, llox, llox.label){
@@ -588,7 +581,6 @@ make.case.count.marker.availability.table=function(dat) {
 
 ###############################################################################
 # theme options
-###############################################################################
 
 # fixed knitr chunk options
 knitr::opts_chunk$set(
@@ -674,4 +666,38 @@ ggsave_custom <- function(filename = default_name(plot),
                           height= 15, width = 21, ...) {
   ggsave(filename = filename, height = height, width = width, ...)
 }
+
+
+
+###############################################################################
+
+# race labeling
+labels.race <- c(
+  "White", 
+  "Black or African American",
+  "Asian", 
+  if ((study_name=="ENSEMBLE" | study_name=="MockENSEMBLE") & startsWith(attr(config, "config"),"janssen_la")) "Indigenous South American" else "American Indian or Alaska Native",
+  "Native Hawaiian or Other Pacific Islander", 
+  "Multiracial",
+  if ((study_name=="COVE" | study_name=="MockCOVE")) "Other", 
+  "Not reported and unknown"
+)
+
+# ethnicity labeling
+labels.ethnicity <- c(
+  "Hispanic or Latino", "Not Hispanic or Latino",
+  "Not reported and unknown"
+)
+
+# baseline stratum labeling
+if (study_name=="COVEBoost") {
+  demo.stratum.labels <- c(
+    "Age >= 65, URM",
+    "Age < 65, At risk, URM",
+    "Age < 65, Not at risk, URM",
+    "Age >= 65, White non-Hisp",
+    "Age < 65, At risk, White non-Hisp",
+    "Age < 65, Not at risk, White non-Hisp"
+  )
+} else stop("unknown study_name 1")
 
