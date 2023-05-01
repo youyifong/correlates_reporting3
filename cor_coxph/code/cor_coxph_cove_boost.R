@@ -65,6 +65,16 @@ prev.pla.nnaive= get.marginalized.risk.no.marker(form.0, dat.pla.nnaive, tfinal.
 overall.risks=list(prev.vac.naive, prev.pla.naive, prev.vac.nnaive, prev.pla.nnaive)
 myprint(prev.vac.naive, prev.pla.naive, prev.vac.nnaive, prev.pla.nnaive)
 
+# a crude boxplot to get some idea of the distributions
+# par(mfrow=c(2,2))
+# for (idat in 1:4) {
+#   myprint(idat)
+#   if (idat==1) {dat.ph1 = dat.vac.naive;  ilabel="vac_naive"}
+#   if (idat==2) {dat.ph1 = dat.pla.naive;  ilabel="pla_naive"}
+#   if (idat==3) {dat.ph1 = dat.vac.nnaive; ilabel="vac_nnaive"}
+#   if (idat==4) {dat.ph1 = dat.pla.nnaive; ilabel="pla_nnaive"}
+#   myboxplot(BD29bindSpike~EventIndPrimary, dat.ph1, main=ilabel)
+# }  
 
 
 ###################################################################################################
