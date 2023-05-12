@@ -37,9 +37,8 @@ numCores <- unname(ifelse(Sys.info()["sysname"] == "Windows", 1, as.integer(futu
 config <- config::get(config = Sys.getenv("TRIAL"))
 study_name=config$study_name
 
-
 # created named lists for assay metadata to easier access, e.g. assay_labels_short["bindSpike"]
-assay_metadata = read.csv(config$assay_metadata)
+assay_metadata = read.csv(paste0(dirname(attr(config,"file")),"/",config$assay_metadata))
 assays=assay_metadata$assay
 assay_labels=assay_metadata$assay_label; names(assay_labels)=assays
 assay_labels_short=assay_metadata$assay_label_short; names(assay_labels_short)=assays
