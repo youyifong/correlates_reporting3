@@ -13,44 +13,30 @@ The SAP is available at https://doi.org/10.6084/m9.figshare.13198595
 
 ```{r, echo=FALSE, results='asis'}
 
+obj.assays=c("bindSpike_BA.1", "pseudoneutid50_BA.1")  
 tpeak <- 29
-COR="vac_naive"
 special.note = paste0("$\\ddagger$ Count cases starting 7 days post BD29.")
-pathCoRoutput <- paste0("cor_coxph/output/", attr(config,"config"), "/vac_naive")
-all.markers=paste0("BD", tpeak, assays)
-names(all.markers)=all.markers
-res = knitr::knit_child(c(here::here('cor_coxph', 'report_by_COR.Rmd')), quiet = TRUE)
-cat(res, sep = '\n')
+  
+for (iObj in 1:2) {
+  save.file.label = paste0(study_name,"obj",iObj)
+  if (iObj==1) {
+    all.markers = paste0("BD29", obj.assays)
+  } else if (iObj==2) {
+    all.markers = paste0("DeltaBD29overBD1", obj.assays)
+  }
+  names(all.markers)=all.markers
 
+  COR="NaiveObjective "%.%iObj
+  pathCoRoutput <- paste0("cor_coxph/output/", attr(config,"config"), "/naive")
+  res = knitr::knit_child(c(here::here('cor_coxph', 'report_by_COR.Rmd')), quiet = TRUE)
+  cat(res, sep = '\n')
+  
+  COR="Non-naiveObjective "%.%iObj
+  pathCoRoutput <- paste0("cor_coxph/output/", attr(config,"config"), "/nnaive")
+  res = knitr::knit_child(c(here::here('cor_coxph', 'report_by_COR.Rmd')), quiet = TRUE)
+  cat(res, sep = '\n')
 
-tpeak <- 29
-COR="pla_naive"
-special.note = paste0("$\\ddagger$ Count cases starting 7 days post BD29.")
-pathCoRoutput <- paste0("cor_coxph/output/", attr(config,"config"), "/pla_naive")
-all.markers=paste0("BD", tpeak, assays)
-names(all.markers)=all.markers
-res = knitr::knit_child(c(here::here('cor_coxph', 'report_by_COR.Rmd')), quiet = TRUE)
-cat(res, sep = '\n')
-
-
-tpeak <- 29
-COR="vac_naive"
-special.note = paste0("$\\ddagger$ Count cases starting 7 days post BD29.")
-pathCoRoutput <- paste0("cor_coxph/output/", attr(config,"config"), "/vac_nnaive")
-all.markers=paste0("BD", tpeak, assays)
-names(all.markers)=all.markers
-res = knitr::knit_child(c(here::here('cor_coxph', 'report_by_COR.Rmd')), quiet = TRUE)
-cat(res, sep = '\n')
-
-
-tpeak <- 29
-COR="pla_naive"
-special.note = paste0("$\\ddagger$ Count cases starting 7 days post BD29.")
-pathCoRoutput <- paste0("cor_coxph/output/", attr(config,"config"), "/pla_nnaive")
-all.markers=paste0("BD", tpeak, assays)
-names(all.markers)=all.markers
-res = knitr::knit_child(c(here::here('cor_coxph', 'report_by_COR.Rmd')), quiet = TRUE)
-cat(res, sep = '\n')
+}
 
 
 

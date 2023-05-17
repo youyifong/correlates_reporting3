@@ -51,103 +51,97 @@ dat$yy=dat$EventIndPrimary
 
 
 # define subsets of data    
-dat.vac.naive=subset(dat,  Trt==1 & naive & ph1.BD29)
-dat.pla.naive=subset(dat,  Trt==0 & naive & ph1.BD29)
-dat.vac.nnaive=subset(dat, Trt==1 & !naive & ph1.BD29)
-dat.pla.nnaive=subset(dat, Trt==0 & !naive & ph1.BD29)
+dat.naive=subset(dat,   naive & ph1.BD29)
+dat.nnaive=subset(dat, !naive & ph1.BD29)
 
-
-# compute overall risk in each quadrant
-prev.vac.naive = get.marginalized.risk.no.marker(form.0, dat.vac.naive, tfinal.tpeak)
-prev.pla.naive = get.marginalized.risk.no.marker(form.0, dat.pla.naive, tfinal.tpeak)
-prev.vac.nnaive= get.marginalized.risk.no.marker(form.0, dat.vac.nnaive, tfinal.tpeak)
-prev.pla.nnaive= get.marginalized.risk.no.marker(form.0, dat.pla.nnaive, tfinal.tpeak)
-overall.risks=list(prev.vac.naive, prev.pla.naive, prev.vac.nnaive, prev.pla.nnaive)
-myprint(prev.vac.naive, prev.pla.naive, prev.vac.nnaive, prev.pla.nnaive)
+# compute overall risks
+prev.naive  = get.marginalized.risk.no.marker(form.0, dat.naive,  tfinal.tpeak)
+prev.nnaive = get.marginalized.risk.no.marker(form.0, dat.nnaive, tfinal.tpeak)
+overall.risks=list(prev.naive, prev.nnaive)
+myprint(prev.naive, prev.nnaive)
 
 
 
 ###################################################################################################
-# loop through each quadrant
-# 4 mock data not working yet
-for (idat in 1:4) {
-  # idat=1
-  myprint(idat)
-  if (idat==1) {dat.ph1 = dat.vac.naive;  ilabel="vac_naive"}
-  if (idat==2) {dat.ph1 = dat.pla.naive;  ilabel="pla_naive"}
-  if (idat==3) {dat.ph1 = dat.vac.nnaive; ilabel="vac_nnaive"}
-  if (idat==4) {dat.ph1 = dat.pla.nnaive; ilabel="pla_nnaive"}
-  
-  save.results.to = paste0(save.results.to.0, "/", ilabel, "/") 
-  if (!dir.exists(save.results.to))  dir.create(save.results.to)
-  print(paste0("save results to ", save.results.to))
-  
-  #??? move out of this loop
-  # add trichotomized markers. use the same cutpoints for all 4 quadrants
-  dat.ph1 = add.trichotomized.markers (dat.ph1, "BD29"%.%assays)
-  marker.cutpoints=attr(dat.ph1, "marker.cutpoints")
-  for (a in "BD29"%.%assays) {        
-    q.a=marker.cutpoints[[a]]
-    to.write = paste0(gsub("_", "\\\\_",a), " [", concatList(round(q.a, 2), ", "), ")%")
-    write(to.write, file=paste0(save.results.to, "cutpoints_", a, "_"%.%study_name))
+
+
+# Obj 1: To assess BD29 omicron Ab as a correlate of risk (CoR) against omicron COVID-19 
+# Obj 2: To assess fold-rise in omicron Ab from BD1/pre-booster to BD29 as a CoR against omicron COVID-19
+for (iObj in 1:2) {
+# iObj=1
+  obj.assays=c("bindSpike_BA.1", "pseudoneutid50_BA.1")  
+  if (iObj==1) {
+    all.markers = paste0("BD29", obj.assays)
+  } else if (iObj==2) {
+    all.markers = paste0("DeltaBD29overBD1", obj.assays)
   }
+  names(all.markers)=all.markers
+  save.file.label = paste0(study_name,"obj",iObj)
   
-  dat.ph2 = subset(dat.ph1, ph2)
-  
-  write(tfinal.tpeak, file=paste0(save.results.to, "timepoints_cum_risk_"%.%study_name))
-  
-  # table of ph1 and ph2 cases
-  tab=with(dat.ph1, table(ph2, EventIndPrimary))
-  names(dimnames(tab))[2]="Event Indicator"
-  print(tab)
-  mytex(tab, file.name="tab1", save2input.only=T, input.foldername=save.results.to)
-  
-  
-  
-  ###################################################################################################
-  # estimate overall marginalized risk (no markers) and VE
-  
-  source(here::here("code", "cor_coxph_marginalized_risk_no_marker.R"))
-  
-
-  ###################################################################################################
-  # prepare for Cox models runs and margialized risks
-
-  tpeak=29
-  # the origin of followup days, may be different from tpeak, e.g., D43start48
-  tpeak1 = 29
-  
-  all.markers = paste0("BD29", assays); names(all.markers)=all.markers
-  
-  
-  ###################################################################################################
-  # run PH models
-  
-  design.1<-twophase(id=list(~1,~1), strata=list(NULL,~Wstratum), subset=~ph2, data=dat.ph1)
-  with(dat.ph1, table(Wstratum, ph2, useNA="ifany"))
-  
-  source(here::here("code", "cor_coxph_ph.R"))
-  
-  # unit testing
-  if (TRIAL == "") {
-    tmp.1=c(rv$tab.1[,4], rv$tab.2[,"overall.p.0"])
-    tmp.2=c("0.162","0.079","0.006",      "0.498","   ","   ","0.162","   ","   ","0.003","   ","   ")
-    assertthat::assert_that(all(tmp.1==tmp.2), msg = "failed cor_coxph unit testing")    
-    print("Passed cor_coxph unit testing")    
-  } 
-  
+  # loop through naive and nonnaive. merge original vaccine arm and original placebo arm
+  for (idat in 1:2) {
+    # idat=1
     
-  ###################################################################################################
-  # marginalized risk and controlled VE
+    myprint(idat)
+    if (idat==1) {dat.ph1 = dat.naive;  ilabel="naive"}
+    if (idat==2) {dat.ph1 = dat.nnaive;  ilabel="nnaive"}
 
-  comp.risk=F
-  COR=idat # only used in table figure labels
-  
-  source(here::here("code", "cor_coxph_marginalized_risk_bootstrap.R"))
-  
-  source(here::here("code", "cor_coxph_marginalized_risk_plotting.R"))
+    save.results.to = paste0(save.results.to.0, "/", ilabel, "/") 
+    if (!dir.exists(save.results.to))  dir.create(save.results.to)
+    print(paste0("save results to ", save.results.to))
+    
+    write(tfinal.tpeak, file=paste0(save.results.to, "timepoints_cum_risk_"%.%save.file.label))
 
-  # source(here::here("code", "cor_coxph_samplesizeratio.R"))
+    #??? move out of this loop
+    # add trichotomized markers. use the same cutpoints for all 4 quadrants
+    dat.ph1 = add.trichotomized.markers (dat.ph1, all.markers)
+    marker.cutpoints=attr(dat.ph1, "marker.cutpoints")
+    for (a in all.markers) {        
+      q.a=marker.cutpoints[[a]]
+      to.write = paste0(gsub("_", "\\\\_",a), " [", concatList(round(q.a, 2), ", "), ")%")
+      write(to.write, file=paste0(save.results.to, "cutpoints_", a, "_"%.%save.file.label))
+    }
+    
+    # create data objects
+    dat.ph2 = subset(dat.ph1, ph2)
+    design.1<-twophase(id=list(~1,~1), strata=list(NULL,~Wstratum), subset=~ph2, data=dat.ph1)
+    with(dat.ph1, table(Wstratum, ph2, useNA="ifany"))
+    
+    # table of ph1 and ph2 cases
+    tab=with(dat.ph1, table(ph2, EventIndPrimary))
+    names(dimnames(tab))[2]="Event Indicator"
+    print(tab)
+    mytex(tab, file.name="tab1", save2input.only=T, input.foldername=save.results.to)
+
+    # prepare for Cox models runs and margialized risks
+    tpeak=29
+    # the origin of followup days, may be different from tpeak, e.g., D43start48
+    tpeak1 = 29
+    
+    # estimate overall marginalized risk (no markers) and VE
+    source(here::here("code", "cor_coxph_marginalized_risk_no_marker.R"))
+    
+    source(here::here("code", "cor_coxph_ph.R"))
+    
+    # unit testing
+    if (TRIAL == "") {
+      tmp.1=c(rv$tab.1[,4], rv$tab.2[,"overall.p.0"])
+      tmp.2=c("0.162","0.079","0.006",      "0.498","   ","   ","0.162","   ","   ","0.003","   ","   ")
+      assertthat::assert_that(all(tmp.1==tmp.2), msg = "failed cor_coxph unit testing")    
+      print("Passed cor_coxph unit testing")    
+    } 
+    
+    # marginalized risk and controlled VE
+    comp.risk=F
+    COR=idat # only used in table figure labels
+    
+    source(here::here("code", "cor_coxph_marginalized_risk_bootstrap.R"))
+    
+    source(here::here("code", "cor_coxph_marginalized_risk_plotting.R"))
+    
+    # source(here::here("code", "cor_coxph_samplesizeratio.R"))
+    
+  }
   
 }
 

@@ -170,7 +170,7 @@ marginalized.risk.svycoxph.boot=function(marker.name, type, data, t, B, ci.type=
 
 
 
-if(!file.exists(paste0(save.results.to, "marginalized.risk.Rdata"))) {    
+if(!file.exists(paste0(save.results.to, save.file.label%.%".marginalized.risk.Rdata"))) {    
   cat("make marginalized.risk\n")
   
   # vaccine arm, conditional on continuous S=s
@@ -194,12 +194,12 @@ if(!file.exists(paste0(save.results.to, "marginalized.risk.Rdata"))) {
     marginalized.risk.svycoxph.boot(marker.name=a%.%"cat", type=3, data=dat.ph1, tfinal.tpeak, B=B, ci.type="quantile", numCores=numCores)                
   })    
   
-  save(risks.all.1, risks.all.2, risks.all.3, file=paste0(save.results.to, "marginalized.risk.Rdata"))
+  save(risks.all.1, risks.all.2, risks.all.3, file=paste0(save.results.to, save.file.label%.%".marginalized.risk.Rdata"))
   
 } else {
-  load(paste0(save.results.to, "marginalized.risk.Rdata"))
+  load(paste0(save.results.to, save.file.label%.%".marginalized.risk.Rdata"))
 }
-write(ncol(risks.all.1[[1]]$boot), file=paste0(save.results.to, "bootstrap_replicates_"%.%study_name))
+write(ncol(risks.all.1[[1]]$boot), file=paste0(save.results.to, "bootstrap_replicates_"%.%save.file.label))
 #rv$marginalized.risk.S.eq.s=list()
 #for (a in assays) rv$marginalized.risk.S.eq.s[[a]] = risks.all.1[[a]][c("marker","prob")]
 #rv$marginalized.risk.S.geq.s=list()
@@ -213,7 +213,7 @@ write(ncol(risks.all.1[[1]]$boot), file=paste0(save.results.to, "bootstrap_repli
 if (!is.null(config$interaction)) {
   if(verbose) print("Interaction models")
   
-  if(!file.exists(paste0(save.results.to, "itxn.marginalized.risk.Rdata"))) {    
+  if(!file.exists(paste0(save.results.to, save.file.label%.%".itxn.marginalized.risk.Rdata"))) {    
     cat("make itxn.marginalized.risk\n")
     
     risks.itxn=list()      
@@ -312,10 +312,10 @@ if (!is.null(config$interaction)) {
       } # end inner.id
       
     }
-    save(risks.itxn, file=paste0(save.results.to, "itxn.marginalized.risk.Rdata"))
+    save(risks.itxn, file=paste0(save.results.to, save.file.label%.%".itxn.marginalized.risk.Rdata"))
     
   } else {
-    load(paste0(save.results.to, "itxn.marginalized.risk.Rdata"))
+    load(paste0(save.results.to, save.file.label%.%".itxn.marginalized.risk.Rdata"))
   }
 }
 
