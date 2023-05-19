@@ -17,7 +17,7 @@ obj.assays=c("bindSpike_BA.1", "pseudoneutid50_BA.1")
 tpeak <- 29
 special.note = paste0("$\\ddagger$ Count cases starting 7 days post BD29.")
   
-for (iObj in 1:3) {
+for (iObj in c(1,2)) {
   save.file.label = paste0(study_name,"obj",iObj)
   if (iObj %in% c(1,3)) {
     all.markers = paste0("BD29", obj.assays)
@@ -41,22 +41,43 @@ for (iObj in 1:3) {
     COR="Objective "%.%iObj
     pathCoRoutput <- paste0("cor_coxph/output/", attr(config,"config"), "/all")
     
-    cat(glue("# {COR} Univariate CoR: Cox Models of Risk"))
     for (a in all.markers) {
       cat(paste0("
-\\begin{table}[H] 
-\\centering
-\\input{",pathCoRoutput,"/CoR_itxn_",a,"}  
-\\caption{ Inference for Day ",tpeak," antibody marker covariate-adjusted correlates of risk by Day \\protect\\input{",pathCoRoutput,"/timepoints_cum_risk_",save.file.label,"} in the vaccine arm. Hazard ratios per 10-fold increment in the marker are shown. ",special.note,"}
-\\end{table}
-"))
+      \\begin{table}[H] 
+      \\centering
+      \\input{",pathCoRoutput,"/CoR_itxn_",a,"}  
+      \\caption{ Inference for Day ",tpeak," antibody marker covariate-adjusted correlates of risk by Day \\protect\\input{",pathCoRoutput,"/timepoints_cum_risk_",save.file.label,"} in the vaccine arm. Hazard ratios per 10-fold increment in the marker are shown. ",special.note,"}
+      \\end{table}
+          "))
     }
+    cat("\\clearpage")
 
-  } # end if iObj
+  }
 
-} # end for iObj
-
+}
 ```
 
 
+```{r, echo=FALSE, results='asis'}
+iObj=3
+obj.assays=c("bindSpike_BA.1", "pseudoneutid50_BA.1")  
+tpeak <- 29
+special.note = paste0("$\\ddagger$ Count cases starting 7 days post BD29.")
 
+save.file.label = paste0(study_name,"obj",iObj)
+all.markers = paste0("BD29", obj.assays)
+names(all.markers)=all.markers
+COR="Objective "%.%iObj
+pathCoRoutput <- paste0("cor_coxph/output/", attr(config,"config"), "/all")
+cat(glue("# {COR} Univariate CoR: Cox Models of Risk"))
+
+for (a in all.markers) {
+  cat(paste0("
+  \\begin{table}[H] 
+  \\centering
+  \\input{",pathCoRoutput,"/CoR_itxn_",a,"}  
+  \\caption{ Inference for Day ",tpeak," antibody marker covariate-adjusted correlates of risk by Day \\protect\\input{",pathCoRoutput,"/timepoints_cum_risk_",save.file.label,"} in the vaccine arm. Hazard ratios per 10-fold increment in the marker are shown. ",special.note,"}
+  \\end{table}
+      ")) }
+    cat("\\clearpage")
+```
