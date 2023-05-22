@@ -23,14 +23,14 @@ for (w.wo.plac in 2:2) { # 1 with placebo lines, 2 without placebo lines. Implem
     } else {
         ylim=range(sapply(risks.all, function(x) x$prob), na.rm=T)
     }
-    ylim=range(ylim, prev.vac.naive, prev.pla.naive, prev.vac.nnaive, prev.pla.nnaive, 0)
+    ylim=range(ylim, prev.naive, prev.nnaive, 0)
     if(verbose) myprint(ylim)
     lwd=2
      
     for (a in all.markers) {        
       assay=marker.name.to.assay(a)
       mypdf(oma=c(0,0,0,0), onefile=F, file=paste0(save.results.to, a, "_marginalized_risks", ifelse(eq.geq==1,"_eq","_geq"), 
-                                                   ifelse(w.wo.plac==1,"","_woplacebo"), "_"%.%study_name), mfrow=.mfrow)
+                                                   ifelse(w.wo.plac==1,"","_woplacebo"), "_"%.%save.file.label), mfrow=.mfrow)
         par(las=1, cex.axis=0.9, cex.lab=1)# axis label orientation
         risks=risks.all[[a]]
         # risks=risks.all[[match(a, all.markers)]]
@@ -67,7 +67,7 @@ for (w.wo.plac in 2:2) { # 1 with placebo lines, 2 without placebo lines. Implem
         }
         
         # save to satisfy some journal requirements
-        if(w.wo.plac==1) mywrite.csv(img.dat, file=paste0(save.results.to, a, "_risk_curves",ifelse(eq.geq==1,"_eq","_geq"),"_"%.%study_name))    
+        if(w.wo.plac==1) mywrite.csv(img.dat, file=paste0(save.results.to, a, "_risk_curves",ifelse(eq.geq==1,"_eq","_geq"),"_"%.%save.file.label))    
     
         # text overall risks
         if (w.wo.plac==1) {
@@ -112,7 +112,7 @@ for (a in all.markers) {
   out=with(risks, cbind("s"=tmp, "Estimate"=paste0(formatDouble(prob[table.order],digits.risk), " (", formatDouble(lb[table.order],digits.risk), ",", formatDouble(ub[table.order],digits.risk), ")")))
   while (nrow(out)%%4!=0) out=rbind(out, c("s"="", "Estimate"=""))
   tab=cbind(out[1:(nrow(out)/4), ], out[1:(nrow(out)/4)+(nrow(out)/4), ], out[1:(nrow(out)/4)+(nrow(out)/4*2), ], out[1:(nrow(out)/4)+(nrow(out)/4*3), ])
-  mytex(tab, file.name=paste0(a, "_marginalized_risks_eq", "_"%.%study_name), align="c", include.colnames = T, save2input.only=T, input.foldername=save.results.to, include.rownames = F,
+  mytex(tab, file.name=paste0(a, "_marginalized_risks_eq", "_"%.%save.file.label), align="c", include.colnames = T, save2input.only=T, input.foldername=save.results.to, include.rownames = F,
       longtable=T, caption.placement = "top", label=paste0("tab marginalized_risks_eq ", COR), caption=paste0("Marginalized cumulative risk by Day ",tfinal.tpeak," as functions of Day ",
           tpeak, " ", assay_labels_short[assay], " (=s) among baseline negative vaccine recipients with 95\\% bootstrap point-wise confidence intervals (",
           ncol(risks.all[[1]]$boot)," replicates).")
@@ -139,7 +139,7 @@ for (a in all.markers) {
 #         
 #         tmp.1=ifelse(eq.geq==1,"_eq",ifelse(eq.geq==2,"_geq","_eq_manus")); if(eq.geq==4) tmp.1=4
 #         
-#         mypdf(onefile=F, file=paste0(save.results.to, a, "_controlled_ve_curves",tmp.1,"_"%.%study_name), mfrow=.mfrow, oma=c(0,0,0,0))
+#         mypdf(onefile=F, file=paste0(save.results.to, a, "_controlled_ve_curves",tmp.1,"_"%.%save.file.label), mfrow=.mfrow, oma=c(0,0,0,0))
 #  
 #             lwd=2.5
 #             par(las=1, cex.axis=0.9, cex.lab=1)# axis label orientation
@@ -230,7 +230,7 @@ for (a in all.markers) {
 # #            }
 #     
 #             img.dat=cbind(img.dat, y)
-#             mywrite.csv(img.dat, file=paste0(save.results.to, a, "_controlled_ve_curves",tmp.1,"_"%.%study_name))    
+#             mywrite.csv(img.dat, file=paste0(save.results.to, a, "_controlled_ve_curves",tmp.1,"_"%.%save.file.label))    
 #             
 #             
 #             # legend
@@ -278,7 +278,7 @@ for (a in all.markers) {
 #           out=outs[[a]]
 #             while (nrow(out)%%4!=0) out=rbind(out, c("s"="", "Estimate"=""))
 #             tab=cbind(out[1:(nrow(out)/4), ], out[1:(nrow(out)/4)+(nrow(out)/4), ], out[1:(nrow(out)/4)+(nrow(out)/4*2), ], out[1:(nrow(out)/4)+(nrow(out)/4*3), ])        
-#             mytex(tab, file.name=paste0(a, "_controlled_ve_sens_eq", "_"%.%study_name), align="c", include.colnames = T, save2input.only=T, input.foldername=save.results.to, include.rownames = F,
+#             mytex(tab, file.name=paste0(a, "_controlled_ve_sens_eq", "_"%.%save.file.label), align="c", include.colnames = T, save2input.only=T, input.foldername=save.results.to, include.rownames = F,
 #                 longtable=T, caption.placement = "top", label=paste0("tab controlled_ve_sens_eq ", COR), caption=paste0("Controlled VE with sensitivity analysis as functions of Day ",
 #                     tpeak," ", assay_labels_short[assay], " (=s) among baseline negative vaccine recipients with 95\\% bootstrap point-wise confidence intervals (",
 #                     ncol(risks.all[[1]]$boot)," replicates)."
@@ -316,7 +316,7 @@ for (a in all.markers) {
 #     while (nrow(ret)%%4!=0) ret=rbind(ret, c("s"="", "Estimate"=""))
 #     tab=cbind(ret[1:(nrow(ret)/4), ], ret[1:(nrow(ret)/4)+(nrow(ret)/4), ], ret[1:(nrow(ret)/4)+(nrow(ret)/4*2), ], ret[1:(nrow(ret)/4)+(nrow(ret)/4*3), ])
 #     
-#     mytex(tab, file.name=paste0(a, "_controlled_ve_eq", "_"%.%study_name), align="c", include.colnames = T, save2input.only=T, input.foldername=save.results.to, include.rownames = F,
+#     mytex(tab, file.name=paste0(a, "_controlled_ve_eq", "_"%.%save.file.label), align="c", include.colnames = T, save2input.only=T, input.foldername=save.results.to, include.rownames = F,
 #         longtable=T, caption.placement = "top", label=paste0("tab controlled_ve_eq ", COR), caption=paste0("Controlled VE as functions of Day ",
 #             tpeak," ", assay_labels_short[assay], " (=s) among baseline negative vaccine recipients with 95\\% bootstrap point-wise confidence intervals (",
 #             ncol(risks.all[[1]]$boot)," replicates). ", "Overall cumulative incidence from ", tpeaklag, " to ",tfinal.tpeak," days post Day ",tpeak1," was ",
@@ -351,7 +351,7 @@ tab=sapply (all.markers, function(a) {
         formatDouble(E.value(res[1,a]),1), "&", formatDouble(E.value(res[3,a]),1)
     )
 })
-write(concatList(tab, "\\\\"), file=paste0(save.results.to, "marginalized_risks_cat_", study_name,".tex"))
+write(concatList(tab, "\\\\"), file=paste0(save.results.to, "marginalized_risks_cat_", save.file.label,".tex"))
 
 
 
@@ -408,7 +408,7 @@ if(.mfrow[1]==1)  height=7.5/2*1.5 else height=7.5/2*.mfrow[1]*1.3
 
 for (a in all.markers) {        
   assay=marker.name.to.assay(a)
-  mypdf(oma=c(1,0,0,0), onefile=F, file=paste0(save.results.to, a, "_marginalized_risks_cat_", study_name), mfrow=.mfrow, mar=c(12,4,5,2))
+  mypdf(oma=c(1,0,0,0), onefile=F, file=paste0(save.results.to, a, "_marginalized_risks_cat_", save.file.label), mfrow=.mfrow, mar=c(12,4,5,2))
     par(las=1, cex.axis=0.9, cex.lab=1)# axis label 
     
     marker.name=a%.%"cat"    
@@ -439,7 +439,7 @@ for (a in all.markers) {
     # # combine and sort
     # img.dat=cbinduneven(list(img.dat, tmp))
     # img.dat=img.dat[order(img.dat[,5]),]
-    mywrite.csv(img.dat, paste0(save.results.to, a, "_marginalized_risks_cat_", study_name))
+    mywrite.csv(img.dat, paste0(save.results.to, a, "_marginalized_risks_cat_", save.file.label))
     
     
     # add data ribbon

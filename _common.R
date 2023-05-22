@@ -5,6 +5,7 @@ library(marginalizedRisk)
 library(survival)
 library(parallel)
 library(kyotil)
+library(glue)
 
 if(Sys.getenv("TRIAL")=="") stop("Environmental variable TRIAL not defined!!!!!!!!!!!!!!")
 TRIAL=Sys.getenv("TRIAL")
