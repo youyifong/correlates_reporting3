@@ -14,7 +14,7 @@ library(gridExtra)
 
 source(here::here("code", "cor_graphics_functions.R"))
 source(here::here("..", "_common.R"))
-colnames(assay_metadata) = gsub("X[.]+","", colnames(assay_metadata))
+#colnames(assay_metadata) = gsub("X[.]+","", colnames(assay_metadata))
 # add panel for bindN in assay_metadata
 assay_metadata[which(assay_metadata$assay=="bindN"), "panel"] = "bindN"
 

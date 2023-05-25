@@ -3,7 +3,7 @@
 # obligatory to append to the top of each script
 renv::activate(project = here::here(".."))
 source(here::here("..", "_common.R"))
-colnames(assay_metadata) = gsub("X[.]+","", colnames(assay_metadata))
+#colnames(assay_metadata) = gsub("X[.]+","", colnames(assay_metadata))
 source(here::here("code/cor_graphics_functions.R"))
 #-----------------------------------------------
 
