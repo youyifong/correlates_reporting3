@@ -1,12 +1,9 @@
 \begin{figure}
 \center
     
-\includegraphics[width=1\textwidth]{`r here("cor_graphical", "output", attr(config,"config"), COR, gsub("[_]+", "_", paste0(type, "_", assay, "_", trt, "_", bsero, "_", facet, "_", ifelse(sev=="", "", "severe_"), ver, "_", study_name)))`}
+\includegraphics[width=1\textwidth]{`r here("cor_graphical", "output", attr(config,"config"), paste0(panel, "_", strain, "_by_case_non_case_at_", time, ".pdf"))`}
 
-\caption{`r paste0(gsub("box", "", type), "plots of ", gsub("%", "\\\\%", labels.assays[grepl(paste0(assay_long,"$"), names(labels.assays))]), ": ", bseroLabel, " ", tolower(trt), " arm", ifelse(facet!="", paste0(" by ", names(facets)[facets==facet]), ""), ifelse(sev!="", " severe only", ""), " (version ", gsub("v", "", ver), ")", COR_postfix_label)`}
+\caption{`r paste0("Violinplots of ", panel, " distributions by case/non-case at ", time)`}
 \end{figure}
 
 \hphantom{Random text to appease the latex god}
-
-
-
