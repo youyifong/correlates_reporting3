@@ -58,7 +58,7 @@ getResponder <- function(data,
 get_desc_by_group <- function(data, 
                               group=group){
     
-    data[which(data$time=="BD1"), "wt"]=1
+    data[which(data$time=="BD1"), "wt"]=data[which(data$time=="BD1"), "wt.BD29"]
     data[which(data$time=="DD1"), "wt"]=1
     data[which(data$time=="BD29"), "wt"]=data[which(data$time=="BD29"), "wt.BD29"]
 
