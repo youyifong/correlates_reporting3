@@ -19,7 +19,7 @@ here::i_am("cor_graphical/report.Rmd")
 
 if(study_name=="COVEBoost"){
   set1_panels_1 = c("pseudoneutid50","bindSpike","bindRBD")
-  set1_panels_1 = c("bindSpike","bindRBD")
+  set1_panels_2 = c("bindSpike","bindRBD")
   set1_times <- c("BD1","BD29","DeltaBD29overBD1")
   
   set2_panels = c("pseudoneutid50","bindSpike","bindRBD","bindN")
