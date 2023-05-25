@@ -18,18 +18,29 @@ library(latex2exp)
 here::i_am("cor_graphical/report.Rmd")
 
 if(study_name=="COVEBoost"){
-  set1_panels = c("pseudoneutid50", "bindSpike","bindRBD")
+  set1_panels_1 = c("pseudoneutid50","bindSpike","bindRBD")
+  set1_panels_1 = c("bindSpike","bindRBD")
   set1_times <- c("BD1","BD29","DeltaBD29overBD1")
   
-  set2_panels = c("pseudoneutid50", "bindSpike","bindRBD","bindN")
+  set2_panels = c("pseudoneutid50","bindSpike","bindRBD","bindN")
   
   set3_times = c("BD1","BD29","DeltaBD29overBD1")
   
 }
     
 ## Set 1: violin and line plots #############
-for (strain in c("2_strain","6_strain")){
-  for (panel in set1_panels) {
+for (strain in c("2_strain")){
+  for (panel in set1_panels_1) {
+    for (time in set1_times) {
+  
+        res = knitr::knit_child(c(here::here('cor_graphical', 'report_sub1.Rmd')), quiet = TRUE)
+        cat(res, sep = '\n')
+        cat("\\clearpage", sep = '\n')
+    }
+  }
+}
+for (strain in c("6_strain")){
+  for (panel in set1_panels_2) {
     for (time in set1_times) {
   
         res = knitr::knit_child(c(here::here('cor_graphical', 'report_sub1.Rmd')), quiet = TRUE)
