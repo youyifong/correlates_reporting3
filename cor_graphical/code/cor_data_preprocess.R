@@ -35,7 +35,7 @@ for (a in assays){
 # variable selection
 dat <- dat.cp %>% select(Ptid, Trt, CalendarBD1Date, CalendarBD1Interval, nnaive, BD1bindSpike:DD1bindRBD_Delta,
                       AnyinfectionBD1, EventTimeOmicronBD1:EventIndOmicronBD29, EventIndPrimary, EventTimePrimary, 
-                      ph2.BD29, wt.BD29,
+                      ph2.BD29, wt.BD29, wt.DD1,
                       DeltaBD29overBD1bindSpike: DeltaDD1overBD1pseudoneutid50_BA.1)
 
 # create case vs non-case indicators
