@@ -84,8 +84,8 @@ get_desc_by_group <- function(data,
 # common color panel, shape panel and legend for figures
 chtcols <- c("Omicron Cases"="#FF6F1B", "Non-Cases"="#0AB7C9", "Non-responder"="#8F8F8F")
 chtpchs <- c("Omicron Cases"=19, "Non-Cases"=19, "Non-responder"=2)
-cht_footer <- c("Omicron Cases: COVID-19 Omicron endpoint in the interval [later day of 7 days post BD29 and Dec 1, 2021, May 2022 (data base lock date)]",
-               "Non-Cases: Did not acquire COVID-19 (of any strain) in the interval [BD1, May 2022 (data base lock date)]")
+cht_footer <- c("Omicron Cases: COVID-19 Omicron endpoint in the interval [later day of 7 days post BD29 and Dec 1, 2021, Apr 5, 2022 (data cutoff date)]",
+               "Non-Cases: Did not acquire COVID-19 (of any strain) in the interval [BD1, Apr 5, 2022 (data cutoff date)]")
 
 
 #' A ggplot object for violin box plot without lines, loop by BD1, BD29, BD29-BD1
