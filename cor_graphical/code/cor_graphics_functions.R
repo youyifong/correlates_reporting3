@@ -571,7 +571,7 @@ ggally_cor_resample <- function(
                     )
                 } else if (B == 0){ # resampling will not be done, weighted spearman correlation will be done
                     
-                    corObj <- try(weightedCorr(x, y, method = "pearman", weights = wt),
+                    corObj <- try(weightedCorr(x, y, method = "Spearman", weights = wt),
                                   silent = TRUE
                     )
                     
