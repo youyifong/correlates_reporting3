@@ -130,10 +130,12 @@ for (t in c("BD1","BD29","DeltaBD29overBD1")) {
         plot_dat = dat.cor.subset.plot3,
         time = t,
         assays = assay_metadata_sub$assay,
-        strata = "all_one",
+        strata = "all_one", 
+        # currently strata is hard-coded to 1's and hard-coded not being used in the correlation calculation
+        # strata-based model is currently commented out in the function, ggally_statistic_resample
         weight = "wt.BD29",
         plot_title = paste0(
-            "Correlations of 6 ", t, " antibody markers, Corr = Resampling-based (on IPW) Simple Spearman Rank Correlation."
+            "Correlations of 6 ", t, " antibody markers, Corr = Weighted Spearman Rank Correlation."
         ),
         column_labels = paste(t, assay_metadata_sub$assay_label_short),
         height = max(1.3 * length(assay_metadata_sub$assay) + 0.1, 5.5),
@@ -184,7 +186,7 @@ for (a in assays){
     y.grob.4 <- textGrob("Placebo\nNon-naive", gp=gpar(fontface="bold", col="black", fontsize=9))
     
     x.grob <- textGrob(paste0(
-        "Correlations of ", a, " Levels at BD1, BD29 (and DD1) by Cases/Non-cases, Corr = Resampling-based (on IPW) Simple Spearman Rank Correlation."
+        "Correlations of ", a, " Levels at BD1, BD29 (and DD1) by Cases/Non-cases, Corr = Weighted Spearman Rank Correlation."
     ), gp=gpar(fontface="bold", col="black", fontsize=9))
    
     #add to plot

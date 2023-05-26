@@ -85,7 +85,7 @@ get_desc_by_group <- function(data,
 chtcols <- c("Omicron Cases"="#FF6F1B", "Non-Cases"="#0AB7C9", "Non-responder"="#8F8F8F")
 chtpchs <- c("Omicron Cases"=19, "Non-Cases"=19, "Non-responder"=2)
 cht_footer <- c("Omicron Cases: COVID-19 Omicron endpoint in the interval [later day of 7 days post BD29 and Dec 1, 2021, May 2022 (data base lock date)]",
-               "Non-Cases: Did not acquire COVID-19 (of any strain) in the interval [BD1, data base lock date]")
+               "Non-Cases: Did not acquire COVID-19 (of any strain) in the interval [BD1, May 2022 (data base lock date)]")
 
 
 #' A ggplot object for violin box plot without lines, loop by BD1, BD29, BD29-BD1
@@ -246,12 +246,14 @@ f_longitude_by_assay <- function(
     return(p2)
     }
 
-
-# resamping-based correlation, used in ggplots, allowing for strata
+#' a sub-function called by function: ggally_statistic_resample
+#' 
+#' when B > 1, resamping-based correlation, used in ggplots, allowing for strata (if no strata, need to input all 1's as strata)
+#' when B = 0, weighted correlation, used in ggplots, allowing for strata (if no strata, need to input all 1's as strata)
 ggally_statistic_resample <- function(
     data,
     mapping,
-    B = 200,
+    B = 0, # when B = 0, no resampling will be done, and weighted spearman correlation will be done
     strata = NULL,
     weight = NULL,
     text_fn,
@@ -453,12 +455,17 @@ ggally_statistic_resample <- function(
 }
 
 
+#' a sub-function called by function: covid_corr_pairplots
+#' 
+#' when B > 1, resamping-based correlation, used in ggplots, allowing for strata (if no strata, need to input all 1's as strata)
+#' when B = 0, weighted correlation, used in ggplots, allowing for strata (if no strata, need to input all 1's as strata)
 ggally_cor_resample <- function(
     data,
     mapping,
     strata,
     weight,
-    B = 200,
+    B = 0, # if B == 0, then no resampling will be done and weighted spearman correlation coef will be computed
+    # if B > 1, then resamping will be done B times and simple spearman correlated coef will be computed and averaged
     seed = 12345,
     ...,
     stars = TRUE,
@@ -514,52 +521,66 @@ ggally_cor_resample <- function(
             # write.csv(data.frame(x = x, y = y, strata = st), "input_columns.csv", row.names = FALSE)
             
             # write.csv(resamp_mat, "output_row_number.csv", row.names = FALSE)
-            for (bb in seq_len(B)) {
-                resamp_vec <- resamp_mat[, bb]
-                x_resamp <- x[resamp_vec]
-                y_resamp <- y[resamp_vec]
-                st_resamp <- st[resamp_vec]
-                
-                # write.csv(data.frame(x = x_resamp, y = y_resamp, strata = st_resamp), "input_columns_last_resamp.csv", row.names = FALSE)
-                
-                suppressWarnings(st_resamp_dummy <-
-                                     dummies::dummy(st_resamp, sep = "_"))
-                
-                resamp_data <- cbind(
-                    data.frame(x = x_resamp, y = y_resamp),
-                    st_resamp_dummy[, 1:(ncol(st_resamp_dummy) - 1)]
-                )
-                names(resamp_data)[3:ncol(resamp_data)] <-
-                    paste0("strata", 1:(ncol(st_resamp_dummy) - 1))
-                #write.csv(resamp_data, "resamp_data.csv", row.names = FALSE)
-                
-                fml <- formula(paste0(
-                    "y | x ~ ",
-                    paste0("strata", 1:(ncol(st_resamp_dummy) - 1),
-                           collapse = "+"
+            if (B > 1) { # if B > 1, resampling will be done
+                for (bb in seq_len(B)) {
+                    resamp_vec <- resamp_mat[, bb]
+                    x_resamp <- x[resamp_vec]
+                    y_resamp <- y[resamp_vec]
+                    st_resamp <- st[resamp_vec]
+                    
+                    # write.csv(data.frame(x = x_resamp, y = y_resamp, strata = st_resamp), "input_columns_last_resamp.csv", row.names = FALSE)
+                    
+                    suppressWarnings(st_resamp_dummy <-
+                                         dummies::dummy(st_resamp, sep = "_"))
+                    
+                    resamp_data <- cbind(
+                        data.frame(x = x_resamp, y = y_resamp),
+                        st_resamp_dummy[, 1:(ncol(st_resamp_dummy) - 1)]
                     )
-                ))
-                
-                if (study_name=="COVEBoost"){ 
-                    # e.g. PROFISCOV's Bstratum variable only includes one value, so use simple spearman for this study, need to specify "exact = FALSE" because of ties
+                    names(resamp_data)[3:ncol(resamp_data)] <-
+                        paste0("strata", 1:(ncol(st_resamp_dummy) - 1))
+                    #write.csv(resamp_data, "resamp_data.csv", row.names = FALSE)
+                    
+                    #fml <- formula(paste0(
+                    #    "y | x ~ ",
+                    #    paste0("strata", 1:(ncol(st_resamp_dummy) - 1),
+                    #           collapse = "+"
+                    #    )
+                    #))
+                    
+                    #if (study_name=="COVEBoost"){ 
+                        # e.g. PROFISCOV's Bstratum variable only includes one value, so use simple spearman for this study, need to specify "exact = FALSE" because of ties
                     corObj <- try(cor.test(resamp_data$x, resamp_data$y, method = "spearman", exact = FALSE)$estimate,
+                                      silent = TRUE
+                        )
+
+                    }
+                    #} #else { # Partial Spearman's Rank Correlation
+                      #  corObj <- try(partial_Spearman(
+                      #      formula = fml, data = resamp_data,
+                      #      fit.x = "lm", fit.y = "lm"
+                      #  )$TS$TB$ts,
+                      #  silent = TRUE
+                      #  )
+                    #}
+                    
+                    # make sure all values have X-many decimal places
+                    corvec[bb] <- ifelse(class(corObj) == "try-error",
+                                         NA,
+                                         corObj
+                    )
+                } else if (B == 0){ # resampling will not be done, weighted spearman correlation will be done
+                    
+                    corObj <- try(weightedCorr(x, y, method = "pearman", weights = wt),
                                   silent = TRUE
                     )
-                } #else {
-                  #  corObj <- try(partial_Spearman(
-                  #      formula = fml, data = resamp_data,
-                  #      fit.x = "lm", fit.y = "lm"
-                  #  )$TS$TB$ts,
-                  #  silent = TRUE
-                  #  )
-                #}
-                
-                # make sure all values have X-many decimal places
-                corvec[bb] <- ifelse(class(corObj) == "try-error",
-                                     NA,
-                                     corObj
-                )
-            }
+                    
+                    corvec <- ifelse(class(corObj) == "try-error",
+                                         NA,
+                                         corObj
+                    )
+                    
+                }
             # saveRDS(corvec, file = "corvec.RDS")
             cor_est <- mean(corvec, na.rm = TRUE)
             cor_txt <- formatC(cor_est, digits = digits, format = "f")
@@ -577,7 +598,7 @@ ggally_cor_resample <- function(
 #'  "Delta57overB".
 #' @param assays: vector of strings: the assay names for plotting.
 #' @param strata: string: the column name in plot_dat that indicates the
-#'  strata.
+#'  strata. when no strata is needed, a column of 1's needs to be assigned
 #' @param weight: string: the column name in plot_dat that indicates the
 #'  individual sampling weights.
 #' @param plot_title: string: title of the plot.
@@ -599,7 +620,6 @@ covid_corr_pairplots <- function(plot_dat, ## data for plotting
                                  time,
                                  assays,
                                  strata, 
-                                 # currently strata is hard-coded not being used in the correlation calculation
                                  weight,
                                  plot_title,
                                  column_labels,
