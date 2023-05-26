@@ -138,7 +138,7 @@ resp_by_time_assay <- resp[, c("Ptid", colnames(resp)[grepl("Resp", colnames(res
 # 256 unique ids, three timepoints, 15 assays
 dat.longer.cor.subset <- dat.longer.cor.subset %>%
   mutate(category=paste0(time, assay, "Resp")) %>%
-  select(Ptid, time, assay, category, Trt, nnaive, cohort_event, value, wt.BD29,
+  select(Ptid, time, assay, category, Trt, nnaive, cohort_event, value, wt.BD29, wt.DD1,
          lbval,lbval2,
          lb,lb2) %>%
   left_join(resp_by_time_assay, by=c("Ptid", "category"))
