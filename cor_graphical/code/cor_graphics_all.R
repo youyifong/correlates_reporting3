@@ -116,7 +116,7 @@ for (t in c("BD1","BD29","DeltaBD29overBD1")) {
         column_labels = paste(t, assay_metadata$assay_label_short),
         height = max(1.3 * length(assays) + 0.1, 5.5),
         width = max(1.3 * length(assays), 5.5),
-        column_label_size = 3.8,
+        column_label_size = ifelse(max(nchar(paste(t, assay_metadata$assay_label_short)))>40, 3.3, 3.8),
         filename = paste0(
             save.results.to, "/pairs_by_time_", t,
             "_15_markers.pdf"
@@ -142,7 +142,7 @@ for (t in c("BD1","BD29","DeltaBD29overBD1")) {
         column_labels = paste(t, assay_metadata_sub$assay_label_short),
         height = max(1.3 * length(assay_metadata_sub$assay) + 0.1, 5.5),
         width = max(1.3 * length(assay_metadata_sub$assay), 5.5),
-        column_label_size = 4.3,
+        column_label_size = ifelse(max(nchar(paste(t, assay_metadata_sub$assay_label_short)))>40, 3.3, 4.3),
         filename = paste0(
             save.results.to, "/pairs_by_time_", t,
             "_6_markers.pdf"
@@ -182,10 +182,10 @@ for (a in assays){
         }
     }
     
-    y.grob.1 <- textGrob("Vaccine\nNaive", gp=gpar(fontface="bold", col="black", fontsize=9))
-    y.grob.2 <- textGrob("Vaccine\nNon-naive", gp=gpar(fontface="bold", col="black", fontsize=9))
-    y.grob.3 <- textGrob("Placebo\nNaive", gp=gpar(fontface="bold", col="black", fontsize=9))
-    y.grob.4 <- textGrob("Placebo\nNon-naive", gp=gpar(fontface="bold", col="black", fontsize=9))
+    y.grob.1 <- textGrob("Vaccine     \nNaive", gp=gpar(fontface="bold", col="black", fontsize=9))
+    y.grob.2 <- textGrob("Vaccine   \nNon-naive", gp=gpar(fontface="bold", col="black", fontsize=9))
+    y.grob.3 <- textGrob("Placebo     \nNaive", gp=gpar(fontface="bold", col="black", fontsize=9))
+    y.grob.4 <- textGrob("Placebo   \nNon-naive", gp=gpar(fontface="bold", col="black", fontsize=9))
     
     x.grob <- textGrob(paste0(
         "Correlations of ", a, " Levels at BD1, BD29 (and DD1) by Cases/Non-cases, Corr = Weighted Spearman Rank Correlation."
