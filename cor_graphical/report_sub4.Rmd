@@ -3,10 +3,8 @@
 
 \includegraphics[width=1\textwidth]{`r here("cor_graphical", "output", attr(config,"config"), paste0("pairs_by_timepoints_", assay, ".pdf"))`}
 
-\caption{`r paste0("Correlation plots for ", assay, " across time points")`}
+\caption{`r paste0("Correlation plots for ", gsub("_", ".", assay), " across time points. Corr = weighted Spearman rank correlation")`}
 \end{figure}
-
-\hphantom{Random text to appease the latex god}
 
 
 

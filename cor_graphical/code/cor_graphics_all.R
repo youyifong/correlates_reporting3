@@ -58,7 +58,7 @@ for (panel in c("pseudoneutid50", "bindSpike","bindRBD")){
     for (i in 1:length(set1_times)){
         
         file_name <- paste0(panel, "_2_strain_by_case_non_case_at_", set1_times[i], ".pdf")
-        ggsave(plot = f_1[[i]], filename = paste0(save.results.to, file_name), width = 16, height = 11)
+        ggsave(plot = f_1[[i]], filename = paste0(save.results.to, file_name), width = 16, height = 16)
     }
 }
 
@@ -76,7 +76,7 @@ for (panel in c("bindSpike","bindRBD")){
     for (i in 1:length(set1_times)){
         
         file_name <- paste0(panel, "_6_strain_by_case_non_case_at_", set1_times[i], ".pdf")
-        ggsave(plot = f_1[[i]], filename = paste0(save.results.to, file_name), width = 16, height = 11)
+        ggsave(plot = f_1[[i]], filename = paste0(save.results.to, file_name), width = 16, height = 16)
     }
 }
 
@@ -187,9 +187,9 @@ for (a in assays){
     y.grob.3 <- textGrob("Placebo     \nNaive", gp=gpar(fontface="bold", col="black", fontsize=9))
     y.grob.4 <- textGrob("Placebo   \nNon-naive", gp=gpar(fontface="bold", col="black", fontsize=9))
     
-    x.grob <- textGrob(paste0(
-        "Correlations of ", a, " Levels at BD1, BD29 (and DD1) by Cases/Non-cases, Corr = Weighted Spearman Rank Correlation."
-    ), gp=gpar(fontface="bold", col="black", fontsize=9))
+    #x.grob <- textGrob(paste0(
+    #    "Correlations of ", a, " Levels at BD1, BD29 (and DD1) by Cases/Non-cases, Corr = Weighted Spearman Rank Correlation."
+    #), gp=gpar(fontface="bold", col="black", fontsize=9))
    
     #add to plot
     combined_p <- grid.arrange(
@@ -201,11 +201,11 @@ for (a in assays){
             ggmatrix_gtable(panels_set[[5]]), ggmatrix_gtable(panels_set[[6]])), left = y.grob.3), nrow=1),
         grid.arrange(arrangeGrob(plot_grid(
             ggmatrix_gtable(panels_set[[7]]), ggmatrix_gtable(panels_set[[8]])), left = y.grob.4), nrow=1),
-        bottom = x.grob,
+        #bottom = x.grob,
         ncol = 1
     )
     
     ggsave(filename = paste0(
-        save.results.to, "/pairs_by_timepoints_", a, ".pdf"), plot = combined_p, width = 10, height = 18, units="in")
+        save.results.to, "/pairs_by_timepoints_", a, ".pdf"), plot = combined_p, width = 8, height = 10, units="in")
 }
 

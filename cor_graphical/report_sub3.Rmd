@@ -3,10 +3,8 @@
 
 \includegraphics[width=1\textwidth]{`r here("cor_graphical", "output", attr(config,"config"), paste0("pairs_by_time_", time, "_", strain, ".pdf"))`}
 
-\caption{`r paste0("Correlation plots of ", gsub(" markers", "", strain), " ", time, " antibody markers")`}
+\caption{`r paste0("Correlation plots of ", gsub("_markers", "", strain), " ", time, " antibody markers")`}
 \end{figure}
-
-\hphantom{Random text to appease the latex god}
 
 
 
