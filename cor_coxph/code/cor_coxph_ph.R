@@ -93,7 +93,7 @@ pvals.adj.hol=p.adjust(p.unadj, method="holm")
 if (length(p.unadj)>1) {
         
     #### Westfall and Young permutation-based adjustment
-    perm.file.name=paste0(save.results.to,"pvals.perm.",save.file.label,".Rdata")
+    perm.file.name=paste0(save.results.to,"pvals.perm.Rdata")
     if(!file.exists(perm.file.name)) {
         
         dat.ph2 = design.1$phase1$sample$variables
@@ -147,7 +147,7 @@ if (length(p.unadj)>1) {
         load(file=perm.file.name)
     }
     # save number of permutation replicates
-    write(nrow(pvals.perm), file=paste0(save.results.to, "permutation_replicates_"%.%save.file.label))
+    write(nrow(pvals.perm), file=paste0(save.results.to, "permutation_replicates"))
     
     
     if(any(is.na(p.unadj))) {
@@ -162,7 +162,7 @@ if (length(p.unadj)>1) {
 } else {
     print("not doing Westfall and Young")
     pvals.adj=cbind(p.unadj, p.FWER=pvals.adj.hol, p.FDR=pvals.adj.fdr)
-    write(NA, file=paste0(save.results.to, "permutation_replicates_"%.%save.file.label))     # so the rmd file can compile
+    write(NA, file=paste0(save.results.to, "permutation_replicates"))     # so the rmd file can compile
 }
 
 
@@ -181,7 +181,7 @@ p.2=formatDouble(pvals.adj["cont."%.%names(pvals.cont),"p.FDR" ], 3, remove.lead
 tab.1=cbind(paste0(nevents, "/", format(natrisk, big.mark=",")), t(est), t(ci), t(p), p.2, p.1)
 # rownames(tab.1)=all.markers.names.short
 tab.1
-mytex(tab.1, file.name="CoR_univariable_svycoxph_pretty_"%.%save.file.label, align="c", include.colnames = F, save2input.only=T, input.foldername=save.results.to,
+mytex(tab.1, file.name="CoR_univariable_svycoxph_pretty", align="c", include.colnames = F, save2input.only=T, input.foldername=save.results.to,
     col.headers=paste0("\\hline\n 
          \\multicolumn{1}{l}{", study_name, "} & \\multicolumn{1}{c}{No. cases /}   & \\multicolumn{2}{c}{HR per 10-fold incr.}                     & \\multicolumn{1}{c}{P-value}   & \\multicolumn{1}{c}{q-value}   & \\multicolumn{1}{c}{FWER} \\\\ 
          \\multicolumn{1}{l}{Immunologic Marker}            & \\multicolumn{1}{c}{No. at-risk**} & \\multicolumn{1}{c}{Pt. Est.} & \\multicolumn{1}{c}{95\\% CI} & \\multicolumn{1}{c}{(2-sided)} & \\multicolumn{1}{c}{***} & \\multicolumn{1}{c}{} \\\\ 
@@ -201,7 +201,7 @@ tab.1.nop12=cbind(paste0(nevents, "/", format(natrisk, big.mark=",")), t(est), t
 tab.1.scaled=cbind(paste0(nevents, "/", format(natrisk, big.mark=",")), t(est.scaled), t(ci.scaled), t(p), p.2, p.1)
 # rownames(tab.1.scaled)=all.markers.names.short
 tab.1.scaled
-mytex(tab.1.scaled, file.name="CoR_univariable_svycoxph_pretty_scaled_"%.%save.file.label, align="c", include.colnames = F, save2input.only=T, input.foldername=save.results.to,
+mytex(tab.1.scaled, file.name="CoR_univariable_svycoxph_pretty_scaled", align="c", include.colnames = F, save2input.only=T, input.foldername=save.results.to,
     col.headers=paste0("\\hline\n 
          \\multicolumn{1}{l}{", study_name, "} & \\multicolumn{1}{c}{No. cases /}   & \\multicolumn{2}{c}{HR per SD incr.}                     & \\multicolumn{1}{c}{P-value}   & \\multicolumn{1}{c}{q-value}   & \\multicolumn{1}{c}{FWER} \\\\ 
          \\multicolumn{1}{l}{Immunologic Marker}            & \\multicolumn{1}{c}{No. at-risk**} & \\multicolumn{1}{c}{Pt. Est.} & \\multicolumn{1}{c}{95\\% CI} & \\multicolumn{1}{c}{(2-sided)} & \\multicolumn{1}{c}{***} & \\multicolumn{1}{c}{} \\\\ 
@@ -252,7 +252,7 @@ tab.cat=tab[1:(nrow(tab)),]
 #cond.plac=dat.pla.seroneg[[config$EventTimePrimary]]<=tfinal.tpeak # not used anymore
 
 # use longtable because this table could be long, e.g. in hvtn705second
-mytex(tab[1:(nrow(tab)),], file.name="CoR_univariable_svycoxph_cat_pretty_"%.%save.file.label, align="c", include.colnames = F, save2input.only=T, input.foldername=save.results.to,
+mytex(tab[1:(nrow(tab)),], file.name="CoR_univariable_svycoxph_cat_pretty", align="c", include.colnames = F, save2input.only=T, input.foldername=save.results.to,
     col.headers=paste0("\\hline\n 
          \\multicolumn{1}{l}{", study_name, "} & \\multicolumn{1}{c}{Tertile}   & \\multicolumn{1}{c}{No. cases /}   & \\multicolumn{1}{c}{Attack}   & \\multicolumn{2}{c}{Haz. Ratio}                     & \\multicolumn{1}{c}{P-value}   & \\multicolumn{1}{c}{Overall P-}      & \\multicolumn{1}{c}{Overall q-}   & \\multicolumn{1}{c}{Overall} \\\\ 
          \\multicolumn{1}{l}{Immunologic Marker}            & \\multicolumn{1}{c}{}          & \\multicolumn{1}{c}{No. at-risk**} & \\multicolumn{1}{c}{rate}   & \\multicolumn{1}{c}{Pt. Est.} & \\multicolumn{1}{c}{95\\% CI} & \\multicolumn{1}{c}{(2-sided)} & \\multicolumn{1}{c}{value***} & \\multicolumn{1}{c}{value $\\dagger$} & \\multicolumn{1}{c}{FWER} \\\\ 
@@ -268,7 +268,7 @@ mytex(tab[1:(nrow(tab)),], file.name="CoR_univariable_svycoxph_cat_pretty_"%.%sa
     #      )
     # ),
     longtable=T, 
-    label=paste0("tab:CoR_univariable_svycoxph_cat_pretty_", save.file.label), 
+    label=paste0("tab:CoR_univariable_svycoxph_cat_pretty"), 
     caption.placement = "top", 
     caption=paste0("Inference for Day ", tpeak, "antibody marker covariate-adjusted correlates of risk of ", config$txt.endpoint, " in the vaccine group: Hazard ratios for Middle vs. Upper tertile vs. Lower tertile*")
 )
