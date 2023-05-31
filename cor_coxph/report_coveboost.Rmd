@@ -11,50 +11,78 @@ The SAP is available at https://doi.org/10.6084/m9.figshare.13198595
 
 
 
-```{r, echo=TRUE, results='asis'}
+```{r, echo=FALSE, results='asis'}
 
 obj.assays=c("bindSpike_BA.1", "pseudoneutid50_BA.1")  
 tpeak <- 29
 special.note = paste0("$\\ddagger$ Count cases starting 7 days post BD29.")
   
-for (iObj in 1:3) {
-  save.file.label = paste0(study_name,"obj",iObj)
-  if (iObj %in% c(1,3)) {
+for (iObj in 1:2) {
+  if (iObj==1) {
     all.markers = paste0("BD29", obj.assays)
   } else if (iObj==2) {
     all.markers = paste0("DeltaBD29overBD1", obj.assays)
   }
   names(all.markers)=all.markers
   
-  if (iObj %in% c(1,2)) {
-    COR=glue("Objective {iObj} Naive")
-    pathCoRoutput <- paste0("cor_coxph/output/", attr(config,"config"), "/naive")
-    res = knitr::knit_child(c(here::here('cor_coxph', 'report_by_COR.Rmd')), quiet = TRUE)
-    cat(res, sep = '\n')
-    
-    COR=glue("Objective {iObj} Non-naive")
-    pathCoRoutput <- paste0("cor_coxph/output/", attr(config,"config"), "/nnaive")
-    res = knitr::knit_child(c(here::here('cor_coxph', 'report_by_COR.Rmd')), quiet = TRUE)
-    cat(res, sep = '\n')
-    
-  } else if (iObj==3) {
-    COR="Objective "%.%iObj
-    pathCoRoutput <- paste0("cor_coxph/output/", attr(config,"config"), "/all")
-    
-    cat(glue("# {COR} Univariate CoR: Cox Models of Risk"))
-    for (a in all.markers) {
-      cat(paste0("
+  COR=glue("Objective {iObj} Naive")
+  pathCoRoutput <- glue("cor_coxph/output/{attr(config,'config')}/obj{iObj}_naive")
+  res = knitr::knit_child(c(here::here('cor_coxph', 'report_by_COR.Rmd')), quiet = TRUE)
+  cat(res, sep = '\n')
+  
+  COR=glue("Objective {iObj} Non-naive")
+  pathCoRoutput <- glue("cor_coxph/output/{attr(config,'config')}/obj{iObj}_nnaive")
+  res = knitr::knit_child(c(here::here('cor_coxph', 'report_by_COR.Rmd')), quiet = TRUE)
+  cat(res, sep = '\n')
+} 
+
+
+#
+COR="Objective 3"
+cat(glue("# {COR} Modification of BD29 markers or fold change by naive/non-naive\\"), sep='\n')
+
+for (iObj in 1:2) {
+  if (iObj==1) {
+    all.markers = paste0("BD29", obj.assays)
+    cat(glue("## BD29"))
+  } else if (iObj==2) {
+    all.markers = paste0("DeltaBD29overBD1", obj.assays)
+    cat(glue("## BD29 over BD1"))
+}
+  names(all.markers)=all.markers
+  pathCoRoutput <- glue("cor_coxph/output/{attr(config,'config')}/obj3_{iObj}")
+  for (a in all.markers) {
+    cat(paste0("
 \\begin{table}[H] 
 \\centering
-\\input{",pathCoRoutput,"/CoR_itxn_",a,"}  
-\\caption{ Inference for Day ",tpeak," antibody marker covariate-adjusted correlates of risk by Day \\protect\\input{",pathCoRoutput,"/timepoints_cum_risk_",save.file.label,"} in the vaccine arm. Hazard ratios per 10-fold increment in the marker are shown. ",special.note,"}
+\\input{",pathCoRoutput,"/CoR_itxnnaive_",a,"}  
+\\caption{ Inference for Day ",tpeak," antibody marker covariate-adjusted correlates of risk by Day \\protect\\input{",pathCoRoutput,"/timepoints_cum_risk} in the vaccine arm. Hazard ratios per 10-fold increment in the marker are shown. ",special.note,"}
 \\end{table}
 "))
-    }
+  }
+}
 
-  } # end if iObj
 
-} # end for iObj
+#
+COR="Objective 4"
+cat(glue("# {COR} Modification of BD29 markers by BD1 markers\\"), sep='\n')
+
+all.markers = paste0("BD29", obj.assays)
+names(all.markers)=all.markers
+
+for (idat in 1:2) {
+  pathCoRoutput <- glue("cor_coxph/output/{attr(config,'config')}/obj4_{ifelse(idat==1,'naive','nnaive')}")
+  cat(glue("## {ifelse(idat==1,'Naive','Non-naive')}"))
+  for (a in all.markers) {
+    cat(paste0("
+\\begin{table}[H] 
+\\centering
+\\input{",pathCoRoutput,"/CoR_itxnBD1BD29_",a,"}  
+\\caption{ Inference for Day ",tpeak," antibody marker covariate-adjusted correlates of risk by Day \\protect\\input{",pathCoRoutput,"/timepoints_cum_risk} in the vaccine arm. Hazard ratios per 10-fold increment in the marker are shown. ",special.note,"}
+\\end{table}
+"))
+  }
+}
 
 ```
 
