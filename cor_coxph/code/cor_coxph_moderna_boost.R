@@ -50,7 +50,7 @@ dat$EventTimePrimary=dat$EventTimeOmicronBD29
 dat$yy=dat$EventIndPrimary
 
 # subset to ph1
-dat=subset(dat,   ph1.BD29)
+dat=subset(dat, ph1.BD29)
 
 # add trichotomized markers. use the same cutpoints for naive and nnaive
 obj.assays=c("bindSpike_BA.1", "pseudoneutid50_BA.1")  
@@ -59,7 +59,7 @@ names(all.markers)=all.markers
 dat = add.trichotomized.markers (dat, all.markers)
 marker.cutpoints=attr(dat, "marker.cutpoints")
   
-# define subsets of data    
+# define naive and nnaive datasets
 dat.naive=subset(dat,   naive & ph1.BD29)
 dat.nnaive=subset(dat, !naive & ph1.BD29)
 

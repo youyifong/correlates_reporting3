@@ -1,3 +1,5 @@
+renv/settings.json
+cor_coxph/output/moderna_boost/*
 .Rproj.user
 *.Rproj
 *.rds
