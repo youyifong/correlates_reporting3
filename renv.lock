@@ -1079,19 +1079,15 @@
     },
     "kyotil": {
       "Package": "kyotil",
-      "Version": "2023.5-31",
+      "Version": "2023.6-15",
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
-      "RemoteRepo": "kyotil",
       "RemoteUsername": "youyifong",
-      "RemoteRef": "HEAD",
-      "RemoteSha": "8126efad5d0cbed7ff580d8da1f4e4917771dee5",
-      "Requirements": [
-        "R",
-        "methods"
-      ],
-      "Hash": "e4f3f3ad9104abdfb3e76c6453a2f878"
+      "RemoteRepo": "kyotil",
+      "RemoteRef": "master",
+      "RemoteSha": "b8cd4fa06ac422e9e557073a0c181291dab816fa",
+      "Hash": "0b260f3b117212bda5a3ce0efb0b965d"
     },
     "labeling": {
       "Package": "labeling",
@@ -1228,8 +1224,8 @@
       "RemoteRepo": "marginalizedRisk",
       "RemoteUsername": "youyifong",
       "RemoteRef": "HEAD",
-      "RemoteSha": "f2722dd9eb5adddc6239acd73c2cdd353536c990",
-      "Hash": "1933d5cdb6e7ea276fffe398403c32d9"
+      "RemoteSha": "ef9625ed8cda59b1fc16bc991b781800c66edf02",
+      "Hash": "c4337823c55443a4b1fc0543763bc065"
     },
     "markdown": {
       "Package": "markdown",
@@ -1705,7 +1701,7 @@
     },
     "renv": {
       "Package": "renv",
-      "Version": "0.17.3",
+      "Version": "0.13.2",
       "Source": "Repository"
     },
     "repr": {
@@ -1985,17 +1981,17 @@
     },
     "survey": {
       "Package": "survey",
-      "Version": "4.1-1",
+      "Version": "4.0",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "8aec2bc6533a6d1e6ef43bbf0c20205a"
+      "Hash": "c1108185333d7187ebd17f033b942ecb"
     },
     "survival": {
       "Package": "survival",
-      "Version": "3.5-5",
+      "Version": "3.2-10",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "d683341b1fa2e8d817efde27d6e6d35b"
+      "Hash": "6b7453cd9bb32b12577c78d54eeea56a"
     },
     "svglite": {
       "Package": "svglite",
