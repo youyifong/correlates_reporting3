@@ -133,7 +133,7 @@ for (t in c("BD1","BD29","DeltaBD29overBD1")) {
         # strata-based model is currently commented out in the function, ggally_statistic_resample
         weight = "wt.BD29",
         plot_title = paste0(
-            "Correlations of 4 ", t, " antibody markers, Corr = Weighted Spearman Rank Correlation."
+            "Correlations of 4 ", t, " antibody markers, ", if (grepl("Delta", t)) "\n", "Corr = Weighted Spearman Rank Correlation."
         ),
         column_labels = paste(t, assay_metadata_sub$assay_label_short),
         height = max(1.3 * length(assay_metadata_sub$assay) + 0.1, 5.5),
