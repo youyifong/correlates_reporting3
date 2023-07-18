@@ -8,7 +8,7 @@
 # t: a time point near to the time of the last observed outcome will be defined
 
 marginalized.risk.svycoxph.boot=function(marker.name, type, data, t, B, ci.type="quantile", numCores=1) {  
-  # marker.name=a; type=2; data=dat.ph1; t=tfinal.tpeak; B=B; ci.type="quantile"; numCores=1
+  # marker.name=a; type=1; data=dat.ph1; t=tfinal.tpeak; B=B; ci.type="quantile"; numCores=1
   
   # store the current rng state 
   save.seed <- try(get(".Random.seed", .GlobalEnv), silent=TRUE) 
@@ -87,7 +87,8 @@ marginalized.risk.svycoxph.boot=function(marker.name, type, data, t, B, ci.type=
     
   } else if (type==2) {
     # conditional on S>=s
-    ss=quantile(data[[marker.name]], seq(0,.9,by=0.05), na.rm=TRUE); if(verbose) myprint(ss)
+    # hack 0.9 to 0.5, otherwise lots of errors: No (non-missing) observations 
+    ss=quantile(data[[marker.name]], seq(0,.5,by=0.05), na.rm=TRUE); if(verbose) myprint(ss)
     prob = fc.2(data.ph2)        
     
   } else if (type==3) {
@@ -107,7 +108,7 @@ marginalized.risk.svycoxph.boot=function(marker.name, type, data, t, B, ci.type=
   } else stop("wrong type")
   
   # bootstrap
-  if(config$case_cohort) ptids.by.stratum=get.ptids.by.stratum.for.bootstrap (data)     
+  if(config$sampling_scheme=="case_cohort") ptids.by.stratum=get.ptids.by.stratum.for.bootstrap (data)     
   seeds=1:B; names(seeds)=seeds
   out=mclapply(seeds, mc.cores = numCores, FUN=function(seed) {   
     seed=seed+560

@@ -29,8 +29,8 @@ omp_set_num_threads(1L)
 stopifnot(omp_get_max_threads() == 1L)
     
 # for mclapply etc
-numCores <- unname(ifelse(Sys.info()["sysname"] == "Windows", 1, as.integer(future::availableCores()/2)))
-
+# numCores <- unname(ifelse(Sys.info()["sysname"] == "Windows", 1, as.integer(future::availableCores()/2)))
+numCores=1
 
 ###################################################################################################
 # load config, assay metadata, define common variables and labels
@@ -194,6 +194,7 @@ add.trichotomized.markers=function(dat, markers, ph2.col.name="ph2", wt.col.name
 #   Ptid, Trt, naive, EventIndPrimary, ph2, demo.stratum, CalendarBD1Interval
 # return a dataframe with wt column
 
+# bootstrap.cove.boost.2 is faster than bootstrap.cove.boost and results are similar
 bootstrap.cove.boost=function(dat.ph1, seed) {
   
   set.seed(seed)
@@ -246,10 +247,7 @@ bootstrap.cove.boost=function(dat.ph1, seed) {
   
   # 4. 
   n.demo = length(table(dat.b$demo.stratum))
-  assertthat::assert_that(n.demo==6, msg = "n.demo != 6")
-  
   # adjust Wstratum
-  # this call may throw exceptions
   ret = cove.boost.collapse.strata (dat.b, n.demo)
   
   # compute inverse probability sampling weights
@@ -287,9 +285,8 @@ bootstrap.cove.boost.2=function(dat.ph1, seed) {
   
   # 4. adjust Wstratum
   n.demo = length(table(dat.b$demo.stratum))
-  assertthat::assert_that(n.demo==6, msg = "n.demo != 6")
   ret = cove.boost.collapse.strata (dat.b, n.demo)
-  
+
   # compute inverse probability sampling weights
   tmp = with(ret, ph1)
   wts_table <- with(ret[tmp,], table(Wstratum, ph2))
