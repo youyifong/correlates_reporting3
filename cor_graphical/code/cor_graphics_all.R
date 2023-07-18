@@ -64,7 +64,8 @@ for (panel in c("pseudoneutid50", "bindSpike","bindRBD")){
 
 # bindSpike D614, Gamma, Alpha, Beta, Delta, BA.1, at BD1, BD29, BD29-BD1
 # bindRBD D614, Gamma, Alpha, Beta, Delta, BA.1, at BD1, BD29, BD29-BD1
-for (panel in c("bindSpike","bindRBD")){
+for (panel in c("bindSpike"#(T & test_moderna_booster),"bindRBD"
+                )){
     
     f_1 <- f_case_non_case_by_time_assay(
         dat = dat.longer.cor.subset.plot1,
@@ -82,6 +83,7 @@ for (panel in c("bindSpike","bindRBD")){
 
 ###### Set 2 plots: Longitudinal plots BD1 to BD29 (and to DD1)
 set2_assays = assays[!grepl("_Alpha|_Beta|_Delta|_Gamma", assays)]
+if (T & test_moderna_booster) {set2_assays = set2_assays[!set2_assays=="bindRBD"]}
 # bindN 614G and BA.1 non-cases and cases, at BD1, BD29, DD1
 # bindRBD 614G and BA.1 non-cases and cases, at BD1, BD29, DD1
 # bindSpike 614G and BA.1 non-cases and cases, at BD1, BD29, DD1
@@ -92,9 +94,9 @@ f_2 <- f_longitude_by_assay(
     times = c("BD1","BD29","DD1")
 )
 
-for (i in 1:length(c("bindN","bindRBD","bindSpike","pseudoneutid50"))){
+for (i in 1:length(c("bindSpike","pseudoneutid50"))){
     
-    panel = c("bindN","bindRBD","bindSpike","pseudoneutid50")[i]
+    panel = c("bindSpike","pseudoneutid50")[i]
 
     file_name <- paste0(panel, "_longitudinal_by_case_non_case.pdf")
     ggsave(plot = f_2[[i]], filename = paste0(save.results.to, file_name), width = 16, height = 11)
@@ -111,7 +113,7 @@ for (t in c("BD1","BD29","DeltaBD29overBD1")) {
         strata = "all_one",
         weight = "wt.BD29",
         plot_title = paste0(
-            "Correlations of 15 ", t, " antibody markers, Corr = Resampling-based (on IPW) Simple Spearman Rank Correlation."
+            "Correlations of 9 ", t, " antibody markers, Corr = Resampling-based (on IPW) Simple Spearman Rank Correlation."
         ),
         column_labels = paste(t, assay_metadata$assay_label_short),
         height = max(1.3 * length(assays) + 0.1, 5.5),
@@ -119,14 +121,13 @@ for (t in c("BD1","BD29","DeltaBD29overBD1")) {
         column_label_size = ifelse(max(nchar(paste(t, assay_metadata$assay_label_short)))>40, 3.3, 3.8),
         filename = paste0(
             save.results.to, "/pairs_by_time_", t,
-            "_15_markers.pdf"
+            "_9_markers.pdf"
         )
     )
 
 
     # 6 markers, three timepoints
     assay_metadata_sub <- subset(assay_metadata, assay %in% c("bindSpike", "bindSpike_BA.1",
-                                                              "bindRBD", "bindRBD_BA.1",
                                                               "pseudoneutid50", "pseudoneutid50_BA.1"))
     covid_corr_pairplots(
         plot_dat = dat.cor.subset.plot3,
@@ -137,7 +138,7 @@ for (t in c("BD1","BD29","DeltaBD29overBD1")) {
         # strata-based model is currently commented out in the function, ggally_statistic_resample
         weight = "wt.BD29",
         plot_title = paste0(
-            "Correlations of 6 ", t, " antibody markers, Corr = Weighted Spearman Rank Correlation."
+            "Correlations of 4 ", t, " antibody markers, Corr = Weighted Spearman Rank Correlation."
         ),
         column_labels = paste(t, assay_metadata_sub$assay_label_short),
         height = max(1.3 * length(assay_metadata_sub$assay) + 0.1, 5.5),
@@ -145,7 +146,7 @@ for (t in c("BD1","BD29","DeltaBD29overBD1")) {
         column_label_size = ifelse(max(nchar(paste(t, assay_metadata_sub$assay_label_short)))>40, 3.3, 4.3),
         filename = paste0(
             save.results.to, "/pairs_by_time_", t,
-            "_6_markers.pdf"
+            "_4_markers.pdf"
         )
     )
 }
