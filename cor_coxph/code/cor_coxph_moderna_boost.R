@@ -1,6 +1,7 @@
+renv::activate(project = here::here(".."))     
+
 #Sys.setenv(TRIAL = "moderna_boost"); Sys.setenv(VERBOSE = 1)
 
-renv::activate(project = here::here(".."))     
 source(here::here("..", "_common.R"))
 source("code/params.R")
 
@@ -77,7 +78,8 @@ myprint(prev.naive, prev.nnaive)
 
 
 for (iObj in 1:2) {
-
+# iObj=1
+  
   if (iObj==1) {
     all.markers = paste0("BD29", obj.assays)
   } else if (iObj==2) {
@@ -86,8 +88,8 @@ for (iObj in 1:2) {
   names(all.markers)=all.markers
 
   # loop through naive and nonnaive
-  for (idat in 1:2) {
-    # idat=1
+  for (idat in 2:2) {
+    # idat=2
     
     myprint(idat)
     if (idat==1) {dat.ph1 = dat.naive;  save.results.to = glue("{save.results.to.0}/obj{iObj}_naive/")}

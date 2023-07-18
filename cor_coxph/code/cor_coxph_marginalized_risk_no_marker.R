@@ -34,7 +34,11 @@ if(!file.exists(paste0(save.results.to, "marginalized.risk.no.marker.Rdata"))) {
       if (verbose>=2) myprint(seed) 
       
       if (TRIAL=="moderna_boost") {
-        dat.b = bootstrap.cove.boost.2(dat.ph1, seed)
+        dat.b = try(bootstrap.cove.boost.2(dat.ph1, seed))
+        while (inherits(dat.b, "try-error")) {
+          print("try again")
+          dat.b = try(bootstrap.cove.boost.2(dat.ph1, seed))
+        }
         
       } else if(config$sampling_scheme=="case_cohort") {
         dat.b = get.bootstrap.data.cor(dat.ph1, ptids.by.stratum, seed)
