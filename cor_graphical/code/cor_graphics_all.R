@@ -63,9 +63,7 @@ for (panel in c("pseudoneutid50", "bindSpike","bindRBD")){
 }
 
 # bindSpike D614, Gamma, Alpha, Beta, Delta, BA.1, at BD1, BD29, BD29-BD1
-# bindRBD D614, Gamma, Alpha, Beta, Delta, BA.1, at BD1, BD29, BD29-BD1
-for (panel in c("bindSpike"#(T & test_moderna_booster),"bindRBD"
-                )){
+for (panel in c("bindSpike")){
     
     f_1 <- f_case_non_case_by_time_assay(
         dat = dat.longer.cor.subset.plot1,
@@ -82,10 +80,7 @@ for (panel in c("bindSpike"#(T & test_moderna_booster),"bindRBD"
 }
 
 ###### Set 2 plots: Longitudinal plots BD1 to BD29 (and to DD1)
-set2_assays = assays[!grepl("_Alpha|_Beta|_Delta|_Gamma", assays)]
-if (T & test_moderna_booster) {set2_assays = set2_assays[!set2_assays=="bindRBD"]}
-# bindN 614G and BA.1 non-cases and cases, at BD1, BD29, DD1
-# bindRBD 614G and BA.1 non-cases and cases, at BD1, BD29, DD1
+set2_assays = c("bindSpike","bindSpike_BA.1","pseudoneutid50","pseudoneutid50_BA.1")
 # bindSpike 614G and BA.1 non-cases and cases, at BD1, BD29, DD1
 # ID50 614G and BA.1 non-cases and cases, at BD1, BD29, DD1
 f_2 <- f_longitude_by_assay(
@@ -104,7 +99,7 @@ for (i in 1:length(c("bindSpike","pseudoneutid50"))){
 
 
 ###### Set 3 plots: Correlation plots across markers at a given time point
-# 15 markers, three timepoints
+# 9 markers, three timepoints
 for (t in c("BD1","BD29","DeltaBD29overBD1")) {
     covid_corr_pairplots(
         plot_dat = dat.cor.subset.plot3,
@@ -113,7 +108,7 @@ for (t in c("BD1","BD29","DeltaBD29overBD1")) {
         strata = "all_one",
         weight = "wt.BD29",
         plot_title = paste0(
-            "Correlations of 9 ", t, " antibody markers, Corr = Resampling-based (on IPW) Simple Spearman Rank Correlation."
+            "Correlations of 9 ", t, " antibody markers, Corr = Weighted Spearman Rank Correlation."
         ),
         column_labels = paste(t, assay_metadata$assay_label_short),
         height = max(1.3 * length(assays) + 0.1, 5.5),
@@ -126,7 +121,7 @@ for (t in c("BD1","BD29","DeltaBD29overBD1")) {
     )
 
 
-    # 6 markers, three timepoints
+    # 4 markers, three timepoints
     assay_metadata_sub <- subset(assay_metadata, assay %in% c("bindSpike", "bindSpike_BA.1",
                                                               "pseudoneutid50", "pseudoneutid50_BA.1"))
     covid_corr_pairplots(
@@ -153,7 +148,7 @@ for (t in c("BD1","BD29","DeltaBD29overBD1")) {
 
 
 ###### Set 4 plots: Correlation plots for a given marker across time points
-# 15 markers
+# 9 markers
 for (a in assays){
     panels_set <- list()
     i <- 1
