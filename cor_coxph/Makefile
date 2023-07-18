@@ -8,7 +8,7 @@ clean:
 ## cor_coxph     : create tables and figures
 cor_coxph:
 ifeq ($(TRIAL),$(filter $(TRIAL), moderna_boost))
-	Rscript code/cor_coxph_cove_boost.R
+	Rscript code/cor_coxph_moderna_boost.R
 
 endif
 

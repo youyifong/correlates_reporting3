@@ -1,6 +1,6 @@
 {
   "R": {
-    "Version": "4.1.2",
+    "Version": "4.0.4",
     "Repositories": [
       {
         "Name": "CRAN",
@@ -1079,15 +1079,15 @@
     },
     "kyotil": {
       "Package": "kyotil",
-      "Version": "2023.4-26",
+      "Version": "2023.7-15",
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
-      "RemoteRepo": "kyotil",
       "RemoteUsername": "youyifong",
-      "RemoteRef": "HEAD",
-      "RemoteSha": "25e66a8adf24107dad627d96c5bf00b972069331",
-      "Hash": "764ec04f2babca28d5a0cd2a05b124a6"
+      "RemoteRepo": "kyotil",
+      "RemoteRef": "master",
+      "RemoteSha": "229c76a7972dcd12906a9bf40bb28e78b7607096",
+      "Hash": "2a5f1252fd393075db80cbe0dba3e7b7"
     },
     "labeling": {
       "Package": "labeling",
@@ -1224,8 +1224,8 @@
       "RemoteRepo": "marginalizedRisk",
       "RemoteUsername": "youyifong",
       "RemoteRef": "HEAD",
-      "RemoteSha": "f2722dd9eb5adddc6239acd73c2cdd353536c990",
-      "Hash": "1933d5cdb6e7ea276fffe398403c32d9"
+      "RemoteSha": "ef9625ed8cda59b1fc16bc991b781800c66edf02",
+      "Hash": "c4337823c55443a4b1fc0543763bc065"
     },
     "markdown": {
       "Package": "markdown",
@@ -1701,10 +1701,8 @@
     },
     "renv": {
       "Package": "renv",
-      "Version": "0.17.3",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "4543b8cd233ae25c6aba8548be9e747e"
+      "Version": "0.13.2",
+      "Source": "Repository"
     },
     "repr": {
       "Package": "repr",
@@ -1983,17 +1981,17 @@
     },
     "survey": {
       "Package": "survey",
-      "Version": "4.1-1",
+      "Version": "4.0",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "8aec2bc6533a6d1e6ef43bbf0c20205a"
+      "Hash": "c1108185333d7187ebd17f033b942ecb"
     },
     "survival": {
       "Package": "survival",
-      "Version": "3.5-5",
+      "Version": "3.2-10",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "d683341b1fa2e8d817efde27d6e6d35b"
+      "Hash": "6b7453cd9bb32b12577c78d54eeea56a"
     },
     "svglite": {
       "Package": "svglite",

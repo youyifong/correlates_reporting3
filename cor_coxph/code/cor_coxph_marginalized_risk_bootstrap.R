@@ -8,7 +8,7 @@
 # t: a time point near to the time of the last observed outcome will be defined
 
 marginalized.risk.svycoxph.boot=function(marker.name, type, data, t, B, ci.type="quantile", numCores=1) {  
-  # marker.name=a; type=2; data=dat.ph1; t=tfinal.tpeak; B=B; ci.type="quantile"; numCores=1
+  # marker.name=a; type=1; data=dat.ph1; t=tfinal.tpeak; B=B; ci.type="quantile"; numCores=1
   
   # store the current rng state 
   save.seed <- try(get(".Random.seed", .GlobalEnv), silent=TRUE) 
@@ -87,7 +87,8 @@ marginalized.risk.svycoxph.boot=function(marker.name, type, data, t, B, ci.type=
     
   } else if (type==2) {
     # conditional on S>=s
-    ss=quantile(data[[marker.name]], seq(0,.9,by=0.05), na.rm=TRUE); if(verbose) myprint(ss)
+    # hack 0.9 to 0.5, otherwise lots of errors: No (non-missing) observations 
+    ss=quantile(data[[marker.name]], seq(0,.5,by=0.05), na.rm=TRUE); if(verbose) myprint(ss)
     prob = fc.2(data.ph2)        
     
   } else if (type==3) {
@@ -107,7 +108,7 @@ marginalized.risk.svycoxph.boot=function(marker.name, type, data, t, B, ci.type=
   } else stop("wrong type")
   
   # bootstrap
-  if(config$case_cohort) ptids.by.stratum=get.ptids.by.stratum.for.bootstrap (data)     
+  if(config$sampling_scheme=="case_cohort") ptids.by.stratum=get.ptids.by.stratum.for.bootstrap (data)     
   seeds=1:B; names(seeds)=seeds
   out=mclapply(seeds, mc.cores = numCores, FUN=function(seed) {   
     seed=seed+560
@@ -170,7 +171,7 @@ marginalized.risk.svycoxph.boot=function(marker.name, type, data, t, B, ci.type=
 
 
 
-if(!file.exists(paste0(save.results.to, save.file.label%.%".marginalized.risk.Rdata"))) {    
+if(!file.exists(paste0(save.results.to, "marginalized.risk.Rdata"))) {    
   cat("make marginalized.risk\n")
   
   # vaccine arm, conditional on continuous S=s
@@ -194,12 +195,12 @@ if(!file.exists(paste0(save.results.to, save.file.label%.%".marginalized.risk.Rd
     marginalized.risk.svycoxph.boot(marker.name=a%.%"cat", type=3, data=dat.ph1, tfinal.tpeak, B=B, ci.type="quantile", numCores=numCores)                
   })    
   
-  save(risks.all.1, risks.all.2, risks.all.3, file=paste0(save.results.to, save.file.label%.%".marginalized.risk.Rdata"))
+  save(risks.all.1, risks.all.2, risks.all.3, file=paste0(save.results.to, "marginalized.risk.Rdata"))
   
 } else {
-  load(paste0(save.results.to, save.file.label%.%".marginalized.risk.Rdata"))
+  load(paste0(save.results.to, "marginalized.risk.Rdata"))
 }
-write(ncol(risks.all.1[[1]]$boot), file=paste0(save.results.to, "bootstrap_replicates_"%.%save.file.label))
+write(ncol(risks.all.1[[1]]$boot), file=paste0(save.results.to, "bootstrap_replicates"))
 #rv$marginalized.risk.S.eq.s=list()
 #for (a in assays) rv$marginalized.risk.S.eq.s[[a]] = risks.all.1[[a]][c("marker","prob")]
 #rv$marginalized.risk.S.geq.s=list()
@@ -213,7 +214,7 @@ write(ncol(risks.all.1[[1]]$boot), file=paste0(save.results.to, "bootstrap_repli
 if (!is.null(config$interaction)) {
   if(verbose) print("Interaction models")
   
-  if(!file.exists(paste0(save.results.to, save.file.label%.%".itxn.marginalized.risk.Rdata"))) {    
+  if(!file.exists(paste0(save.results.to, "itxn.marginalized.risk.Rdata"))) {    
     cat("make itxn.marginalized.risk\n")
     
     risks.itxn=list()      
@@ -312,10 +313,10 @@ if (!is.null(config$interaction)) {
       } # end inner.id
       
     }
-    save(risks.itxn, file=paste0(save.results.to, save.file.label%.%".itxn.marginalized.risk.Rdata"))
+    save(risks.itxn, file=paste0(save.results.to, "itxn.marginalized.risk.Rdata"))
     
   } else {
-    load(paste0(save.results.to, save.file.label%.%".itxn.marginalized.risk.Rdata"))
+    load(paste0(save.results.to, "itxn.marginalized.risk.Rdata"))
   }
 }
 
