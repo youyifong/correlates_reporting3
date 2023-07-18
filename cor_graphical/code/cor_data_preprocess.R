@@ -18,25 +18,34 @@ dat.cp <- dat
 # assign values above the uloq to the uloq
 for (a in assays){
   for (t in c("BD1","BD29","DD1")){
-    dat.cp[, paste0(t, a)] = ifelse(dat.cp[, paste0(t, a)] > log10(uloqs[a]), log10(uloqs[a]), dat.cp[, paste0(t, a)])
+    if (paste0(t, a) %in% colnames(dat.cp)){
+      dat.cp[, paste0(t, a)] = ifelse(dat.cp[, paste0(t, a)] > log10(uloqs[a]), log10(uloqs[a]), dat.cp[, paste0(t, a)])
+    } else {print(paste0(t, a, " doesn't exist"))}
   }
 }
 
 # recalculate DeltaBD29overBD1 after the censoring above in order to calculate the response rate for cases at DD1
 for (a in assays){
-  dat.cp[, paste0("DeltaBD29overBD1", a)] = dat.cp[, paste0("BD29", a)] - dat.cp[, paste0("BD1", a)]
+  if (paste0("BD29", a) %in% colnames(dat.cp) & paste0("BD1", a) %in% colnames(dat.cp)){
+    dat.cp[, paste0("DeltaBD29overBD1", a)] = dat.cp[, paste0("BD29", a)] - dat.cp[, paste0("BD1", a)]
+  } else {print(paste0("BD1", a, "or BD29", a, " doesn't exist"))}
 }
 
 # calculate DeltaBD57overBD1 in order to calculate the response rate for cases at DD1
 for (a in assays){
-  dat.cp[, paste0("DeltaDD1overBD1", a)] = dat.cp[, paste0("DD1", a)] - dat.cp[, paste0("BD1", a)]
+  if (paste0("DD1", a) %in% colnames(dat.cp) & paste0("BD1", a) %in% colnames(dat.cp)){
+    dat.cp[, paste0("DeltaDD1overBD1", a)] = dat.cp[, paste0("DD1", a)] - dat.cp[, paste0("BD1", a)]
+  } else {print(paste0("BD1", a, "or DD1", a, " doesn't exist"))}
 }
 
+immuno_vars <- colnames(dat.cp)[grepl("^BD1|^BD29|^DD1|^Delta", colnames(dat.cp))]
+
 # variable selection
-dat <- dat.cp %>% select(Ptid, Trt, CalendarBD1Date, CalendarBD1Interval, nnaive, BD1bindSpike:DD1bindRBD_Delta,
-                      AnyinfectionBD1, EventTimeOmicronBD1:EventIndOmicronBD29, EventIndPrimary, EventTimePrimary, 
+dat <- dat.cp %>% select(Ptid, Trt, CalendarBD1Date, CalendarBD1Interval, nnaive,
+                         BDPerprotocolIncludeSeroPos, Stage2SamplingInd, 
+                      EventTimeOmicronBD1:EventIndOmicronBD29, EventIndPrimary, EventTimePrimary, 
                       ph2.BD29, wt.BD29, wt.DD1,
-                      DeltaBD29overBD1bindSpike: DeltaDD1overBD1pseudoneutid50_BA.1)
+                      all_of(immuno_vars))
 
 # create case vs non-case indicators
 # Case = COVID-19 endpoint in the interval [≥ 7 days post BD29 and ≥ Dec 1 2021, May 2022 data base lock date]. As described in the appendix the COVID-19 endpoint is documented to be Omicron BA.1 if possible whereas for some non-naive COVID-19 endpoints there was not lineage data available to document the case to be Omicron BA.1.
@@ -44,9 +53,9 @@ dat <- dat.cp %>% select(Ptid, Trt, CalendarBD1Date, CalendarBD1Interval, nnaive
 if (study_name=="COVEBoost") {
   dat <- dat %>%
     mutate(cohort_event = factor(
-      case_when(EventIndPrimary == 1 & EventTimePrimary >= 7 & (as.Date(CalendarBD1Date) + EventTimeOmicronBD1) >= "2021-12-31" 
+      case_when(BDPerprotocolIncludeSeroPos==1 & EventIndOmicronBD29==1 & EventTimeOmicronBD29>=7 & Stage2SamplingInd==1 
                 ~ "Omicron Cases",
-                AnyinfectionBD1 == 0 & EventIndOmicronBD1 == 0 ~ "Non-Cases"),
+                BDPerprotocolIncludeSeroPos==1 & EventIndOmicronBD29==0 & Stage2SamplingInd==1 ~ "Non-Cases"),
       levels = c("Omicron Cases", "Non-Cases"))
       )
 }
