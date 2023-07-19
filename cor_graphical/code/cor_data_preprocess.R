@@ -53,9 +53,9 @@ dat <- dat.cp %>% select(Ptid, Trt, CalendarBD1Date, CalendarBD1Interval, nnaive
 if (study_name=="COVEBoost") {
   dat <- dat %>%
     mutate(cohort_event = factor(
-      case_when(BDPerprotocolIncludeSeroPos==1 & EventIndOmicronBD29==1 & EventTimeOmicronBD29>=7 & Stage2SamplingInd==1 
+      case_when(BDPerprotocolIncludeSeroPos==1 & BD29window==1 & EventIndPrimaryOmicronBD29==1 & EventTimePrimaryOmicronBD29>=7 & Stage2SamplingInd==1 
                 ~ "Omicron Cases",
-                BDPerprotocolIncludeSeroPos==1 & EventIndOmicronBD29==0 & Stage2SamplingInd==1 ~ "Non-Cases"),
+                BDPerprotocolIncludeSeroPos==1 & BD29window==1 & EventIndPrimaryOmicronBD1==0 & Stage2SamplingInd==1  ~ "Non-Cases"),
       levels = c("Omicron Cases", "Non-Cases"))
       )
 }
