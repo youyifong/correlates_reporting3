@@ -87,7 +87,8 @@ set2_assays = c("bindSpike","bindSpike_BA.1","pseudoneutid50","pseudoneutid50_BA
 f_2 <- f_longitude_by_assay(
     dat = dat.longer.cor.subset.plot1,
     assays = set2_assays,
-    times = c("BD1","BD29","DD1")
+    times = c("BD1","BD29","DD1"),
+    panel.text.size = 6
 )
 
 for (i in 1:length(c("bindSpike","pseudoneutid50"))){

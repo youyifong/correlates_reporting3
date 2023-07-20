@@ -187,11 +187,11 @@ f_longitude_by_assay <- function(
     
     plot_theme <- theme_bw() +
         theme(plot.title = element_text(hjust = 0.5),
-              axis.text.x = element_text(size = 9),
+              axis.text.x = element_text(size = 9.5),
               axis.text.y = element_text(size = 18),
               axis.title = element_text(size = 24, face="bold"),
-              strip.text.x = element_text(size = 18), # facet label size
-              strip.text.y = element_text(size = 18),
+              strip.text.x = element_text(size = 25), # facet label size
+              strip.text.y = element_text(size = 25),
               strip.background = element_rect(fill=NA,colour=NA),
               strip.placement = "outside",
               legend.position = "bottom", 
