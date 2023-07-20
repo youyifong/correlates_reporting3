@@ -45,15 +45,15 @@ print(paste0("save.results.to equals ", save.results.to))
 set1_times <- c("BD1","BD29","DeltaBD29overBD1")
 # ID50 614G and BA.1, at BD1, BD29, BD29-BD1
 # bindSpike 614G and BA.1, at BD1, BD29, BD29-BD1
-# bindRBD 614G and BA.1, at BD1, BD29, BD29-BD1
-for (panel in c("pseudoneutid50", "bindSpike","bindRBD")){
+for (panel in c("pseudoneutid50", "bindSpike")){
     
     f_1 <- f_case_non_case_by_time_assay(
         dat = dat.longer.cor.subset.plot1,
         assays = paste0(panel,c("","_BA.1")),
         times = set1_times,
-        axis.x.text.size = 18,
-        strip.x.text.size = 18)
+        axis.x.text.size = 28,
+        strip.x.text.size = 25,
+        panel.text.size = 8)
     
     for (i in 1:length(set1_times)){
         
@@ -69,8 +69,9 @@ for (panel in c("bindSpike")){
         dat = dat.longer.cor.subset.plot1,
         assays = paste0(panel,c("", "_Gamma", "_Alpha", "_Beta", "_Delta", "_BA.1")),
         times = set1_times,
-        axis.x.text.size = 10,
-        strip.x.text.size = 10)
+        axis.x.text.size = 11,
+        strip.x.text.size = 12,
+        panel.text.size = 4.5)
     
     for (i in 1:length(set1_times)){
         

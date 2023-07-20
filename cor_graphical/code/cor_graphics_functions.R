@@ -110,13 +110,13 @@ f_case_non_case_by_time_assay <-
              strip.x.text.size = 18
              ) {
         
-    plot_theme <- theme_bw() +
+    plot_theme <- theme_bw(base_size = 25) +
         theme(plot.title = element_text(hjust = 0.5),
               axis.text.x = element_text(size = axis.x.text.size),
-              axis.text.y = element_text(size = 18),
+              axis.text.y = element_text(size = 25),
               axis.title = element_text(size = 24, face="bold"),
               strip.text.x = element_text(size = strip.x.text.size), # facet label size
-              strip.text.y = element_text(size = 18),
+              strip.text.y = element_text(size = 25),
               strip.background = element_rect(fill=NA,colour=NA),
               strip.placement = "outside",
               legend.position = "bottom", 
@@ -142,7 +142,7 @@ f_case_non_case_by_time_assay <-
             ggplot(data = d, aes(x = cohort_event, y = value, color = cohort_event)) +
                 facet_grid(Trt_nnaive ~ assay_label_short) +
                 geom_violin(scale = "width", na.rm = TRUE, show.legend = FALSE) +
-                geom_jitter(aes(color = cohort_col, shape = cohort_col), width = 0.1, height = 0, size = 1.5, show.legend = TRUE) +
+                geom_jitter(aes(color = cohort_col, shape = cohort_col), width = 0.1, height = 0, size = 2, show.legend = TRUE) +
                 geom_boxplot(width = 0.25, lwd = 1.5, alpha = 0.3, stat = "boxplot", outlier.shape = NA, show.legend = FALSE) +
                 # The lower and upper hinges correspond to the first and third quartiles (the 25th and 75th percentiles)
                 # Whisker: Q3 + 1.5 IQR
