@@ -11,8 +11,8 @@ times=c("BD1","BD29","DD1","DeltaBD29overBD1","DeltaDD1overBD1")
 uloqs=assay_metadata$uloq; names(uloqs)=assays
 pos.cutoffs=assay_metadata$pos.cutoff; names(pos.cutoffs)=assays
 
-dat$EventIndPrimary=dat$EventIndOmicronBD29
-dat$EventTimePrimary=dat$EventTimeOmicronBD29
+#dat$EventIndPrimary=dat$EventIndOmicronBD29
+#dat$EventTimePrimary=dat$EventTimeOmicronBD29
 dat.cp <- dat
 
 # assign values above the uloq to the uloq
@@ -43,7 +43,9 @@ immuno_vars <- colnames(dat.cp)[grepl("^BD1|^BD29|^DD1|^Delta", colnames(dat.cp)
 # variable selection
 dat <- dat.cp %>% select(Ptid, Trt, CalendarBD1Date, CalendarBD1Interval, nnaive,
                          BDPerprotocolIncludeSeroPos, Stage2SamplingInd, 
-                      EventTimeOmicronBD1:EventIndOmicronBD29, EventIndPrimary, EventTimePrimary, 
+                      EventTimeOmicronBD1:EventIndOmicronBD29, 
+                      EventTimePrimaryOmicronBD1:EventIndPrimaryOmicronBD29, 
+                      #EventIndPrimary, EventTimePrimary, 
                       ph2.BD29, wt.BD29, wt.DD1,
                       all_of(immuno_vars))
 
