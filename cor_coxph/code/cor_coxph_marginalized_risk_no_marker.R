@@ -35,9 +35,8 @@ if(!file.exists(paste0(save.results.to, "marginalized.risk.no.marker.Rdata"))) {
       
       if (TRIAL=="moderna_boost") {
         dat.b = try(bootstrap.cove.boost.2(dat.ph1, seed))
-        while (inherits(dat.b, "try-error")) {
-          print("try again")
-          dat.b = try(bootstrap.cove.boost.2(dat.ph1, seed))
+        if (inherits(dat.b, "try-error")) {
+          stop("error in bootstrap.cove.boost.2")
         }
         
       } else if(config$sampling_scheme=="case_cohort") {
@@ -52,7 +51,7 @@ if(!file.exists(paste0(save.results.to, "marginalized.risk.no.marker.Rdata"))) {
     # restore rng state 
     assign(".Random.seed", save.seed, .GlobalEnv)    
     
-    marginalized.risk.no.marker = list(est=c(prob, quantile(boot, c(.025,.975) )), boot=boot)      
+    marginalized.risk.no.marker = list(est=c(prob, quantile(boot, c(.025,.975), na.rm=T )), boot=boot)      
 
     save(marginalized.risk.no.marker, file=paste0(save.results.to, "marginalized.risk.no.marker.Rdata"))
     

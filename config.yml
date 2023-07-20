@@ -11,8 +11,8 @@ moderna_boost: &moderna_boost
   ve_ylim: [0,1]
   ve_ylim_log: [0.0,0.98]
   low_efficacy: no
-  num_boot_replicates: 10
-  num_perm_replicates: 10
+  num_boot_replicates: 1000
+  num_perm_replicates: 10000
   ph1: [ph1.BD29]
   endpoints: [EventIndOmicron]
   txt.coxph.note2: No. at-risk = estimated number in the population for analysis, i.e. baseline negative per-protocol vaccine recipients not experiencing the COVID endpoint or infected through 6 days post BD29 visit; no. cases = number of this cohort with an observed COVID endpoint. 

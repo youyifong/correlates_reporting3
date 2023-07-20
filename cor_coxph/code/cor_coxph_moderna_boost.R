@@ -1,7 +1,6 @@
 renv::activate(project = here::here(".."))     
 
 #Sys.setenv(TRIAL = "moderna_boost"); Sys.setenv(VERBOSE = 1)
-
 source(here::here("..", "_common.R"))
 source("code/params.R")
 
@@ -88,7 +87,7 @@ for (iObj in 1:2) {
   names(all.markers)=all.markers
 
   # loop through naive and nonnaive
-  for (idat in 2:2) {
+  for (idat in 1:1) {
     # idat=2
     
     myprint(idat)
