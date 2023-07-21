@@ -85,10 +85,6 @@ if (!is.null(config$primary_assays)) {
         p.unadj=c()
     }
 }
-if (study_name=="PREVENT19") {
-    # bindSpike tertiary has no cases in the upper tertile, cannot do P value
-    p.unadj = p.unadj[startsWith(names(p.unadj), "cont."), drop=F]
-}
 
 # Holm and FDR adjustment
 pvals.adj.fdr=p.adjust(p.unadj, method="fdr")
@@ -97,7 +93,8 @@ pvals.adj.hol=p.adjust(p.unadj, method="holm")
 if (length(p.unadj)>1) {
         
     #### Westfall and Young permutation-based adjustment
-    if(!file.exists(paste0(save.results.to, "pvals.perm.",study_name,".Rdata"))) {
+    perm.file.name=paste0(save.results.to,"pvals.perm.Rdata")
+    if(!file.exists(perm.file.name)) {
         
         dat.ph2 = design.1$phase1$sample$variables
         design.1.perm=design.1
@@ -107,7 +104,6 @@ if (length(p.unadj)>1) {
     #    if (!"liveneutmn50" %in% assays) numPerm=5
         
         # TODO: there is no need to permutate all.markers
-        
         out=mclapply(1:numPerm, mc.cores = numCores, FUN=function(seed) {   
             # store the current rng state 
             save.seed <- try(get(".Random.seed", .GlobalEnv), silent=TRUE) 
@@ -145,18 +141,20 @@ if (length(p.unadj)>1) {
             out
         })
         pvals.perm=do.call(rbind, out)
-        save(pvals.perm, file=paste0(save.results.to, "pvals.perm."%.%study_name%.%".Rdata"))
+        save(pvals.perm, file=perm.file.name)
         
     } else {
-        load(file=paste0(save.results.to, "pvals.perm."%.%study_name%.%".Rdata"))
+        load(file=perm.file.name)
     }
     # save number of permutation replicates
-    write(nrow(pvals.perm), file=paste0(save.results.to, "permutation_replicates_"%.%study_name))
+    write(nrow(pvals.perm), file=paste0(save.results.to, "permutation_replicates"))
     
     
     if(any(is.na(p.unadj))) {
         pvals.adj = cbind(p.unadj=p.unadj, p.FWER=NA, p.FDR=NA)
     } else {
+        #print(colnames(pvals.perm))
+        #print(p.unadj)
         pvals.adj = p.adj.perm (p.unadj, pvals.perm[,names(p.unadj)], alpha=1)  
     }
     if(verbose) print(pvals.adj)
@@ -164,7 +162,7 @@ if (length(p.unadj)>1) {
 } else {
     print("not doing Westfall and Young")
     pvals.adj=cbind(p.unadj, p.FWER=pvals.adj.hol, p.FDR=pvals.adj.fdr)
-    write(NA, file=paste0(save.results.to, "permutation_replicates_"%.%study_name))     # so the rmd file can compile
+    write(NA, file=paste0(save.results.to, "permutation_replicates"))     # so the rmd file can compile
 }
 
 
@@ -172,35 +170,18 @@ if (length(p.unadj)>1) {
 # since we take ID80 out earlier, we may need to add it back for the table and we do it with the help of p.unadj.1
 pvals.adj = cbind(p.unadj=p.unadj.1, pvals.adj[match(names(p.unadj.1), rownames(pvals.adj)),2:3, drop=F])
 
-if (study_name=="PREVENT19") {
-    # bindSpike tertiary has no cases in the upper tertile, cannot do P value
-    # this code somehow works even though there are also RBD and ID50
-    pvals.adj=rbind(pvals.adj, tri.Day35bindSpike=c(NA,NA,NA))
-}
-
 
 ###################################################################################################
 # make continuous markers table
 
 p.1=formatDouble(pvals.adj["cont."%.%names(pvals.cont),"p.FWER"], 3, remove.leading0=F); p.1=sub("0.000","<0.001",p.1)
 p.2=formatDouble(pvals.adj["cont."%.%names(pvals.cont),"p.FDR" ], 3, remove.leading0=F); p.2=sub("0.000","<0.001",p.2)
-#if (study_name=="COVE" | study_name=="MockCOVE") {
-#    p.1[endsWith(names(p.1), "pseudoneutid50")] = "N/A"
-#    p.2[endsWith(names(p.2), "pseudoneutid50")] = "N/A"
-#    p.1[endsWith(names(p.1), "bindRBD")] = "N/A"
-#    p.2[endsWith(names(p.2), "bindRBD")] = "N/A"
-#}
-
-## if want to only do multitesting when liveneutmn50 is included
-#if (!"liveneutmn50" %in% assays) {
-#    for (i in 1:length(p.1)) p.1[i]<-p.2[i]<-"N/A"
-#}
 
 
 tab.1=cbind(paste0(nevents, "/", format(natrisk, big.mark=",")), t(est), t(ci), t(p), p.2, p.1)
 # rownames(tab.1)=all.markers.names.short
 tab.1
-mytex(tab.1, file.name="CoR_univariable_svycoxph_pretty_"%.%study_name, align="c", include.colnames = F, save2input.only=T, input.foldername=save.results.to,
+mytex(tab.1, file.name="CoR_univariable_svycoxph_pretty", align="c", include.colnames = F, save2input.only=T, input.foldername=save.results.to,
     col.headers=paste0("\\hline\n 
          \\multicolumn{1}{l}{", study_name, "} & \\multicolumn{1}{c}{No. cases /}   & \\multicolumn{2}{c}{HR per 10-fold incr.}                     & \\multicolumn{1}{c}{P-value}   & \\multicolumn{1}{c}{q-value}   & \\multicolumn{1}{c}{FWER} \\\\ 
          \\multicolumn{1}{l}{Immunologic Marker}            & \\multicolumn{1}{c}{No. at-risk**} & \\multicolumn{1}{c}{Pt. Est.} & \\multicolumn{1}{c}{95\\% CI} & \\multicolumn{1}{c}{(2-sided)} & \\multicolumn{1}{c}{***} & \\multicolumn{1}{c}{} \\\\ 
@@ -220,7 +201,7 @@ tab.1.nop12=cbind(paste0(nevents, "/", format(natrisk, big.mark=",")), t(est), t
 tab.1.scaled=cbind(paste0(nevents, "/", format(natrisk, big.mark=",")), t(est.scaled), t(ci.scaled), t(p), p.2, p.1)
 # rownames(tab.1.scaled)=all.markers.names.short
 tab.1.scaled
-mytex(tab.1.scaled, file.name="CoR_univariable_svycoxph_pretty_scaled_"%.%study_name, align="c", include.colnames = F, save2input.only=T, input.foldername=save.results.to,
+mytex(tab.1.scaled, file.name="CoR_univariable_svycoxph_pretty_scaled", align="c", include.colnames = F, save2input.only=T, input.foldername=save.results.to,
     col.headers=paste0("\\hline\n 
          \\multicolumn{1}{l}{", study_name, "} & \\multicolumn{1}{c}{No. cases /}   & \\multicolumn{2}{c}{HR per SD incr.}                     & \\multicolumn{1}{c}{P-value}   & \\multicolumn{1}{c}{q-value}   & \\multicolumn{1}{c}{FWER} \\\\ 
          \\multicolumn{1}{l}{Immunologic Marker}            & \\multicolumn{1}{c}{No. at-risk**} & \\multicolumn{1}{c}{Pt. Est.} & \\multicolumn{1}{c}{95\\% CI} & \\multicolumn{1}{c}{(2-sided)} & \\multicolumn{1}{c}{***} & \\multicolumn{1}{c}{} \\\\ 
@@ -271,7 +252,7 @@ tab.cat=tab[1:(nrow(tab)),]
 #cond.plac=dat.pla.seroneg[[config$EventTimePrimary]]<=tfinal.tpeak # not used anymore
 
 # use longtable because this table could be long, e.g. in hvtn705second
-mytex(tab[1:(nrow(tab)),], file.name="CoR_univariable_svycoxph_cat_pretty_"%.%study_name, align="c", include.colnames = F, save2input.only=T, input.foldername=save.results.to,
+mytex(tab[1:(nrow(tab)),], file.name="CoR_univariable_svycoxph_cat_pretty", align="c", include.colnames = F, save2input.only=T, input.foldername=save.results.to,
     col.headers=paste0("\\hline\n 
          \\multicolumn{1}{l}{", study_name, "} & \\multicolumn{1}{c}{Tertile}   & \\multicolumn{1}{c}{No. cases /}   & \\multicolumn{1}{c}{Attack}   & \\multicolumn{2}{c}{Haz. Ratio}                     & \\multicolumn{1}{c}{P-value}   & \\multicolumn{1}{c}{Overall P-}      & \\multicolumn{1}{c}{Overall q-}   & \\multicolumn{1}{c}{Overall} \\\\ 
          \\multicolumn{1}{l}{Immunologic Marker}            & \\multicolumn{1}{c}{}          & \\multicolumn{1}{c}{No. at-risk**} & \\multicolumn{1}{c}{rate}   & \\multicolumn{1}{c}{Pt. Est.} & \\multicolumn{1}{c}{95\\% CI} & \\multicolumn{1}{c}{(2-sided)} & \\multicolumn{1}{c}{value***} & \\multicolumn{1}{c}{value $\\dagger$} & \\multicolumn{1}{c}{FWER} \\\\ 
@@ -287,7 +268,7 @@ mytex(tab[1:(nrow(tab)),], file.name="CoR_univariable_svycoxph_cat_pretty_"%.%st
     #      )
     # ),
     longtable=T, 
-    label=paste0("tab:CoR_univariable_svycoxph_cat_pretty_", study_name), 
+    label=paste0("tab:CoR_univariable_svycoxph_cat_pretty"), 
     caption.placement = "top", 
     caption=paste0("Inference for Day ", tpeak, "antibody marker covariate-adjusted correlates of risk of ", config$txt.endpoint, " in the vaccine group: Hazard ratios for Middle vs. Upper tertile vs. Lower tertile*")
 )

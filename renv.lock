@@ -1,6 +1,6 @@
 {
   "R": {
-    "Version": "4.1.2",
+    "Version": "4.0.4",
     "Repositories": [
       {
         "Name": "CRAN",
@@ -937,7 +937,7 @@
       "RemoteUsername": "nhejazi",
       "RemoteRef": "master",
       "RemoteSha": "16350cc39b68e61566f03a11f633e08073405355",
-      "Hash": "47c34f41535fb9c16bd44e760d61cb67"
+      "Hash": "1b5958df7bd05b48da50266f92a1d327"
     },
     "haven": {
       "Package": "haven",
@@ -1079,15 +1079,15 @@
     },
     "kyotil": {
       "Package": "kyotil",
-      "Version": "2022.9-17",
+      "Version": "2023.7-22",
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
-      "RemoteRepo": "kyotil",
       "RemoteUsername": "youyifong",
-      "RemoteRef": "HEAD",
-      "RemoteSha": "38a6d0e9f63b568518c3a40c6c3e1904b2bcdea8",
-      "Hash":      "d51d9b607bbf27599a0f8503f908cd5d"
+      "RemoteRepo": "kyotil",
+      "RemoteRef": "master",
+      "RemoteSha": "8b1f51b5958292f00385a5c65f922c760410457e",
+      "Hash": "22130af86d22b591c07ff2993314ab43"
     },
     "labeling": {
       "Package": "labeling",
@@ -1701,10 +1701,10 @@
     },
     "renv": {
       "Package": "renv",
-      "Version": "0.14.0",
+      "Version": "0.13.2",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "30e5eba91b67f7f4d75d31de14bbfbdc"
+      "Hash": "079cb1f03ff972b30401ed05623cbe92"
     },
     "repr": {
       "Package": "repr",
@@ -1967,13 +1967,6 @@
       "Repository": "CRAN",
       "Hash": "72200a58cae0d7046e416e6be6d9d322"
     },
-    "speedglm": {
-      "Package": "speedglm",
-      "Version": "0.3-3",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "5955a9bd4ed0275ad45596a49d75946f"
-    },
     "stringi": {
       "Package": "stringi",
       "Version": "1.7.4",
@@ -2118,7 +2111,7 @@
       "RemoteUsername": "nhejazi",
       "RemoteRef": "master",
       "RemoteSha": "c0f572a638b019c057aee83c9f59f56acf1398db",
-      "Hash": "154f62a760f3f43838ea629efec3e5ae"
+      "Hash": "362ae555812ded051554a1136577d20f"
     },
     "usethis": {
       "Package": "usethis",

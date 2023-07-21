@@ -4,8 +4,23 @@ library(dplyr)
 library(marginalizedRisk)
 library(survival)
 library(parallel)
+library(kyotil)
+library(glue)
 
+if(Sys.getenv("TRIAL")=="") stop("Environmental variable TRIAL not defined!!!!!!!!!!!!!!")
+TRIAL=Sys.getenv("TRIAL")
+
+set.seed(98109)
+
+if(!exists("verbose")) verbose=0
+if (Sys.getenv("VERBOSE") %in% c("T","TRUE")) verbose=1
+if (Sys.getenv("VERBOSE") %in% c("1", "2", "3")) verbose=as.integer(Sys.getenv("VERBOSE"))
+
+
+
+###################################################################################################
 # disable lower level parallelization in favor of higher level of parallelization
+
 library(RhpcBLASctl)
 blas_get_num_procs()
 blas_set_num_threads(1L)
@@ -13,84 +28,421 @@ blas_set_num_threads(1L)
 omp_set_num_threads(1L)
 stopifnot(omp_get_max_threads() == 1L)
     
-set.seed(98109)
-    
-if(!exists("verbose")) verbose=0
-if (Sys.getenv("VERBOSE") %in% c("T","TRUE")) verbose=1
-if (Sys.getenv("VERBOSE") %in% c("1", "2", "3")) verbose=as.integer(Sys.getenv("VERBOSE"))
-    
-if(Sys.getenv("TRIAL")=="") stop(" *************************************  environmental variable TRIAL not defined  *************************************")
+# for mclapply etc
+# numCores <- unname(ifelse(Sys.info()["sysname"] == "Windows", 1, as.integer(future::availableCores()/2)))
+numCores=1
 
-# load config
+###################################################################################################
+# load config, assay metadata, define common variables and labels
+
 config <- config::get(config = Sys.getenv("TRIAL"))
 study_name=config$study_name
 
-assay_metadata = read.csv(config$assay_metadata)
+# created named lists for assay metadata to easier access, e.g. assay_labels_short["bindSpike"]
+assay_metadata = read.csv(paste0(dirname(attr(config,"file")),"/",config$assay_metadata))
 assays=assay_metadata$assay
+assay_labels=assay_metadata$assay_label; names(assay_labels)=assays
+assay_labels_short=assay_metadata$assay_label_short; names(assay_labels_short)=assays
+llox_labels=assay_metadata$llox_label; names(llox_labels)=assays
+lloqs=assay_metadata$lloq; names(lloqs)=assays
+lods=assay_metadata$lod; names(lods)=assays
+lloxs=ifelse(llox_labels=="lloq", lloqs, lods)
+
 
 form.s = Surv(EventTimePrimary, EventIndPrimary) ~ 1
 form.0 = update (form.s, as.formula(config$covariates))
 print(form.0)
 
+# read analysis ready data
+dat = read.csv(config$data_cleaned)
 
-############## Utility func
 
-# dat should be the ph2 dataset from a case control study
-# smaller of the two: 1) last case in dat, 2) last time to have 15 at risk in dat
-get.tfinal.tpeak.case.control.rule1 = function(dat, event.ind.col="EventIndPrimary", event.time.col="EventTimePrimary") {
+###############################################################################
+# compute tfinal.tpeak
+
+# returns smaller of the two: 1) time of the last case, 2) last time to have 15 at risk
+# use case: 1) dat.ph2 is the ph2 dataset from a case control study
+get.tfinal.tpeak.1 = function(dat.ph2, event.ind.col="EventIndPrimary", event.time.col="EventTimePrimary") {
   min(
-    max (dat[[event.time.col]] [dat[[event.ind.col]]==1]),
-    sort(dat[[event.time.col]], decreasing=T)[15]-1
+    max (dat.ph2[[event.time.col]] [dat.ph2[[event.ind.col]]==1]),
+    sort(dat.ph2[[event.time.col]], decreasing=T)[15]-1
   )
 }
 
-# get marginalized risk without marker
-get.marginalized.risk.no.marker=function(formula, dat, day){
+if (TRIAL=="moderna_boost") {
+  # compute tfinal.tpeak as the minimum of the four quadrants and no larger than 105 days
+  tfinal.tpeaks=c(
+    get.tfinal.tpeak.1(subset(dat, Trt==1 &  naive & ph2.BD29), event.ind.col="EventIndOmicronBD29", event.time.col="EventTimeOmicronBD29"),
+    get.tfinal.tpeak.1(subset(dat, Trt==1 &  naive & ph2.BD29), event.ind.col="EventIndOmicronBD29", event.time.col="EventTimeOmicronBD29"),
+    get.tfinal.tpeak.1(subset(dat, Trt==1 & !naive & ph2.BD29), event.ind.col="EventIndOmicronBD29", event.time.col="EventTimeOmicronBD29"),
+    get.tfinal.tpeak.1(subset(dat, Trt==1 & !naive & ph2.BD29), event.ind.col="EventIndOmicronBD29", event.time.col="EventTimeOmicronBD29"),
+    105)
+  myprint(tfinal.tpeaks)
+  tfinal.tpeak=min(tfinal.tpeaks)
+  myprint(tfinal.tpeak)
+}
+
+
+
+
+###################################################################################################
+# shared functions: survival analysis
+
+# get marginalized risk to the followup followup.day without marker
+get.marginalized.risk.no.marker=function(formula, dat.ph1, followup.day){
   if (!is.list(formula)) {
     # model=T is required because the type of prediction requires it, see Note on ?predict.coxph
-    fit.risk = coxph(formula, dat, model=T) 
-    dat$EventTimePrimary=day
-    risks = 1 - exp(-predict(fit.risk, newdata=dat, type="expected"))
+    fit.risk = coxph(formula, dat.ph1, model=T) 
+    dat.ph1$EventTimePrimary=followup.day
+    risks = 1 - exp(-predict(fit.risk, newdata=dat.ph1, type="expected"))
     mean(risks)
   } else {
     # competing risk estimation
-    out=pcr2(formula, dat, day)
+    out=pcr2(formula, dat.ph1, followup.day)
     mean(out)
   }
 }
 
 
-# e.g. Day22pseudoneutid50 => pseudoneutid50, Delta22overBpseudoneutid50 => pseudoneutid50
-get.assay.from.name=function(a) {
-    if (startsWith(a,"Day")) {
-      sub("Day[[0123456789]+", "", a)
-    } else if (startsWith(a,"BD")) {
-      sub("BD[[0123456789]+", "", a)
-    } else if (contain(a,"overB")) {
-      sub("Delta[[0123456789]+overB", "", a)
-    } else if (contain(a,"over")) {
-        sub("Delta[[0123456789]+over[[0123456789]+", "", a)
-    } else stop("get.assay.from.name: not sure what to do")
+
+
+###################################################################################################
+# shared functions: misc
+
+add.trichotomized.markers=function(dat, markers, ph2.col.name="ph2", wt.col.name="wt") {
+  
+  if(verbose) print("add.trichotomized.markers ...")
+  
+  marker.cutpoints <- list()    
+  for (a in markers) {
+    if (verbose) myprint(a, newline=F)
+    tmp.a=dat[[a]]
+    
+    # if we estimate cutpoints using all non-NA markers, it may have an issue when a lot of subjects outside ph2 have non-NA markers
+    flag=dat[[ph2.col.name]]
+    
+    if(startsWith(a, "Delta")) {
+      # fold change
+      q.a <- wtd.quantile(tmp.a[flag], weights = dat[[wt.col.name]][flag], probs = c(1/3, 2/3))
+    } else {
+      # not fold change
+      uloq=assay_metadata$uloq[assay_metadata$assay==marker.name.to.assay(a)]
+      
+      uppercut=log10(uloq); uppercut=uppercut*ifelse(uppercut>0,.9999,1.0001)
+      lowercut=min(tmp.a, na.rm=T)*1.0001; lowercut=lowercut*ifelse(lowercut>0,1.0001,.9999)
+      if (mean(tmp.a>uppercut, na.rm=T)>1/3) {
+        # if more than 1/3 of vaccine recipients have value > ULOQ, let q.a be (median among those < ULOQ, ULOQ)
+        if (verbose) cat("more than 1/3 of vaccine recipients have value > ULOQ\n")
+        q.a=c(wtd.quantile(tmp.a[dat[[a]]<=uppercut & flag], weights = dat[[wt.col.name]][tmp.a<=uppercut & flag], probs = c(1/2)),  uppercut)
+      } else if (mean(tmp.a<lowercut, na.rm=T)>1/3) {
+        # if more than 1/3 of vaccine recipients have value at min, let q.a be (min, median among those > LLOQ)
+        if (verbose) cat("more than 1/3 of vaccine recipients have at min\n")
+        q.a=c(lowercut, wtd.quantile(tmp.a[dat[[a]]>=lowercut & flag], weights = dat[[wt.col.name]][tmp.a>=lowercut & flag], probs = c(1/2))  )
+      } else {
+        # this implementation uses all non-NA markers, which include a lot of subjects outside ph2, and that leads to uneven distribution of markers between low/med/high among ph2
+        #q.a <- wtd.quantile(tmp.a, weights = dat[[wt.col.name]], probs = c(1/3, 2/3))
+        q.a <- wtd.quantile(tmp.a[flag], weights = dat[[wt.col.name]][flag], probs = c(1/3, 2/3))
+      }
+    }
+    tmp=try(factor(cut(tmp.a, breaks = c(-Inf, q.a, Inf))), silent=T)
+    
+    do.cut=FALSE # if TRUE, use cut function which does not use weights
+    # if there is a huge point mass, an error would occur, or it may not break into 3 groups
+    if (inherits(tmp, "try-error")) do.cut=TRUE else if(length(table(tmp)) != 3) do.cut=TRUE
+    
+    if(!do.cut) {
+      dat[[a %.% "cat"]] <- tmp
+      marker.cutpoints[[a]] <- q.a
+    } else {
+      cat("\nfirst cut fails, call cut again with breaks=3 \n")
+      # cut is more robust but it does not incorporate weights
+      tmp=cut(tmp.a, breaks=3)
+      stopifnot(length(table(tmp))==3)
+      dat[[a %.% "cat"]] = tmp
+      # extract cut points from factor level labels
+      tmpname = names(table(tmp))[2]
+      tmpname = substr(tmpname, 2, nchar(tmpname)-1)
+      marker.cutpoints[[a]] <- as.numeric(strsplit(tmpname, ",")[[1]])
+    }
+    stopifnot(length(table(dat[[a %.% "cat"]])) == 3)
+    if(verbose) {
+      print(table(dat[[a %.% "cat"]]))
+      cat("\n")
+    }
+  }
+  
+  attr(dat, "marker.cutpoints")=marker.cutpoints
+  dat
+  
 }
 
 
-get.range.cor=function(dat, assay, time) {
-    if(assay %in% c("bindSpike", "bindRBD") & all(c("pseudoneutid50", "pseudoneutid80") %in% assays)) {
-        ret=range(dat[["Day"%.%time%.%"bindSpike"]], 
-                  dat[["Day"%.%time%.%"bindRBD"]], 
-                  log10(lloxs[c("bindSpike","bindRBD")]/2), na.rm=T)
-        
-    } else if(assay %in% c("pseudoneutid50", "pseudoneutid80") & all(c("pseudoneutid50", "pseudoneutid80") %in% assays)) {
-        ret=range(dat[["Day"%.%time%.%"pseudoneutid50"]], 
-                  dat[["Day"%.%time%.%"pseudoneutid80"]], 
-                  #log10(uloqs[c("pseudoneutid50","pseudoneutid80")]),
-                  log10(lloxs[c("pseudoneutid50","pseudoneutid80")]/2), na.rm=T) 
-    } else {
-        ret=range(dat[["Day"%.%time%.%assay]], 
-        log10(lloxs[assay]/2), na.rm=T)        
+
+###################################################################################################
+# shared functions: make bootstrap samples
+
+# bootstrap for COVE boost
+# Within each quadrant (2 Trt * 2 naive status):
+#   1. resample the cohort and count the number of cases and controls: n1 and n0
+#         if n1 < 32 or n0 < 32, redo
+#   2. resample 32 cases and 32 controls from ph2 samples 
+#   3. resample n1-32 cases and n0-32 controls from non-ph2 samples
+# 4. Collapse strata if needed and compute inverse probability sampling weights
+# Thus, the number of cases may vary across bootstrap replicates, but the ph2 sample size remains constant
+
+# dat.ph1 is ph1 data and need to have, in addition to markers and covariates columns:
+#   Ptid, Trt, naive, EventIndPrimary, ph2, demo.stratum, CalendarBD1Interval
+# return a dataframe with wt column
+
+# bootstrap.cove.boost.2 is faster than bootstrap.cove.boost and results are similar
+bootstrap.cove.boost=function(dat.ph1, seed) {
+  
+  set.seed(seed)
+  
+  # perform bootstrap within each quadrant (2 Trt * 2 naive status)
+  dat.b=NULL
+  for (idat in 1:4) {
+    if (idat==1) {dat.tmp = subset(dat.ph1, Trt==1 & naive==1)}
+    if (idat==2) {dat.tmp = subset(dat.ph1, Trt==0 & naive==1)}
+    if (idat==3) {dat.tmp = subset(dat.ph1, Trt==1 & naive==0)}
+    if (idat==4) {dat.tmp = subset(dat.ph1, Trt==0 & naive==0)}
+    if (nrow(dat.tmp)==0) next
+    
+    dat.tmp.nph2=subset(dat.tmp, !ph2)
+    dat.tmp.ph2=subset(dat.tmp, ph2)
+    
+    # n1.ph2 and n0.ph2 are expected to be 32 in COVE Boost
+    # we make it data-dependent here to be more flexible
+    n1.ph2 = sum(dat.tmp.ph2$EventIndPrimary)
+    n0.ph2 = sum(1-dat.tmp.ph2$EventIndPrimary)
+    
+    # 1. 
+    dat.2=dat.tmp[sample.int(nrow(dat.tmp), r=TRUE),]
+    n1 = nrow(subset(dat.2, EventIndPrimary==1))
+    n0 = nrow(subset(dat.2, EventIndPrimary==0))
+    
+    while(n1<n1.ph2 | n0<n0.ph2) {   
+      dat.2=dat.tmp[sample.int(nrow(dat.tmp), r=TRUE),]
+      n1 = nrow(subset(dat.2, EventIndPrimary==1))
+      n0 = nrow(subset(dat.2, EventIndPrimary==0))
     }
-    delta=(ret[2]-ret[1])/20     
-    c(ret[1]-delta, ret[2]+delta)
+    
+    # 2.
+    dat.ph2.cases=subset(dat.tmp.ph2, EventIndPrimary==1)
+    dat.ph2.cases.b=dat.ph2.cases[sample.int(nrow(dat.ph2.cases), size=n1.ph2, r=TRUE),]
+    
+    dat.ph2.ctrls=subset(dat.tmp.ph2, EventIndPrimary==0)
+    dat.ph2.ctrls.b=dat.ph2.ctrls[sample.int(nrow(dat.ph2.ctrls), size=n0.ph2, r=TRUE),]
+    
+    # 3.
+    dat.nph2.cases=subset(dat.tmp.nph2, EventIndPrimary==1)
+    dat.nph2.cases.b=dat.nph2.cases[sample.int(nrow(dat.nph2.cases), size=n1-n1.ph2, r=TRUE),]
+    
+    dat.nph2.ctrls=subset(dat.tmp.nph2, EventIndPrimary==0)
+    dat.nph2.ctrls.b=dat.nph2.ctrls[sample.int(nrow(dat.nph2.ctrls), size=n0-n0.ph2, r=TRUE),]
+    
+    dat.b=rbind(dat.b, dat.ph2.cases.b, dat.ph2.ctrls.b, dat.nph2.cases.b, dat.nph2.ctrls.b)
+  }
+  
+  
+  # 4. 
+  n.demo = length(table(dat.b$demo.stratum))
+  # adjust Wstratum
+  ret = cove.boost.collapse.strata (dat.b, n.demo)
+  
+  # compute inverse probability sampling weights
+  tmp = with(ret, ph1)
+  wts_table <- with(ret[tmp,], table(Wstratum, ph2))
+  wts_norm <- rowSums(wts_table) / wts_table[, 2]
+  ret[["wt"]] = ifelse(ret$ph1, wts_norm[ret$Wstratum %.% ""], NA)
+  
+  assertthat::assert_that(
+    all(!is.na(subset(ret, tmp & !is.na(Wstratum))[["wt"]])),
+    msg = "missing wt.BD for D analyses ph1 subjects")
+  
+  return (ret)
+}
+
+
+
+
+# a second version, simpler, faster, results are close to bootstrap.cove.boost
+bootstrap.cove.boost.2=function(dat.ph1, seed) {
+  
+  set.seed(seed)
+  
+  # perform bootstrap within each quadrant (2 Trt * 2 naive status)
+  dat.b=NULL
+  for (idat in 1:4) {
+    if (idat==1) {dat.tmp = subset(dat.ph1, Trt==1 & naive==1)}
+    if (idat==2) {dat.tmp = subset(dat.ph1, Trt==0 & naive==1)}
+    if (idat==3) {dat.tmp = subset(dat.ph1, Trt==1 & naive==0)}
+    if (idat==4) {dat.tmp = subset(dat.ph1, Trt==0 & naive==0)}
+    if (nrow(dat.tmp)==0) next
+    
+    dat.b=dat.tmp[sample.int(nrow(dat.tmp), r=TRUE),]
+  }
+  
+  # 4. adjust Wstratum
+  n.demo = length(table(dat.b$demo.stratum))
+  ret = cove.boost.collapse.strata (dat.b, n.demo)
+
+  # compute inverse probability sampling weights
+  tmp = with(ret, ph1)
+  wts_table <- with(ret[tmp,], table(Wstratum, ph2))
+  wts_norm <- rowSums(wts_table) / wts_table[, 2]
+  ret[["wt"]] = ifelse(ret$ph1, wts_norm[ret$Wstratum %.% ""], NA)
+  
+  assertthat::assert_that(
+    all(!is.na(subset(ret, tmp & !is.na(Wstratum))[["wt"]])),
+    msg = "missing wt.BD for D analyses ph1 subjects")
+  
+  return (ret)
+}
+
+
+
+
+# when all cases are sampled, bootstrap from case control studies is done by resampling cases, ph2 controls, and non-ph2 controls separately. 
+# e.g. hvtn705
+
+# Across bootstrap replicates, the number of cases does not stay constant, neither do the numbers of ph2 controls by demographics strata. 
+# Specifically,
+# 1) sample with replacement to get dat.b. From this dataset, take the cases and count ph2 and non-ph2 controls by strata
+# 2) sample with replacement ph2 and non-ph2 controls by strata
+
+bootstrap.case.control.samples=function(dat.ph1, seed, delta.name="EventIndPrimary", strata.name="tps.stratum", ph2.name="ph2", min.cell.size=1) {
+  #dat.ph1=dat.tmp; delta.name="EventIndPrimary"; strata.name="tps.stratum"; ph2.name="ph2"; min.cell.size=0
+  
+  set.seed(seed)
+  
+  dat.tmp=data.frame(ptid=1:nrow(dat.ph1), delta=dat.ph1[,delta.name], strata=dat.ph1[,strata.name], ph2=dat.ph1[,ph2.name])
+  
+  nn.ph1=with(dat.tmp, table(strata, delta))
+  strat=rownames(nn.ph1); names(strat)=strat
+  # ctrl.ptids is a list of lists
+  ctrl.ptids = with(subset(dat.tmp, delta==0), lapply(strat, function (i) list(ph2=ptid[strata==i & ph2], nonph2=ptid[strata==i & !ph2])))
+  
+  # 1. resample dat.ph1 to get dat.b, but only take the cases 
+  dat.b=dat.tmp[sample.int(nrow(dat.tmp), r=TRUE),]
+  
+  # re-do resampling if the bootstrap dataset has too few samples in a cell in nn.ctrl.b
+  while(TRUE) {   
+    nn.ctrl.b=with(subset(dat.b, !delta), table(strata, ph2))
+    if (min(nn.ctrl.b)<min.cell.size | ncol(nn.ctrl.b)<2) dat.b=dat.tmp[sample.int(nrow(dat.tmp), r=TRUE),] else break
+  }
+  
+  # take the case ptids
+  case.ptids.b = dat.b$ptid[dat.b$delta==1]
+  
+  # 2. resample controls in dat.ph1 (numbers determined by dat.b) stratified by strata and ph2/nonph2
+  # ph2 and non-ph2 controls by strata
+  nn.ctrl.b=with(subset(dat.b, !delta), table(strata, ph2))
+  # sample the control ptids
+  ctrl.ptids.by.stratum.b=lapply(strat, function (i) {
+    c(sample(ctrl.ptids[[i]]$ph2, nn.ctrl.b[i,2], r=T),
+      sample(ctrl.ptids[[i]]$nonph2, nn.ctrl.b[i,1], r=T))
+  })
+  ctrl.ptids.b=do.call(c, ctrl.ptids.by.stratum.b)    
+  
+  # return data frame
+  dat.ph1[c(case.ptids.b, ctrl.ptids.b), ]
+}
+
+## testing
+#dat.b=bootstrap.case.control.samples(dat.vac.seroneg)
+#with(dat.vac.seroneg, table(ph2, tps.stratum, EventIndPrimary))
+#with(dat.b, table(ph2, tps.stratum, EventIndPrimary))
+#> with(dat.vac.seroneg, table(ph2, tps.stratum, EventIndPrimary))
+#, , EventIndPrimary = 0
+#
+#       tps.stratum
+#ph2       33   34   35   36   37   38   39   40   41   42   43   44   45   46   47   48
+#  FALSE 1483  915  759  439 1677 1138  894  591 3018 1973 1559 1051 1111  693  511  329
+#  TRUE    57   53   55   57   56   57   57   56   58   55   55   57   57   56   56   56
+#
+#, , EventIndPrimary = 1
+#
+#       tps.stratum
+#ph2       33   34   35   36   37   38   39   40   41   42   43   44   45   46   47   48
+#  FALSE    1    0    0    1    0    1    0    0    2    1    2    1    0    0    0    1
+#  TRUE     3    7    7   10    8   11    2   13   17   23   15   23    5    6    4    6
+#
+#> with(dat.b, table(ph2, tps.stratum, EventIndPrimary))
+#, , EventIndPrimary = 0
+#
+#       tps.stratum
+#ph2       33   34   35   36   37   38   39   40   41   42   43   44   45   46   47   48
+#  FALSE 1487  911  750  462 1675 1181  884  570 3058 2023 1499 1034 1094  694  487  329
+#  TRUE    47   57   65   62   50   53   50   64   55   61   65   53   64   53   54   60
+#
+#, , EventIndPrimary = 1
+#
+#       tps.stratum
+#ph2       33   34   35   36   37   38   39   40   41   42   43   44   45   46   47   48
+#  FALSE    0    0    0    0    0    2    0    0    1    1    3    3    0    0    0    2
+#  TRUE     2    6    8    5    9   13    0   11   20   26   10   20    4    3    4    5
+
+
+# for bootstrap use
+get.ptids.by.stratum.for.bootstrap = function(data) {
+  strat=sort(unique(data$tps.stratum))
+  ptids.by.stratum=lapply(strat, function (i) 
+    list(subcohort=subset(data, tps.stratum==i & SubcohortInd==1, Ptid, drop=TRUE), nonsubcohort=subset(data, tps.stratum==i & SubcohortInd==0, Ptid, drop=TRUE))
+  )    
+  # add a pseudo-stratum for subjects with NA in tps.stratum (not part of Subcohort). 
+  # we need this group because it contains some cases with missing tps.stratum
+  # if data is ph2 only, then this group is only cases because ph2 = subcohort + cases
+  tmp=list(subcohort=subset(data, is.na(tps.stratum), Ptid, drop=TRUE),               nonsubcohort=NULL)
+  ptids.by.stratum=append(ptids.by.stratum, list(tmp))    
+  ptids.by.stratum
+}
+
+
+# bootstrap case cohort samples
+# data is assumed to contain only ph1 ptids
+get.bootstrap.data.cor = function(data, ptids.by.stratum, seed) {
+  set.seed(seed)    
+  
+  # For each sampling stratum, bootstrap samples in subcohort and not in subchort separately
+  tmp=lapply(ptids.by.stratum, function(x) c(sample(x$subcohort, r=TRUE), sample(x$nonsubcohort, r=TRUE)))
+  
+  dat.b=data[match(unlist(tmp), data$Ptid),]
+  
+  # compute weights
+  tmp=with(dat.b, table(Wstratum, ph2))
+  weights=rowSums(tmp)/tmp[,2]
+  dat.b$wt=weights[""%.%dat.b$Wstratum]
+  # we assume data only contains ph1 ptids, thus weights is defined for every bootstrapped ptids
+  
+  dat.b
+}
+
+
+
+
+###################################################################################################
+# shared functions: plotting
+
+# get plotting range
+get.xlim=function(dat, marker) {
+  assay=marker.name.to.assay(a)
+  
+  # the default
+  ret=range(dat[[marker]], log10(lloxs[assay]/2), na.rm=T)
+  
+  # may be customized, e.g. to have the same xlim for different variants in the same type of assay
+  # if (TRIAL=="moderna_boost") {
+  #   if(assay %in% c("bindSpike", "bindRBD")) {
+  #     ret=range(dat[["Day"%.%time%.%"bindSpike"]], 
+  #               dat[["Day"%.%time%.%"bindRBD"]], 
+  #               log10(lloxs[c("bindSpike","bindRBD")]/2), na.rm=T)
+  #     
+  #   } 
+  # }
+
+  delta=(ret[2]-ret[1])/20     
+  c(ret[1]-delta, ret[2]+delta)
 }
 
 draw.x.axis.cor=function(xlim, llox, llox.label){
@@ -148,197 +500,20 @@ get.labels.x.axis.cor=function(xlim, llox){
 
 
 
-# Start with dat.ph1. Step 1 determines the numbers, the rest do the actual sampling.
-# 1. resample 
-#     if there are less than 16 cases in any of the 8 buckets (4 time periods * 2 trt), re-do sampling because we need at least 16 to sample from in each naive/non-naive pair
-#     if there are less than 8 controls in any of the 16 bucket (4 time periods * 2 trt * 2 naive), re-do sampling 
-# 2. resample ph2 cases from each of 16 buckets
-#     Count the number of ph2 cases for each of 16 buckets (4 time periods * 2 trt * naive). If there are x < 8 cases in nnaive, take x from nnaive and 16-x from naive; otherwise, take 8 from nnaive and 8 from naive.
-#     if sampling 8 and it is possible to sample 2:1:1:2:1:1 by demographics, do it; otherwise, sample without regard to demographics
-# 3. resample non-ph2 cases from each of the 16 buckets 
-# 4. resample 8 ph2 controls from each of 16 buckets
-#     if it is possible to sample 2:1:1:2:1:1 by demographics, do it; otherwise, sample without regard to demographics
-# 5. resample non-ph2 controls from each of 16 buckets
-#
-# Across bootstrap replicates, the number of cases does not stay constant, but the numbers of ph2 cases and controls remain the same.
 
-bootstrap.cove.boost=function(dat.ph1, seed, delta.name="EventIndPrimary", strata.name="tps.stratum", ph2.name="ph2", min.cell.size=1) {
-  #dat.ph1=dat.tmp; delta.name="EventIndPrimary"; strata.name="tps.stratum"; ph2.name="ph2"; min.cell.size=0
-  
-  set.seed(seed)
-  
-  # reduce columns  
-  dat.tmp=subset(dat.ph1, select=c(CalendarBD1Interval, Trt, Naive, ))
-  
-  # 1. 
-  dat.b=dat.tmp[sample.int(nrow(dat.tmp), r=TRUE),]
-  tab.case = with(subset(dat.b, EventIndPrimary==1), table(CalendarBD1Interval, Trt))
-  tab.ctrl = with(subset(dat.b, EventIndPrimary==0), table(CalendarBD1Interval, Trt, Naive))
-  # re-do resampling if some cells are too small
-  while(any(tab.case<16) | any(tab.ctrl<8)) {   
-    dat.b=dat.tmp[sample.int(nrow(dat.tmp), r=TRUE),]
-    tab.case = with(subset(dat.b, EventIndPrimary==1), table(CalendarBD1Interval, Trt))
-    tab.ctrl = with(subset(dat.b, EventIndPrimary==0), table(CalendarBD1Interval, Trt, Naive))
-  }
-  
-  # 2.
-  tab.case = with(subset(dat.b, EventIndPrimary==1), table(CalendarBD1Interval, Trt, Naive))
-  
-  
-  
-  
-  
-  
-    # take the case ptids
-  case.ptids.b = dat.b$ptid[dat.b$delta==1]
-  
-  # 2. resample controls in dat.ph1 (numbers determined by dat.b) stratified by strata and ph2/nonph2
-  # ph2 and non-ph2 controls by strata
-  nn.ctrl.b=with(subset(dat.b, !delta), table(strata, ph2))
-  # sample the control ptids
-  ctrl.ptids.by.stratum.b=lapply(strat, function (i) {
-    c(sample(ctrl.ptids[[i]]$ph2, nn.ctrl.b[i,2], r=T),
-      sample(ctrl.ptids[[i]]$nonph2, nn.ctrl.b[i,1], r=T))
-  })
-  ctrl.ptids.b=do.call(c, ctrl.ptids.by.stratum.b)    
-  
-  # return data frame
-  dat.ph1[c(case.ptids.b, ctrl.ptids.b), ]
+# get histogram object to add to VE plots etc
+get.marker.histogram=function(marker, wt, trial, marker.break=marker) {
+  # first call hist to get breaks, then call weighted.hist
+  tmp.1=hist(marker.break,breaks=ifelse(trial=="moderna_real",25,15),plot=F)  # 15 is treated as a suggestion and the actual number of breaks is determined by pretty()
+  tmp=weighted.hist(marker,wt, breaks=tmp.1$breaks, plot=F)
+  attr(tmp,"class")="histogram" 
+  tmp
 }
 
 
 
-
-
-# bootstrap from case control studies is done by resampling cases, ph2 controls, and non-ph2 controls separately. 
-# Across bootstrap replicates, the number of cases does not stay constant, neither do the numbers of ph2 controls by demographics strata. 
-# Specifically,
-# 1) sample with replacement to get dat.b. From this dataset, take the cases and count ph2 and non-ph2 controls by strata
-# 2) sample with replacement ph2 and non-ph2 controls by strata
-bootstrap.case.control.samples=function(dat.ph1, seed, delta.name="EventIndPrimary", strata.name="tps.stratum", ph2.name="ph2", min.cell.size=1) {
-#dat.ph1=dat.tmp; delta.name="EventIndPrimary"; strata.name="tps.stratum"; ph2.name="ph2"; min.cell.size=0
-    
-    set.seed(seed)
-    
-    dat.tmp=data.frame(ptid=1:nrow(dat.ph1), delta=dat.ph1[,delta.name], strata=dat.ph1[,strata.name], ph2=dat.ph1[,ph2.name])
-    
-    nn.ph1=with(dat.tmp, table(strata, delta))
-    strat=rownames(nn.ph1); names(strat)=strat
-    # ctrl.ptids is a list of lists
-    ctrl.ptids = with(subset(dat.tmp, delta==0), lapply(strat, function (i) list(ph2=ptid[strata==i & ph2], nonph2=ptid[strata==i & !ph2])))
-    
-    # 1. resample dat.ph1 to get dat.b, but only take the cases 
-    dat.b=dat.tmp[sample.int(nrow(dat.tmp), r=TRUE),]
-    
-    # re-do resampling if the bootstrap dataset has too few samples in a cell in nn.ctrl.b
-    while(TRUE) {   
-        nn.ctrl.b=with(subset(dat.b, !delta), table(strata, ph2))
-        if (min(nn.ctrl.b)<min.cell.size | ncol(nn.ctrl.b)<2) dat.b=dat.tmp[sample.int(nrow(dat.tmp), r=TRUE),] else break
-    }
-    
-    # take the case ptids
-    case.ptids.b = dat.b$ptid[dat.b$delta==1]
-    
-    # 2. resample controls in dat.ph1 (numbers determined by dat.b) stratified by strata and ph2/nonph2
-    # ph2 and non-ph2 controls by strata
-    nn.ctrl.b=with(subset(dat.b, !delta), table(strata, ph2))
-    # sample the control ptids
-    ctrl.ptids.by.stratum.b=lapply(strat, function (i) {
-        c(sample(ctrl.ptids[[i]]$ph2, nn.ctrl.b[i,2], r=T),
-          sample(ctrl.ptids[[i]]$nonph2, nn.ctrl.b[i,1], r=T))
-    })
-    ctrl.ptids.b=do.call(c, ctrl.ptids.by.stratum.b)    
-    
-    # return data frame
-    dat.ph1[c(case.ptids.b, ctrl.ptids.b), ]
-}
-
-## testing
-#dat.b=bootstrap.case.control.samples(dat.vac.seroneg)
-#with(dat.vac.seroneg, table(ph2, tps.stratum, EventIndPrimary))
-#with(dat.b, table(ph2, tps.stratum, EventIndPrimary))
-#> with(dat.vac.seroneg, table(ph2, tps.stratum, EventIndPrimary))
-#, , EventIndPrimary = 0
-#
-#       tps.stratum
-#ph2       33   34   35   36   37   38   39   40   41   42   43   44   45   46   47   48
-#  FALSE 1483  915  759  439 1677 1138  894  591 3018 1973 1559 1051 1111  693  511  329
-#  TRUE    57   53   55   57   56   57   57   56   58   55   55   57   57   56   56   56
-#
-#, , EventIndPrimary = 1
-#
-#       tps.stratum
-#ph2       33   34   35   36   37   38   39   40   41   42   43   44   45   46   47   48
-#  FALSE    1    0    0    1    0    1    0    0    2    1    2    1    0    0    0    1
-#  TRUE     3    7    7   10    8   11    2   13   17   23   15   23    5    6    4    6
-#
-#> with(dat.b, table(ph2, tps.stratum, EventIndPrimary))
-#, , EventIndPrimary = 0
-#
-#       tps.stratum
-#ph2       33   34   35   36   37   38   39   40   41   42   43   44   45   46   47   48
-#  FALSE 1487  911  750  462 1675 1181  884  570 3058 2023 1499 1034 1094  694  487  329
-#  TRUE    47   57   65   62   50   53   50   64   55   61   65   53   64   53   54   60
-#
-#, , EventIndPrimary = 1
-#
-#       tps.stratum
-#ph2       33   34   35   36   37   38   39   40   41   42   43   44   45   46   47   48
-#  FALSE    0    0    0    0    0    2    0    0    1    1    3    3    0    0    0    2
-#  TRUE     2    6    8    5    9   13    0   11   20   26   10   20    4    3    4    5
-
-
-# for bootstrap use
-get.ptids.by.stratum.for.bootstrap = function(data) {
-    strat=sort(unique(data$tps.stratum))
-    ptids.by.stratum=lapply(strat, function (i) 
-        list(subcohort=subset(data, tps.stratum==i & SubcohortInd==1, Ptid, drop=TRUE), nonsubcohort=subset(data, tps.stratum==i & SubcohortInd==0, Ptid, drop=TRUE))
-    )    
-    # add a pseudo-stratum for subjects with NA in tps.stratum (not part of Subcohort). 
-    # we need this group because it contains some cases with missing tps.stratum
-    # if data is ph2 only, then this group is only cases because ph2 = subcohort + cases
-    tmp=list(subcohort=subset(data, is.na(tps.stratum), Ptid, drop=TRUE),               nonsubcohort=NULL)
-    ptids.by.stratum=append(ptids.by.stratum, list(tmp))    
-    ptids.by.stratum
-}
-
-
-# bootstrap case cohort samples
-# data is assumed to contain only ph1 ptids
-get.bootstrap.data.cor = function(data, ptids.by.stratum, seed) {
-    set.seed(seed)    
-    
-    # For each sampling stratum, bootstrap samples in subcohort and not in subchort separately
-    tmp=lapply(ptids.by.stratum, function(x) c(sample(x$subcohort, r=TRUE), sample(x$nonsubcohort, r=TRUE)))
-    
-    dat.b=data[match(unlist(tmp), data$Ptid),]
-    
-    # compute weights
-    tmp=with(dat.b, table(Wstratum, ph2))
-    weights=rowSums(tmp)/tmp[,2]
-    dat.b$wt=weights[""%.%dat.b$Wstratum]
-    # we assume data only contains ph1 ptids, thus weights is defined for every bootstrapped ptids
-    
-    dat.b
-}
-
-# extract assay from marker name such as Day57pseudoneutid80, Bpseudoneutid80
-marker.name.to.assay=function(marker.name) {
-    if(endsWith(marker.name, "bindSpike")) {
-        "bindSpike"
-    } else if(endsWith(marker.name, "bindRBD")) {
-        "bindRBD"
-    } else if(endsWith(marker.name, "bindN")) {
-        "bindN"
-    } else if(endsWith(marker.name, "pseudoneutid50")) {
-        "pseudoneutid50"
-    } else if(endsWith(marker.name, "pseudoneutid80")) {
-        "pseudoneutid80"
-    } else if(endsWith(marker.name, "liveneutmn50")) {
-        "liveneutmn50"
-    } else stop("marker.name.to.assay: wrong marker.name")
-}
-
+###################################################################################################
+# shared functions: for tables
 
 # x is the marker values
 # assay is one of assays, e.g. pseudoneutid80
@@ -353,74 +528,6 @@ report.assay.values=function(x, assay){
     #out[!duplicated(out)] # unique strips away the names. But don't take out duplicates because 15% may be needed and because we may want the same number of values for each assay
 }
 #report.assay.values (dat.vac.seroneg[["Day57pseudoneutid80"]], "pseudoneutid80")
-
-
-add.trichotomized.markers=function(dat, markers, ph2.col.name="ph2", wt.col.name="wt") {
-    
-    if(verbose) print("add.trichotomized.markers ...")
-    
-    marker.cutpoints <- list()    
-    for (a in markers) {
-        if (verbose) myprint(a, newline=F)
-        tmp.a=dat[[a]]
-        
-        # if we estimate cutpoints using all non-NA markers, it may have an issue when a lot of subjects outside ph2 have non-NA markers
-        flag=dat[[ph2.col.name]]
-
-        if(startsWith(a, "Delta")) {
-          # fold change
-          q.a <- wtd.quantile(tmp.a[flag], weights = dat[[wt.col.name]][flag], probs = c(1/3, 2/3))
-        } else {
-          # not fold change
-          uloq=assay_metadata$uloq[assay_metadata$assay==get.assay.from.name(a)]
-          
-          uppercut=log10(uloq); uppercut=uppercut*ifelse(uppercut>0,.9999,1.0001)
-          lowercut=min(tmp.a, na.rm=T)*1.0001; lowercut=lowercut*ifelse(lowercut>0,1.0001,.9999)
-          if (mean(tmp.a>uppercut, na.rm=T)>1/3) {
-              # if more than 1/3 of vaccine recipients have value > ULOQ, let q.a be (median among those < ULOQ, ULOQ)
-              if (verbose) cat("more than 1/3 of vaccine recipients have value > ULOQ\n")
-              q.a=c(wtd.quantile(tmp.a[dat[[a]]<=uppercut & flag], weights = dat[[wt.col.name]][tmp.a<=uppercut & flag], probs = c(1/2)),  uppercut)
-          } else if (mean(tmp.a<lowercut, na.rm=T)>1/3) {
-              # if more than 1/3 of vaccine recipients have value at min, let q.a be (min, median among those > LLOQ)
-              if (verbose) cat("more than 1/3 of vaccine recipients have at min\n")
-              q.a=c(lowercut, wtd.quantile(tmp.a[dat[[a]]>=lowercut & flag], weights = dat[[wt.col.name]][tmp.a>=lowercut & flag], probs = c(1/2))  )
-          } else {
-              # this implementation uses all non-NA markers, which include a lot of subjects outside ph2, and that leads to uneven distribution of markers between low/med/high among ph2
-              #q.a <- wtd.quantile(tmp.a, weights = dat[[wt.col.name]], probs = c(1/3, 2/3))
-              q.a <- wtd.quantile(tmp.a[flag], weights = dat[[wt.col.name]][flag], probs = c(1/3, 2/3))
-          }
-        }
-        tmp=try(factor(cut(tmp.a, breaks = c(-Inf, q.a, Inf))), silent=T)
- 
-        do.cut=FALSE # if TRUE, use cut function which does not use weights
-        # if there is a huge point mass, an error would occur, or it may not break into 3 groups
-        if (inherits(tmp, "try-error")) do.cut=TRUE else if(length(table(tmp)) != 3) do.cut=TRUE
-        
-        if(!do.cut) {
-            dat[[a %.% "cat"]] <- tmp
-            marker.cutpoints[[a]] <- q.a
-        } else {
-            cat("\nfirst cut fails, call cut again with breaks=3 \n")
-            # cut is more robust but it does not incorporate weights
-            tmp=cut(tmp.a, breaks=3)
-            stopifnot(length(table(tmp))==3)
-            dat[[a %.% "cat"]] = tmp
-            # extract cut points from factor level labels
-            tmpname = names(table(tmp))[2]
-            tmpname = substr(tmpname, 2, nchar(tmpname)-1)
-            marker.cutpoints[[a]] <- as.numeric(strsplit(tmpname, ",")[[1]])
-        }
-        stopifnot(length(table(dat[[a %.% "cat"]])) == 3)
-        if(verbose) {
-            print(table(dat[[a %.% "cat"]]))
-            cat("\n")
-        }
-    }
-    
-    attr(dat, "marker.cutpoints")=marker.cutpoints
-    dat
-    
-}
 
 
 
@@ -467,70 +574,10 @@ make.case.count.marker.availability.table=function(dat) {
 #make.case.count.marker.availability.table(dat.mock)
 
 
-# get histogram object to add to VE plots etc
-get.marker.histogram=function(marker, wt, trial, marker.break=marker) {
-    # first call hist to get breaks, then call weighted.hist
-    tmp.1=hist(marker.break,breaks=ifelse(trial=="moderna_real",25,15),plot=F)  # 15 is treated as a suggestion and the actual number of breaks is determined by pretty()
-    tmp=weighted.hist(marker,wt, breaks=tmp.1$breaks, plot=F)
-    attr(tmp,"class")="histogram" 
-    tmp
-}
-
-
-
-###############################################################################
-# figure labels and titles for markers
-###############################################################################
-
-
-# race labeling
-labels.race <- c(
-  "White", 
-  "Black or African American",
-  "Asian", 
-  if ((study_name=="ENSEMBLE" | study_name=="MockENSEMBLE") & startsWith(attr(config, "config"),"janssen_la")) "Indigenous South American" else "American Indian or Alaska Native",
-  "Native Hawaiian or Other Pacific Islander", 
-  "Multiracial",
-  if ((study_name=="COVE" | study_name=="MockCOVE")) "Other", 
-  "Not reported and unknown"
-)
-
-# ethnicity labeling
-labels.ethnicity <- c(
-  "Hispanic or Latino", "Not Hispanic or Latino",
-  "Not reported and unknown"
-)
-
-
-# baseline stratum labeling
-if (study_name=="COVEBoost") {
-  Bstratum.labels <- c(
-    "Age >= 65",
-    "Age < 65, At risk",
-    "Age < 65, Not at risk"
-  )
-  
-} else stop("unknown study_name 2")
-
-
-
-# baseline stratum labeling
-if (study_name=="COVEBoost" | study_name=="MockCOVE") {
-  demo.stratum.labels <- c(
-    "Age >= 65, URM",
-    "Age < 65, At risk, URM",
-    "Age < 65, Not at risk, URM",
-    "Age >= 65, White non-Hisp",
-    "Age < 65, At risk, White non-Hisp",
-    "Age < 65, Not at risk, White non-Hisp"
-  )
-  
-} else stop("unknown study_name 3")
 
 
 ###############################################################################
 # theme options
-###############################################################################
 
 # fixed knitr chunk options
 knitr::opts_chunk$set(
@@ -616,4 +663,38 @@ ggsave_custom <- function(filename = default_name(plot),
                           height= 15, width = 21, ...) {
   ggsave(filename = filename, height = height, width = width, ...)
 }
+
+
+
+###############################################################################
+
+# race labeling
+labels.race <- c(
+  "White", 
+  "Black or African American",
+  "Asian", 
+  if ((study_name=="ENSEMBLE" | study_name=="MockENSEMBLE") & startsWith(attr(config, "config"),"janssen_la")) "Indigenous South American" else "American Indian or Alaska Native",
+  "Native Hawaiian or Other Pacific Islander", 
+  "Multiracial",
+  if ((study_name=="COVE" | study_name=="MockCOVE")) "Other", 
+  "Not reported and unknown"
+)
+
+# ethnicity labeling
+labels.ethnicity <- c(
+  "Hispanic or Latino", "Not Hispanic or Latino",
+  "Not reported and unknown"
+)
+
+# baseline stratum labeling
+if (study_name=="COVEBoost") {
+  demo.stratum.labels <- c(
+    "Age >= 65, URM",
+    "Age < 65, At risk, URM",
+    "Age < 65, Not at risk, URM",
+    "Age >= 65, White non-Hisp",
+    "Age < 65, At risk, White non-Hisp",
+    "Age < 65, Not at risk, White non-Hisp"
+  )
+} else stop("unknown study_name 1")
 
