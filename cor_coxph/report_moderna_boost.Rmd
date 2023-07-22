@@ -84,7 +84,21 @@ for (idat in 1:2) {
   }
 }
 
+
+#
+cat(glue("# Multivariate Cox Models of Risk\\"), sep='\n')
+
+if (!is.null(config$multivariate_assays)) {
+  for (i in 1:length(config$multivariate_assays)) {
+    res = knitr::knit_child(c(here::here('cor_coxph', 'multiple_regression.Rmd')), quiet = TRUE)
+    cat(res, sep = '\n')
+  }
+}
+
+
 ```
+
+
 
 
 

@@ -8,6 +8,24 @@ moderna_boost: &moderna_boost
   assay_metadata: assay_metadata/moderna_boost_assay_metadata.csv
   sampling_scheme: case_control
   covariates: ~.+ MinorityInd + HighRiskInd + risk_score
+  multivariate_assays: [
+# BA1 and D614G neuts           absolute level
+    BD29pseudoneutid50_BA.1 + BD29pseudoneutid50, 
+# BA1 and D614G IgG Spike    absolute level
+    BD29bindSpike_BA.1 + BD29bindSpike, 
+# BA1 neuts and BA1 IgG Spike    absolute level
+    BD29pseudoneutid50_BA.1 + BD29bindSpike_BA.1, 
+# D614G neuts and D614G IgG Spike    absolute level
+    BD29pseudoneutid50 + BD29bindSpike, 
+# BA1 and D614G neuts           fold-rise
+    DeltaBD29overBD1pseudoneutid50_BA.1 + DeltaBD29overBD1pseudoneutid50, 
+# BA1 and D614G IgG Spike    fold-rise
+    DeltaBD29overBD1bindSpike_BA.1 + DeltaBD29overBD1bindSpike, 
+# BA1 neuts and BA1 IgG Spike    fold-rise
+    DeltaBD29overBD1pseudoneutid50_BA.1 + DeltaBD29overBD1bindSpike_BA.1, 
+# D614G neuts and D614G IgG Spike    fold-rise
+    DeltaBD29overBD1pseudoneutid50 + DeltaBD29overBD1bindSpike
+  ]
   ve_ylim: [0,1]
   ve_ylim_log: [0.0,0.98]
   low_efficacy: no
