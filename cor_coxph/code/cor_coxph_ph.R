@@ -287,8 +287,6 @@ tab.nop12=cbind(
 
 
 
-###################################################################################################
-# multivariate_assays models
 
 save(fits.cont.coef.ls, fits.tri.coef.ls, file=paste0(save.results.to, "coxph_fits.Rdata"))
 
