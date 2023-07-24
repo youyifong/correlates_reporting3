@@ -13,6 +13,8 @@ The SAP is available at https://doi.org/10.6084/m9.figshare.13198595
 
 ```{r, echo=FALSE, results='asis'}
 
+study_name = "COVEBoost"
+
 obj.assays=c("bindSpike_BA.1", "pseudoneutid50_BA.1")  
 tpeak <- 29
 special.note = paste0("$\\ddagger$ Count cases starting 7 days post BD29.")
@@ -88,6 +90,11 @@ for (idat in 1:2) {
 #
 cat(glue("# Multivariate Cox Models of Risk\\"), sep='\n')
 
+# naive is also adjusted
+covariates_adjusted.0=covariates_adjusted
+covariates_adjusted = paste0(covariates_adjusted, " + naive")
+
+pathCoRoutput <- glue("cor_coxph/output/{attr(config,'config')}")
 if (!is.null(config$multivariate_assays)) {
   for (i in 1:length(config$multivariate_assays)) {
     res = knitr::knit_child(c(here::here('cor_coxph', 'multiple_regression.Rmd')), quiet = TRUE)
@@ -95,6 +102,8 @@ if (!is.null(config$multivariate_assays)) {
   }
 }
 
+# revert covariates_adjusted back 
+covariates_adjusted = covariates_adjusted.0
 
 ```
 

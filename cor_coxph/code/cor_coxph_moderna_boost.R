@@ -87,7 +87,7 @@ for (iObj in 1:2) {
   names(all.markers)=all.markers
 
   # loop through naive and nonnaive
-  for (idat in 2:2) {
+  for (idat in 1:2) {
     # idat=2
     
     myprint(idat)
@@ -299,9 +299,15 @@ if (!is.null(config$multivariate_assays)) {
         # replace every variable with scale(x) when i==1
         a.tmp=gsub(x, paste0(if(i==1) "scale","(",x,")"), a.tmp) 
       }
-      f= update(form.0, as.formula(paste0("~.+", a.tmp)))
+      f= update(form.0, as.formula(paste0("~.+naive+", a.tmp)))
       fit=svycoxph(f, design=design.1) 
       var.ind=length(coef(fit)) - length(aa):1 + 1
+      
+      # svycoxph(Surv(EventTimePrimary, EventIndPrimary) ~ MinorityInd + HighRiskInd + 
+      #            risk_score + scale(BD1pseudoneutid50_BA.1) * scale(BD29pseudoneutid50_BA.1), design=design.1)
+      # 
+      # svycoxph(Surv(EventTimePrimary, EventIndPrimary) ~ MinorityInd + HighRiskInd + 
+      #            risk_score + scale(BD1bindSpike_BA.1) * scale(BD29bindSpike_BA.1), design=design.1)
       
       fits=list(fit)
       est=getFormattedSummary(fits, exp=T, robust=T, rows=var.ind, type=1)
@@ -319,7 +325,7 @@ if (!is.null(config$multivariate_assays)) {
       tab=rbind(tab, "Generalized Wald Test"=c("", formatDouble(p.gwald,3, remove.leading0 = F)))
       
       mytex(tab, file.name=paste0("CoR_multivariable_svycoxph_pretty", match(a, config$multivariate_assays), if(i==2) "_per10fold", study_name), align="c", include.colnames = T, save2input.only=T, 
-            input.foldername=save.results.to)
+            input.foldername=save.results.to.0)
     }
   }
   
