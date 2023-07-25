@@ -163,7 +163,7 @@ dat.longer.cor.subset <- dat.longer.cor.subset %>%
 # 1. define response rate:
 # 2. make subsample datasets such that the violin plot only shows <= 100 non-case data points
 
-#### for Figure 1. intercurrent vs pp, case vs non-case, (Day 1), Day 29 Day 57
+#### for figures 1, 2, 3, 4: case vs non-case, by naive/non-naive, vaccine/placebo, (Day 1), Day 29 Day 57
 groupby_vars1=c("Trt", "nnaive", "cohort_event", "time", "assay")
 
 # define response rate
@@ -171,3 +171,18 @@ dat.longer.cor.subset.plot1 <- get_desc_by_group(dat.longer.cor.subset, groupby_
 write.csv(dat.longer.cor.subset.plot1, file = here::here("data_clean", "longer_cor_data_plot1.csv"), row.names=F)
 saveRDS(dat.longer.cor.subset.plot1, file = here::here("data_clean", "longer_cor_data_plot1.rds"))
 
+#### for figures 1.2, 2.2: case vs non-case, by (Day 1), Day 29 Day 57
+groupby_vars1.2=c("cohort_event", "time", "assay")
+
+# define response rate
+dat.longer.cor.subset.plot1.2 <- get_desc_by_group(dat.longer.cor.subset, groupby_vars1.2)
+write.csv(dat.longer.cor.subset.plot1.2, file = here::here("data_clean", "longer_cor_data_plot1.2.csv"), row.names=F)
+saveRDS(dat.longer.cor.subset.plot1.2, file = here::here("data_clean", "longer_cor_data_plot1.2.rds"))
+
+#### for figures 1.3, 2.3: case vs non-case, by naive vs non-naive, (Day 1), Day 29 Day 57
+groupby_vars1.3=c("cohort_event", "nnaive", "time", "assay")
+
+# define response rate
+dat.longer.cor.subset.plot1.3 <- get_desc_by_group(dat.longer.cor.subset, groupby_vars1.3)
+write.csv(dat.longer.cor.subset.plot1.3, file = here::here("data_clean", "longer_cor_data_plot1.3.csv"), row.names=F)
+saveRDS(dat.longer.cor.subset.plot1.3, file = here::here("data_clean", "longer_cor_data_plot1.3.rds"))

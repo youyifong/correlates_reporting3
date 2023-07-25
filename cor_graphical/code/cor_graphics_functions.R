@@ -99,6 +99,8 @@ chtpchs <- setNames(chtpchs, cht_footer)
 #' @param panel.text.size font size for text within panels
 #' @param axis.x.text.size font size for x-axis tick label
 #' @param strip.x.text.size font size for x-axis strip label
+#' @param facet.x.var horizontal facet variable 
+#' @param facet.y.var vertical facet variable 
 #' @return A ggplot object list for violin + box plot without lines
 f_case_non_case_by_time_assay <- 
     function(dat,
@@ -108,7 +110,9 @@ f_case_non_case_by_time_assay <-
              ybreaks = c(0,2,4,6),
              panel.text.size = 3.8,
              axis.x.text.size = 18,
-             strip.x.text.size = 18
+             strip.x.text.size = 18,
+             facet.x.var,
+             facet.y.var
              ) {
         
     plot_theme <- theme_bw(base_size = 25) +
@@ -141,7 +145,7 @@ f_case_non_case_by_time_assay <-
         group_split(time) %>%
         purrr::map(function(d){
             ggplot(data = d, aes(x = cohort_event, y = value)) +
-                facet_grid(Trt_nnaive ~ assay_label_short) +
+                facet_grid(rows = facet.y.var, col = facet.x.var) +
                 geom_violin(aes(color = cohort_event, shape = cohort_event), scale = "width", na.rm = TRUE, show.legend = FALSE) +
                 geom_boxplot(aes(color = cohort_event, shape = cohort_event), width = 0.25, lwd = 1.5, alpha = 0.3, stat = "boxplot", outlier.shape = NA, show.legend = FALSE) +
                 scale_color_manual(values = chtcols[1:2]) + 
@@ -178,6 +182,8 @@ f_case_non_case_by_time_assay <-
 #' @param ylim y-axis limit
 #' @param ybreaks y-axis breaks
 #' @param panel.text.size font size for text within panels
+#' @param facet.x.var horizontal facet variable 
+#' @param facet.y.var vertical facet variable
 #' @return A ggplot object list for longitudinal violin + box plot with lines
 f_longitude_by_assay <- function(
     dat,
@@ -185,7 +191,9 @@ f_longitude_by_assay <- function(
     times = times,
     ylim = c(0,7.2),
     ybreaks = c(0,2,4,6),
-    panel.text.size = 4
+    panel.text.size = 4,
+    facet.x.var,
+    facet.y.var
     ) {
     
     plot_theme <- theme_bw() +
@@ -221,7 +229,7 @@ f_longitude_by_assay <- function(
         group_split(panel) %>% # "panel" variable from assay_metadata
         purrr::map(function(d){
             ggplot(data = d, aes(x = time_cohort, y = value, color = cohort_event)) +
-                facet_grid(Trt_nnaive ~ assay_label_short) +
+                facet_grid(rows = facet.y.var, col = facet.x.var) +
                 
                 geom_violin(scale = "width", na.rm = TRUE, show.legend = FALSE) +
                 geom_point(aes(color = cohort_col, shape = cohort_col), size = 1.5, show.legend = TRUE) +

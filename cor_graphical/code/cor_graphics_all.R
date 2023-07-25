@@ -29,6 +29,8 @@ assay_metadata = assay_metadata %>%
 ))
 
 dat.longer.cor.subset.plot1 <- readRDS(here::here("data_clean", "longer_cor_data_plot1.rds"))
+dat.longer.cor.subset.plot1.2 <- readRDS(here::here("data_clean", "longer_cor_data_plot1.2.rds"))
+dat.longer.cor.subset.plot1.3 <- readRDS(here::here("data_clean", "longer_cor_data_plot1.3.rds"))
 dat.cor.subset.plot3 <- readRDS(here::here("data_clean", "cor_data_plot3.rds"))
 dat.cor.subset.plot3$all_one <- 1 # as a placeholder for strata values
 
@@ -53,12 +55,47 @@ for (panel in c("pseudoneutid50", "bindSpike")){
         times = set1_times,
         axis.x.text.size = 28,
         strip.x.text.size = 25,
-        panel.text.size = 8)
+        panel.text.size = 8,
+        facet.y.var = vars(Trt_nnaive), 
+        facet.x.var = vars(assay_label_short))
     
     for (i in 1:length(set1_times)){
         
         file_name <- paste0(panel, "_2_strain_by_case_non_case_at_", set1_times[i], ".pdf")
         ggsave(plot = f_1[[i]], filename = paste0(save.results.to, file_name), width = 16, height = 16)
+    }
+    
+    f_1.2 <- f_case_non_case_by_time_assay(
+        dat = dat.longer.cor.subset.plot1.2,
+        assays = paste0(panel,c("","_BA.1")),
+        times = set1_times,
+        axis.x.text.size = 28,
+        strip.x.text.size = 25,
+        panel.text.size = 8,
+        facet.y.var = NULL, 
+        facet.x.var = vars(assay_label_short))
+    
+    for (i in 1:length(set1_times)){
+        
+        file_name <- paste0(panel, "_2_strain_by_case_non_case_pooled_at_", set1_times[i], ".pdf")
+        ggsave(plot = f_1.2[[i]], filename = paste0(save.results.to, file_name), width = 16, height = 16)
+    }
+    
+    f_1.3 <- f_case_non_case_by_time_assay(
+        dat = dat.longer.cor.subset.plot1.3,
+        assays = paste0(panel,c("","_BA.1")),
+        times = set1_times,
+        axis.x.text.size = 28,
+        strip.x.text.size = 25,
+        panel.text.size = 8,
+        facet.y.var = vars(nnaive), 
+        facet.x.var = vars(assay_label_short),
+        pch.by.trt = T)
+    
+    for (i in 1:length(set1_times)){
+        
+        file_name <- paste0(panel, "_2_strain_by_case_non_case_pooled_v2_at_", set1_times[i], ".pdf")
+        ggsave(plot = f_1.3[[i]], filename = paste0(save.results.to, file_name), width = 16, height = 16)
     }
 }
 
@@ -71,13 +108,32 @@ for (panel in c("bindSpike")){
         times = set1_times,
         axis.x.text.size = 11,
         strip.x.text.size = 12,
-        panel.text.size = 4.5)
+        panel.text.size = 4.5,
+        facet.y.var = vars(Trt_nnaive), 
+        facet.x.var = vars(assay_label_short))
     
     for (i in 1:length(set1_times)){
         
         file_name <- paste0(panel, "_6_strain_by_case_non_case_at_", set1_times[i], ".pdf")
         ggsave(plot = f_1[[i]], filename = paste0(save.results.to, file_name), width = 16, height = 16)
     }
+    
+    f_1.2 <- f_case_non_case_by_time_assay(
+        dat = dat.longer.cor.subset.plot1.2,
+        assays = paste0(panel,c("", "_Gamma", "_Alpha", "_Beta", "_Delta", "_BA.1")),
+        times = set1_times,
+        axis.x.text.size = 11,
+        strip.x.text.size = 12,
+        panel.text.size = 4.5,
+        facet.y.var = NULL, 
+        facet.x.var = vars(assay_label_short))
+    
+    for (i in 1:length(set1_times)){
+        
+        file_name <- paste0(panel, "_6_strain_by_case_non_case_pooled_at_", set1_times[i], ".pdf")
+        ggsave(plot = f_1.2[[i]], filename = paste0(save.results.to, file_name), width = 16, height = 16)
+    }
+
 }
 
 ###### Set 2 plots: Longitudinal plots BD1 to BD29 (and to DD1)
@@ -88,7 +144,9 @@ f_2 <- f_longitude_by_assay(
     dat = dat.longer.cor.subset.plot1,
     assays = set2_assays,
     times = c("BD1","BD29","DD1"),
-    panel.text.size = 6
+    panel.text.size = 6,
+    facet.y.var = vars(Trt_nnaive), 
+    facet.x.var = vars(assay_label_short)
 )
 
 for (i in 1:length(c("bindSpike","pseudoneutid50"))){
