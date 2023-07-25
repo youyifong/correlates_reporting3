@@ -30,15 +30,16 @@ getResponder <- function(data,
             bl <- paste0("BD1", j)
             delta <- paste0("Delta", i, "overBD1", j)
 
-            if (grepl("bind", j)) {
+            #if (grepl("bind", j)) { 
+            # Moderna booster study has the positivity call method as below
                 data[, paste0(post, "Resp")] <- as.numeric(data[, post] > log10(pos.cutoffs[j]))
                 data[, paste0(bl, "Resp")] <- as.numeric(data[, bl] > log10(pos.cutoffs[j]))
-            } else { 
-                data[, paste0(post, "Resp")] <- as.numeric(
-                    (data[, bl] < log10(pos.cutoffs[j]) & data[, post] > log10(pos.cutoffs[j])) |
-                        (data[, bl] >= log10(pos.cutoffs[j]) & as.numeric(10^data[, delta] >= responderFR)))
-                data[, paste0(bl, "Resp")] <- as.numeric(data[, bl] > log10(pos.cutoffs[j]))
-            }
+            #} else { 
+            #    data[, paste0(post, "Resp")] <- as.numeric(
+            #        (data[, bl] < log10(pos.cutoffs[j]) & data[, post] > log10(pos.cutoffs[j])) |
+            #            (data[, bl] >= log10(pos.cutoffs[j]) & as.numeric(10^data[, delta] >= responderFR)))
+            #    data[, paste0(bl, "Resp")] <- as.numeric(data[, bl] > log10(pos.cutoffs[j]))
+            #}
             
         }
     }
@@ -82,11 +83,11 @@ get_desc_by_group <- function(data,
 }
 
 # common color panel, shape panel and legend for figures
-chtcols <- c("Omicron Cases"="#FF6F1B", "Non-Cases"="#0AB7C9", "Non-responder"="#8F8F8F")
-chtpchs <- c("Omicron Cases"=19, "Non-Cases"=19, "Non-responder"=2)
-cht_footer <- c("Omicron Cases: COVID-19 Omicron endpoint in the interval [later day of 7 days post BD29 and Dec 1, 2021, Apr 5, 2022 (data cutoff date)]",
-               "Non-Cases: Did not acquire COVID-19 (of any strain) in the interval [BD1, Apr 5, 2022 (data cutoff date)]")
-
+chtcols <- c("#FF6F1B", "#0AB7C9", "#8F8F8F")
+chtpchs <- c(19, 19, 2)
+cht_footer <- c("Omicron Cases", "Non-Cases", "Non-Responders")
+chtcols <- setNames(chtcols, cht_footer)
+chtpchs <- setNames(chtpchs, cht_footer)
 
 #' A ggplot object for violin box plot without lines, loop by BD1, BD29, BD29-BD1
 #' 
@@ -98,6 +99,8 @@ cht_footer <- c("Omicron Cases: COVID-19 Omicron endpoint in the interval [later
 #' @param panel.text.size font size for text within panels
 #' @param axis.x.text.size font size for x-axis tick label
 #' @param strip.x.text.size font size for x-axis strip label
+#' @param facet.x.var horizontal facet variable 
+#' @param facet.y.var vertical facet variable 
 #' @return A ggplot object list for violin + box plot without lines
 f_case_non_case_by_time_assay <- 
     function(dat,
@@ -107,16 +110,18 @@ f_case_non_case_by_time_assay <-
              ybreaks = c(0,2,4,6),
              panel.text.size = 3.8,
              axis.x.text.size = 18,
-             strip.x.text.size = 18
+             strip.x.text.size = 18,
+             facet.x.var,
+             facet.y.var
              ) {
         
-    plot_theme <- theme_bw() +
+    plot_theme <- theme_bw(base_size = 25) +
         theme(plot.title = element_text(hjust = 0.5),
               axis.text.x = element_text(size = axis.x.text.size),
-              axis.text.y = element_text(size = 18),
+              axis.text.y = element_text(size = 25),
               axis.title = element_text(size = 24, face="bold"),
               strip.text.x = element_text(size = strip.x.text.size), # facet label size
-              strip.text.y = element_text(size = 18),
+              strip.text.y = element_text(size = 25),
               strip.background = element_rect(fill=NA,colour=NA),
               strip.placement = "outside",
               legend.position = "bottom", 
@@ -134,16 +139,20 @@ f_case_non_case_by_time_assay <-
                Trt_nnaive = factor(paste(Trt, nnaive), 
                                    levels = c("Vaccine Naive", "Vaccine Non-naive", "Placebo Naive", "Placebo Non-naive"),
                                    labels = c("Vaccine\nnaive", "Vaccine\nnon-naive", "Placebo\nnaive", "Placebo\nnon-naive")),
-               cohort_col = ifelse(response==0 & !is.na(response), "Non-responder", as.character(cohort_event))
+               cohort_col = ifelse(response==0 & !is.na(response), "Non-Responders", as.character(cohort_event))
                ) %>%
         ungroup() %>%
         group_split(time) %>%
         purrr::map(function(d){
-            ggplot(data = d, aes(x = cohort_event, y = value, color = cohort_event)) +
-                facet_grid(Trt_nnaive ~ assay_label_short) +
-                geom_violin(scale = "width", na.rm = TRUE, show.legend = FALSE) +
-                geom_jitter(aes(color = cohort_col, shape = cohort_col), width = 0.1, height = 0, size = 1.5, show.legend = TRUE) +
-                geom_boxplot(width = 0.25, lwd = 1.5, alpha = 0.3, stat = "boxplot", outlier.shape = NA, show.legend = FALSE) +
+            ggplot(data = d, aes(x = cohort_event, y = value)) +
+                facet_grid(rows = facet.y.var, col = facet.x.var) +
+                geom_violin(aes(color = cohort_event, shape = cohort_event), scale = "width", na.rm = TRUE, show.legend = FALSE) +
+                geom_boxplot(aes(color = cohort_event, shape = cohort_event), width = 0.25, lwd = 1.5, alpha = 0.3, stat = "boxplot", outlier.shape = NA, show.legend = FALSE) +
+                scale_color_manual(values = chtcols[1:2]) + 
+                
+                geom_jitter(aes(color = cohort_col, shape = cohort_col), width = 0.1, height = 0, size = 2, show.legend = TRUE) +
+                scale_color_manual(name = "", values = chtcols, breaks = cht_footer, drop=FALSE) +
+                scale_shape_manual(name = "", values = chtpchs, breaks = cht_footer, drop=FALSE) +
                 # The lower and upper hinges correspond to the first and third quartiles (the 25th and 75th percentiles)
                 # Whisker: Q3 + 1.5 IQR
                 geom_text(aes(label = ifelse(txt!="","Rate",""), x = 0.4, y = 6.3), hjust = 0, color = "black", size = panel.text.size, check_overlap = TRUE) +
@@ -158,8 +167,6 @@ f_case_non_case_by_time_assay <-
                 scale_x_discrete(labels = c("Omicron Cases","Non-Cases"), drop=FALSE) +
                 scale_y_continuous(limits = ylim, breaks = ybreaks, labels = scales::math_format(10^.x)) +
                 labs(x = "Cohort", y = unique(d$panel), title = paste(unique(d$panel), "distributions by case/non-case at", unique(d$time)), color = "Category", shape = "Category") +
-                scale_color_manual(name = "", values = chtcols, labels=c(cht_footer, "Non-responder"), drop=FALSE) +
-                scale_shape_manual(name = "", values = chtpchs, labels=c(cht_footer, "Non-responder"), drop=FALSE) +
                 plot_theme +
                 guides(color = guide_legend(ncol = 1), shape = guide_legend(ncol = 1))
         })
@@ -175,6 +182,8 @@ f_case_non_case_by_time_assay <-
 #' @param ylim y-axis limit
 #' @param ybreaks y-axis breaks
 #' @param panel.text.size font size for text within panels
+#' @param facet.x.var horizontal facet variable 
+#' @param facet.y.var vertical facet variable
 #' @return A ggplot object list for longitudinal violin + box plot with lines
 f_longitude_by_assay <- function(
     dat,
@@ -182,16 +191,18 @@ f_longitude_by_assay <- function(
     times = times,
     ylim = c(0,7.2),
     ybreaks = c(0,2,4,6),
-    panel.text.size = 4
+    panel.text.size = 4,
+    facet.x.var,
+    facet.y.var
     ) {
     
     plot_theme <- theme_bw() +
         theme(plot.title = element_text(hjust = 0.5),
-              axis.text.x = element_text(size = 9),
+              axis.text.x = element_text(size = 9.5),
               axis.text.y = element_text(size = 18),
               axis.title = element_text(size = 24, face="bold"),
-              strip.text.x = element_text(size = 18), # facet label size
-              strip.text.y = element_text(size = 18),
+              strip.text.x = element_text(size = 25), # facet label size
+              strip.text.y = element_text(size = 25),
               strip.background = element_rect(fill=NA,colour=NA),
               strip.placement = "outside",
               legend.position = "bottom", 
@@ -218,7 +229,7 @@ f_longitude_by_assay <- function(
         group_split(panel) %>% # "panel" variable from assay_metadata
         purrr::map(function(d){
             ggplot(data = d, aes(x = time_cohort, y = value, color = cohort_event)) +
-                facet_grid(Trt_nnaive ~ assay_label_short) +
+                facet_grid(rows = facet.y.var, col = facet.x.var) +
                 
                 geom_violin(scale = "width", na.rm = TRUE, show.legend = FALSE) +
                 geom_point(aes(color = cohort_col, shape = cohort_col), size = 1.5, show.legend = TRUE) +
@@ -238,8 +249,8 @@ f_longitude_by_assay <- function(
                 scale_x_discrete(labels = c("BD1 Non-Cases","BD29 Non-Cases","BD1 Omicron Cases","BD29 Omicron Cases","DD1 Omicron Cases"), drop=FALSE) +
                 scale_y_continuous(limits = ylim, breaks = ybreaks, labels = scales::math_format(10^.x)) +
                 labs(x = "Cohort", y = unique(d$panel), title = paste(unique(d$panel), "longitudinal plots BD1 to BD29 (and to DD1)"), color = "Category", shape = "Category") +
-                scale_color_manual(name = "", values = chtcols, labels=c(cht_footer, "Non-responder"), drop=FALSE) +
-                scale_shape_manual(name = "", values = chtpchs, labels=c(cht_footer, "Non-responder"), drop=FALSE) +
+                scale_color_manual(name = "", values = chtcols, breaks = cht_footer, drop=FALSE) +
+                scale_shape_manual(name = "", values = chtpchs, breaks = cht_footer, drop=FALSE) +
                 plot_theme +
                 guides(color = guide_legend(ncol = 1), shape = guide_legend(ncol = 1))
         })

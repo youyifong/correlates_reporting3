@@ -29,6 +29,8 @@ assay_metadata = assay_metadata %>%
 ))
 
 dat.longer.cor.subset.plot1 <- readRDS(here::here("data_clean", "longer_cor_data_plot1.rds"))
+dat.longer.cor.subset.plot1.2 <- readRDS(here::here("data_clean", "longer_cor_data_plot1.2.rds"))
+dat.longer.cor.subset.plot1.3 <- readRDS(here::here("data_clean", "longer_cor_data_plot1.3.rds"))
 dat.cor.subset.plot3 <- readRDS(here::here("data_clean", "cor_data_plot3.rds"))
 dat.cor.subset.plot3$all_one <- 1 # as a placeholder for strata values
 
@@ -45,56 +47,111 @@ print(paste0("save.results.to equals ", save.results.to))
 set1_times <- c("BD1","BD29","DeltaBD29overBD1")
 # ID50 614G and BA.1, at BD1, BD29, BD29-BD1
 # bindSpike 614G and BA.1, at BD1, BD29, BD29-BD1
-# bindRBD 614G and BA.1, at BD1, BD29, BD29-BD1
-for (panel in c("pseudoneutid50", "bindSpike","bindRBD")){
+for (panel in c("pseudoneutid50", "bindSpike")){
     
     f_1 <- f_case_non_case_by_time_assay(
         dat = dat.longer.cor.subset.plot1,
         assays = paste0(panel,c("","_BA.1")),
         times = set1_times,
-        axis.x.text.size = 18,
-        strip.x.text.size = 18)
+        axis.x.text.size = 28,
+        strip.x.text.size = 25,
+        panel.text.size = 8,
+        facet.y.var = vars(Trt_nnaive), 
+        facet.x.var = vars(assay_label_short))
     
     for (i in 1:length(set1_times)){
         
         file_name <- paste0(panel, "_2_strain_by_case_non_case_at_", set1_times[i], ".pdf")
         ggsave(plot = f_1[[i]], filename = paste0(save.results.to, file_name), width = 16, height = 16)
     }
+    
+    f_1.2 <- f_case_non_case_by_time_assay(
+        dat = dat.longer.cor.subset.plot1.2,
+        assays = paste0(panel,c("","_BA.1")),
+        times = set1_times,
+        axis.x.text.size = 28,
+        strip.x.text.size = 25,
+        panel.text.size = 8,
+        facet.y.var = NULL, 
+        facet.x.var = vars(assay_label_short))
+    
+    for (i in 1:length(set1_times)){
+        
+        file_name <- paste0(panel, "_2_strain_by_case_non_case_pooled_at_", set1_times[i], ".pdf")
+        ggsave(plot = f_1.2[[i]], filename = paste0(save.results.to, file_name), width = 16, height = 16)
+    }
+    
+    f_1.3 <- f_case_non_case_by_time_assay(
+        dat = dat.longer.cor.subset.plot1.3,
+        assays = paste0(panel,c("","_BA.1")),
+        times = set1_times,
+        axis.x.text.size = 28,
+        strip.x.text.size = 25,
+        panel.text.size = 8,
+        facet.y.var = vars(nnaive), 
+        facet.x.var = vars(assay_label_short),
+        pch.by.trt = T)
+    
+    for (i in 1:length(set1_times)){
+        
+        file_name <- paste0(panel, "_2_strain_by_case_non_case_pooled_v2_at_", set1_times[i], ".pdf")
+        ggsave(plot = f_1.3[[i]], filename = paste0(save.results.to, file_name), width = 16, height = 16)
+    }
 }
 
 # bindSpike D614, Gamma, Alpha, Beta, Delta, BA.1, at BD1, BD29, BD29-BD1
-# bindRBD D614, Gamma, Alpha, Beta, Delta, BA.1, at BD1, BD29, BD29-BD1
-for (panel in c("bindSpike","bindRBD")){
+for (panel in c("bindSpike")){
     
     f_1 <- f_case_non_case_by_time_assay(
         dat = dat.longer.cor.subset.plot1,
         assays = paste0(panel,c("", "_Gamma", "_Alpha", "_Beta", "_Delta", "_BA.1")),
         times = set1_times,
-        axis.x.text.size = 10,
-        strip.x.text.size = 10)
+        axis.x.text.size = 11,
+        strip.x.text.size = 12,
+        panel.text.size = 4.5,
+        facet.y.var = vars(Trt_nnaive), 
+        facet.x.var = vars(assay_label_short))
     
     for (i in 1:length(set1_times)){
         
         file_name <- paste0(panel, "_6_strain_by_case_non_case_at_", set1_times[i], ".pdf")
         ggsave(plot = f_1[[i]], filename = paste0(save.results.to, file_name), width = 16, height = 16)
     }
+    
+    f_1.2 <- f_case_non_case_by_time_assay(
+        dat = dat.longer.cor.subset.plot1.2,
+        assays = paste0(panel,c("", "_Gamma", "_Alpha", "_Beta", "_Delta", "_BA.1")),
+        times = set1_times,
+        axis.x.text.size = 11,
+        strip.x.text.size = 12,
+        panel.text.size = 4.5,
+        facet.y.var = NULL, 
+        facet.x.var = vars(assay_label_short))
+    
+    for (i in 1:length(set1_times)){
+        
+        file_name <- paste0(panel, "_6_strain_by_case_non_case_pooled_at_", set1_times[i], ".pdf")
+        ggsave(plot = f_1.2[[i]], filename = paste0(save.results.to, file_name), width = 16, height = 16)
+    }
+
 }
 
 ###### Set 2 plots: Longitudinal plots BD1 to BD29 (and to DD1)
-set2_assays = assays[!grepl("_Alpha|_Beta|_Delta|_Gamma", assays)]
-# bindN 614G and BA.1 non-cases and cases, at BD1, BD29, DD1
-# bindRBD 614G and BA.1 non-cases and cases, at BD1, BD29, DD1
+set2_assays = c("bindSpike","bindSpike_BA.1","pseudoneutid50","pseudoneutid50_BA.1")
 # bindSpike 614G and BA.1 non-cases and cases, at BD1, BD29, DD1
 # ID50 614G and BA.1 non-cases and cases, at BD1, BD29, DD1
 f_2 <- f_longitude_by_assay(
     dat = dat.longer.cor.subset.plot1,
     assays = set2_assays,
-    times = c("BD1","BD29","DD1")
+    times = c("BD1","BD29","DD1"),
+    panel.text.size = 6,
+    facet.y.var = vars(Trt_nnaive), 
+    facet.x.var = vars(assay_label_short)
 )
 
-for (i in 1:length(c("bindN","bindRBD","bindSpike","pseudoneutid50"))){
+for (i in 1:length(c("bindSpike","pseudoneutid50"))){
     
-    panel = c("bindN","bindRBD","bindSpike","pseudoneutid50")[i]
+    panel = c("bindSpike","pseudoneutid50")[i]
 
     file_name <- paste0(panel, "_longitudinal_by_case_non_case.pdf")
     ggsave(plot = f_2[[i]], filename = paste0(save.results.to, file_name), width = 16, height = 11)
@@ -102,7 +159,7 @@ for (i in 1:length(c("bindN","bindRBD","bindSpike","pseudoneutid50"))){
 
 
 ###### Set 3 plots: Correlation plots across markers at a given time point
-# 15 markers, three timepoints
+# 9 markers, three timepoints
 for (t in c("BD1","BD29","DeltaBD29overBD1")) {
     covid_corr_pairplots(
         plot_dat = dat.cor.subset.plot3,
@@ -111,7 +168,7 @@ for (t in c("BD1","BD29","DeltaBD29overBD1")) {
         strata = "all_one",
         weight = "wt.BD29",
         plot_title = paste0(
-            "Correlations of 15 ", t, " antibody markers, Corr = Resampling-based (on IPW) Simple Spearman Rank Correlation."
+            "Correlations of 9 ", t, " antibody markers, Corr = Weighted Spearman Rank Correlation."
         ),
         column_labels = paste(t, assay_metadata$assay_label_short),
         height = max(1.3 * length(assays) + 0.1, 5.5),
@@ -119,14 +176,13 @@ for (t in c("BD1","BD29","DeltaBD29overBD1")) {
         column_label_size = ifelse(max(nchar(paste(t, assay_metadata$assay_label_short)))>40, 3.3, 3.8),
         filename = paste0(
             save.results.to, "/pairs_by_time_", t,
-            "_15_markers.pdf"
+            "_9_markers.pdf"
         )
     )
 
 
-    # 6 markers, three timepoints
+    # 4 markers, three timepoints
     assay_metadata_sub <- subset(assay_metadata, assay %in% c("bindSpike", "bindSpike_BA.1",
-                                                              "bindRBD", "bindRBD_BA.1",
                                                               "pseudoneutid50", "pseudoneutid50_BA.1"))
     covid_corr_pairplots(
         plot_dat = dat.cor.subset.plot3,
@@ -137,7 +193,7 @@ for (t in c("BD1","BD29","DeltaBD29overBD1")) {
         # strata-based model is currently commented out in the function, ggally_statistic_resample
         weight = "wt.BD29",
         plot_title = paste0(
-            "Correlations of 6 ", t, " antibody markers, Corr = Weighted Spearman Rank Correlation."
+            "Correlations of 4 ", t, " antibody markers, ", if (grepl("Delta", t)) "\n", "Corr = Weighted Spearman Rank Correlation."
         ),
         column_labels = paste(t, assay_metadata_sub$assay_label_short),
         height = max(1.3 * length(assay_metadata_sub$assay) + 0.1, 5.5),
@@ -145,14 +201,14 @@ for (t in c("BD1","BD29","DeltaBD29overBD1")) {
         column_label_size = ifelse(max(nchar(paste(t, assay_metadata_sub$assay_label_short)))>40, 3.3, 4.3),
         filename = paste0(
             save.results.to, "/pairs_by_time_", t,
-            "_6_markers.pdf"
+            "_4_markers.pdf"
         )
     )
 }
 
 
 ###### Set 4 plots: Correlation plots for a given marker across time points
-# 15 markers
+# 9 markers
 for (a in assays){
     panels_set <- list()
     i <- 1

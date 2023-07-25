@@ -11,32 +11,43 @@ times=c("BD1","BD29","DD1","DeltaBD29overBD1","DeltaDD1overBD1")
 uloqs=assay_metadata$uloq; names(uloqs)=assays
 pos.cutoffs=assay_metadata$pos.cutoff; names(pos.cutoffs)=assays
 
-dat$EventIndPrimary=dat$EventIndOmicronBD29
-dat$EventTimePrimary=dat$EventTimeOmicronBD29
+#dat$EventIndPrimary=dat$EventIndOmicronBD29
+#dat$EventTimePrimary=dat$EventTimeOmicronBD29
 dat.cp <- dat
 
 # assign values above the uloq to the uloq
 for (a in assays){
   for (t in c("BD1","BD29","DD1")){
-    dat.cp[, paste0(t, a)] = ifelse(dat.cp[, paste0(t, a)] > log10(uloqs[a]), log10(uloqs[a]), dat.cp[, paste0(t, a)])
+    if (paste0(t, a) %in% colnames(dat.cp)){
+      dat.cp[, paste0(t, a)] = ifelse(dat.cp[, paste0(t, a)] > log10(uloqs[a]), log10(uloqs[a]), dat.cp[, paste0(t, a)])
+    } else {print(paste0(t, a, " doesn't exist"))}
   }
 }
 
 # recalculate DeltaBD29overBD1 after the censoring above in order to calculate the response rate for cases at DD1
 for (a in assays){
-  dat.cp[, paste0("DeltaBD29overBD1", a)] = dat.cp[, paste0("BD29", a)] - dat.cp[, paste0("BD1", a)]
+  if (paste0("BD29", a) %in% colnames(dat.cp) & paste0("BD1", a) %in% colnames(dat.cp)){
+    dat.cp[, paste0("DeltaBD29overBD1", a)] = dat.cp[, paste0("BD29", a)] - dat.cp[, paste0("BD1", a)]
+  } else {print(paste0("BD1", a, "or BD29", a, " doesn't exist"))}
 }
 
 # calculate DeltaBD57overBD1 in order to calculate the response rate for cases at DD1
 for (a in assays){
-  dat.cp[, paste0("DeltaDD1overBD1", a)] = dat.cp[, paste0("DD1", a)] - dat.cp[, paste0("BD1", a)]
+  if (paste0("DD1", a) %in% colnames(dat.cp) & paste0("BD1", a) %in% colnames(dat.cp)){
+    dat.cp[, paste0("DeltaDD1overBD1", a)] = dat.cp[, paste0("DD1", a)] - dat.cp[, paste0("BD1", a)]
+  } else {print(paste0("BD1", a, "or DD1", a, " doesn't exist"))}
 }
 
+immuno_vars <- colnames(dat.cp)[grepl("^BD1|^BD29|^DD1|^Delta", colnames(dat.cp))]
+
 # variable selection
-dat <- dat.cp %>% select(Ptid, Trt, CalendarBD1Date, CalendarBD1Interval, nnaive, BD1bindSpike:DD1bindRBD_Delta,
-                      AnyinfectionBD1, EventTimeOmicronBD1:EventIndOmicronBD29, EventIndPrimary, EventTimePrimary, 
+dat <- dat.cp %>% select(Ptid, Trt, CalendarBD1Date, CalendarBD1Interval, nnaive,
+                         BDPerprotocolIncludeSeroPos, Stage2SamplingInd, 
+                      EventTimeOmicronBD1:EventIndOmicronBD29, 
+                      EventTimePrimaryOmicronBD1:EventIndPrimaryOmicronBD29, 
+                      #EventIndPrimary, EventTimePrimary, 
                       ph2.BD29, wt.BD29, wt.DD1,
-                      DeltaBD29overBD1bindSpike: DeltaDD1overBD1pseudoneutid50_BA.1)
+                      all_of(immuno_vars))
 
 # create case vs non-case indicators
 # Case = COVID-19 endpoint in the interval [≥ 7 days post BD29 and ≥ Dec 1 2021, May 2022 data base lock date]. As described in the appendix the COVID-19 endpoint is documented to be Omicron BA.1 if possible whereas for some non-naive COVID-19 endpoints there was not lineage data available to document the case to be Omicron BA.1.
@@ -44,9 +55,9 @@ dat <- dat.cp %>% select(Ptid, Trt, CalendarBD1Date, CalendarBD1Interval, nnaive
 if (study_name=="COVEBoost") {
   dat <- dat %>%
     mutate(cohort_event = factor(
-      case_when(EventIndPrimary == 1 & EventTimePrimary >= 7 & (as.Date(CalendarBD1Date) + EventTimeOmicronBD1) >= "2021-12-31" 
+      case_when(BDPerprotocolIncludeSeroPos==1 & BD29window==1 & EventIndPrimaryOmicronBD29==1 & EventTimePrimaryOmicronBD29>=7 & Stage2SamplingInd==1 
                 ~ "Omicron Cases",
-                AnyinfectionBD1 == 0 & EventIndOmicronBD1 == 0 ~ "Non-Cases"),
+                BDPerprotocolIncludeSeroPos==1 & BD29window==1 & EventIndPrimaryOmicronBD1==0 & Stage2SamplingInd==1  ~ "Non-Cases"),
       levels = c("Omicron Cases", "Non-Cases"))
       )
 }
@@ -99,8 +110,12 @@ dat.long$assay <- factor(dat.long$assay, levels = assays, labels = assays)
 # add label = LLoD / poscutoff, uloq values to show in the plot
 dat.long$LLoD = with(dat.long, log10(lods[as.character(assay)]))
 dat.long$pos.cutoffs = with(dat.long, log10(pos.cutoffs[as.character(assay)]))
-dat.long$lb = with(dat.long, ifelse(grepl("bind", assay), "Pos.Cut", "LoD"))
-dat.long$lbval =  with(dat.long, ifelse(grepl("bind", assay), pos.cutoffs, LLoD)) # pos.cutoffs = LLoD for pseudovirus
+dat.long$lb = with(dat.long, #ifelse(grepl("bind", assay), 
+                   "Pos.Cut"#, "LoD")
+                   )
+dat.long$lbval =  with(dat.long, #ifelse(grepl("bind", assay), 
+                       pos.cutoffs#, LLoD)
+                       ) # pos.cutoffs = LLoD for pseudovirus
 
 dat.long$ULoQ = with(dat.long, log10(uloqs[as.character(assay)]))
 dat.long$lb2 = "ULoQ" #with(dat.long, ifelse(grepl("bind", assay), "ULoQ", ""))
@@ -148,7 +163,7 @@ dat.longer.cor.subset <- dat.longer.cor.subset %>%
 # 1. define response rate:
 # 2. make subsample datasets such that the violin plot only shows <= 100 non-case data points
 
-#### for Figure 1. intercurrent vs pp, case vs non-case, (Day 1), Day 29 Day 57
+#### for figures 1, 2, 3, 4: case vs non-case, by naive/non-naive, vaccine/placebo, (Day 1), Day 29 Day 57
 groupby_vars1=c("Trt", "nnaive", "cohort_event", "time", "assay")
 
 # define response rate
@@ -156,3 +171,18 @@ dat.longer.cor.subset.plot1 <- get_desc_by_group(dat.longer.cor.subset, groupby_
 write.csv(dat.longer.cor.subset.plot1, file = here::here("data_clean", "longer_cor_data_plot1.csv"), row.names=F)
 saveRDS(dat.longer.cor.subset.plot1, file = here::here("data_clean", "longer_cor_data_plot1.rds"))
 
+#### for figures 1.2, 2.2: case vs non-case, by (Day 1), Day 29 Day 57
+groupby_vars1.2=c("cohort_event", "time", "assay")
+
+# define response rate
+dat.longer.cor.subset.plot1.2 <- get_desc_by_group(dat.longer.cor.subset, groupby_vars1.2)
+write.csv(dat.longer.cor.subset.plot1.2, file = here::here("data_clean", "longer_cor_data_plot1.2.csv"), row.names=F)
+saveRDS(dat.longer.cor.subset.plot1.2, file = here::here("data_clean", "longer_cor_data_plot1.2.rds"))
+
+#### for figures 1.3, 2.3: case vs non-case, by naive vs non-naive, (Day 1), Day 29 Day 57
+groupby_vars1.3=c("cohort_event", "nnaive", "time", "assay")
+
+# define response rate
+dat.longer.cor.subset.plot1.3 <- get_desc_by_group(dat.longer.cor.subset, groupby_vars1.3)
+write.csv(dat.longer.cor.subset.plot1.3, file = here::here("data_clean", "longer_cor_data_plot1.3.csv"), row.names=F)
+saveRDS(dat.longer.cor.subset.plot1.3, file = here::here("data_clean", "longer_cor_data_plot1.3.rds"))
