@@ -117,7 +117,7 @@ dat.long$lb = with(dat.long, #ifelse(grepl("bind", assay),
                    "LoQ")
 dat.long$lbval = with(dat.long, #ifelse(grepl("bind", assay), 
                    #pos.cutoffs, LLoD)
-                    "LLoQ")
+                    LLoQ)
 
 dat.long$ULoQ = with(dat.long, log10(uloqs[as.character(assay)]))
 dat.long$lb2 = "ULoQ" #with(dat.long, ifelse(grepl("bind", assay), "ULoQ", ""))
