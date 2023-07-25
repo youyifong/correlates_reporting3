@@ -6,5 +6,5 @@ bindSpike,3,bindSpike_Alpha,52,8800000,13,52,Binding Antibody to Spike Alpha,Ant
 bindSpike,4,bindSpike_Beta,111,5000000,10,111,Binding Antibody to Spike Beta,Anti Spike IgG Beta (AU/ml),lloq
 bindSpike,5,bindSpike_Delta,150,8000000,7,150,Binding Antibody to Spike Delta,Anti Spike IgG Delta (AU/ml),lloq
 bindRBD,1,bindRBD,79,5800000,5,79,Binding Antibody to RBD D614,Anti RBD IgG D614 (AU/ml),lloq
-id50,1,pseudoneutid50,1.86154,25929.6,1.86154,1.86154,PsV Neutralization to D614G,Pseudovirus-nAb D614G (AU/ml),lloq
+id50,1,pseudoneutid50,NA,25929.6,1.86154,1.86154,PsV Neutralization to D614G,Pseudovirus-nAb D614G (AU/ml),lloq
 id50,2,pseudoneutid50_BA.1,1.86154,5701.66,1.86154,1.86154,PsV Neutralization to BA.1,Pseudovirus-nAb BA.1 (AU/ml),lloq
