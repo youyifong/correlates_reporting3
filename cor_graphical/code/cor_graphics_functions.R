@@ -232,6 +232,7 @@ f_longitude_by_assay <- function(
                                    levels = c("Vaccine Naive", "Vaccine Non-naive", "Placebo Naive", "Placebo Non-naive"),
                                    labels = c("Vaccine\nnaive", "Vaccine\nnon-naive", "Placebo\nnaive", "Placebo\nnon-naive")),
                cohort_col = ifelse(response==0 & !is.na(response), "Non-Responders", as.character(cohort_event)),
+               cohort_col2 = paste(cohort_event, Trt),
                time_cohort = factor(paste(time, cohort_event),
                                     levels = c("BD1 Non-Cases","BD29 Non-Cases","BD1 Omicron Cases","BD29 Omicron Cases","DD1 Omicron Cases"),
                                     labels = c("BD1 Non-Cases","BD29 Non-Cases","BD1 Omicron Cases","BD29 Omicron Cases","DD1 Omicron Cases"))
