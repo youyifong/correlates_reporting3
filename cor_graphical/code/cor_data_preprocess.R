@@ -173,7 +173,7 @@ dat.longer.cor.subset.plot1 <- get_desc_by_group(dat.longer.cor.subset, groupby_
 write.csv(dat.longer.cor.subset.plot1, file = here::here("data_clean", "longer_cor_data_plot1.csv"), row.names=F)
 saveRDS(dat.longer.cor.subset.plot1, file = here::here("data_clean", "longer_cor_data_plot1.rds"))
 
-#### for figures 1.2, 2.2: case vs non-case, by (Day 1), Day 29 Day 57
+#### for figures 1.2, 2.2: case vs non-case, pooling all, by (Day 1), Day 29 Day 57
 groupby_vars1.2=c("cohort_event", "time", "assay")
 
 # define response rate
