@@ -10,6 +10,7 @@ source(here::here("code/cor_graphics_functions.R"))
 times=c("BD1","BD29","DD1","DeltaBD29overBD1","DeltaDD1overBD1")
 uloqs=assay_metadata$uloq; names(uloqs)=assays
 pos.cutoffs=assay_metadata$pos.cutoff; names(pos.cutoffs)=assays
+loqs=assay_metadata$loqs; names(loqs)=assays
 
 #dat$EventIndPrimary=dat$EventIndOmicronBD29
 #dat$EventTimePrimary=dat$EventTimeOmicronBD29
@@ -107,15 +108,16 @@ dat.long$nnaive <- factor(dat.long$nnaive,
 )
 dat.long$assay <- factor(dat.long$assay, levels = assays, labels = assays)
 
-# add label = LLoD / poscutoff, uloq values to show in the plot
+# add label = LLoQ, uloq values to show in the plot
 dat.long$LLoD = with(dat.long, log10(lods[as.character(assay)]))
 dat.long$pos.cutoffs = with(dat.long, log10(pos.cutoffs[as.character(assay)]))
+dat.long$LLoQ = with(dat.long, log10(loqs[as.character(assay)]))
 dat.long$lb = with(dat.long, #ifelse(grepl("bind", assay), 
-                   "Pos.Cut"#, "LoD")
-                   )
-dat.long$lbval =  with(dat.long, #ifelse(grepl("bind", assay), 
-                       pos.cutoffs#, LLoD)
-                       ) # pos.cutoffs = LLoD for pseudovirus
+                   #"Pos.Cut", "LoD")
+                   "LoQ")
+dat.long$lbval = with(dat.long, #ifelse(grepl("bind", assay), 
+                   #pos.cutoffs, LLoD)
+                    "LLoQ")
 
 dat.long$ULoQ = with(dat.long, log10(uloqs[as.character(assay)]))
 dat.long$lb2 = "ULoQ" #with(dat.long, ifelse(grepl("bind", assay), "ULoQ", ""))
