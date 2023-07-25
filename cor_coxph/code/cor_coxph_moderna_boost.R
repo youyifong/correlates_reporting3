@@ -1,7 +1,6 @@
 renv::activate(project = here::here(".."))     
 
 #Sys.setenv(TRIAL = "moderna_boost"); Sys.setenv(VERBOSE = 1)
-
 source(here::here("..", "_common.R"))
 source("code/params.R")
 
@@ -54,7 +53,7 @@ dat$yy=dat$EventIndPrimary
 dat=subset(dat, ph1.BD29)
 
 # add trichotomized markers. use the same cutpoints for naive and nnaive
-obj.assays=c("bindSpike_BA.1", "pseudoneutid50_BA.1")  
+obj.assays=c("bindSpike_BA.1", "pseudoneutid50_BA.1", "bindSpike", "pseudoneutid50")  
 all.markers = c(paste0("BD29", obj.assays), paste0("DeltaBD29overBD1", obj.assays))
 names(all.markers)=all.markers
 dat = add.trichotomized.markers (dat, all.markers)
@@ -88,7 +87,7 @@ for (iObj in 1:2) {
   names(all.markers)=all.markers
 
   # loop through naive and nonnaive
-  for (idat in 2:2) {
+  for (idat in 1:2) {
     # idat=2
     
     myprint(idat)
@@ -242,7 +241,7 @@ for (idat in 1:2) {
   
   # fit the interaction model and save regression results to a table
   for (a in all.markers) {
-    f= update(form.0, as.formula(paste0("~.+",sub("BD29","BD1",a),"*", a)))
+    f= update(form.0, as.formula(paste0("~.+scale(",sub("BD29","BD1",a),")*scale(", a, ")")))
     fits=list(svycoxph(f, design=design.1))
     est=getFormattedSummary(fits, exp=T, robust=T, type=1)
     ci= getFormattedSummary(fits, exp=T, robust=T, type=13)
@@ -269,6 +268,70 @@ for (idat in 1:2) {
   # colnames(tab)=c("interaction P value", "FWER", "FDR")
   # mytex(tab, file.name="CoR_itxn_multitesting", align="c", include.colnames = T, save2input.only=T, input.foldername=save.results.to)
 }
+
+
+# # joint distribution of BD1 and BD29 markers
+# par(mfrow=c(1,2))
+# with(dat.naive, plot(BD1bindSpike_BA.1, BD29bindSpike_BA.1, col=ifelse(EventIndPrimary, 2, 1),  main=paste0("Naive, cor ",round(cor(BD1bindSpike_BA.1, BD29bindSpike_BA.1, use="complete.obs"),2))))
+# abline(0,1)
+# with(dat.nnaive, plot(BD1bindSpike_BA.1, BD29bindSpike_BA.1, col=ifelse(EventIndPrimary, 2, 1), main=paste0("Naive, cor ",round(cor(BD1bindSpike_BA.1, BD29bindSpike_BA.1, use="complete.obs"),2))))
+# abline(0,1)
+
+
+
+###################################################################################################
+# multivariate_assays models
+# pooled over naive and nnaive
+
+if (!is.null(config$multivariate_assays)) {
+  if(verbose) print("Multiple regression")
+  
+  dat.ph1 = subset(dat, ph1.BD29)
+  design.1<-twophase(id=list(~1,~1), strata=list(NULL,~Wstratum), subset=~ph2, data=dat.ph1)
+  with(dat.ph1, table(Wstratum, ph2, useNA="ifany"))
+  
+  for (a in config$multivariate_assays) {
+    for (i in 1:2) {
+      # 1: per SD; 2: per 10-fold
+      a.tmp=a
+      aa=trim(strsplit(a, "\\+")[[1]])
+      for (x in aa[!contain(aa, "\\*")]) {
+        # replace every variable with scale(x) when i==1
+        a.tmp=gsub(x, paste0(if(i==1) "scale","(",x,")"), a.tmp) 
+      }
+      f= update(form.0, as.formula(paste0("~.+naive+", a.tmp)))
+      fit=svycoxph(f, design=design.1) 
+      var.ind=length(coef(fit)) - length(aa):1 + 1
+      
+      # svycoxph(Surv(EventTimePrimary, EventIndPrimary) ~ MinorityInd + HighRiskInd + 
+      #            risk_score + scale(BD1pseudoneutid50_BA.1) * scale(BD29pseudoneutid50_BA.1), design=design.1)
+      # 
+      # svycoxph(Surv(EventTimePrimary, EventIndPrimary) ~ MinorityInd + HighRiskInd + 
+      #            risk_score + scale(BD1bindSpike_BA.1) * scale(BD29bindSpike_BA.1), design=design.1)
+      
+      fits=list(fit)
+      est=getFormattedSummary(fits, exp=T, robust=T, rows=var.ind, type=1)
+      ci= getFormattedSummary(fits, exp=T, robust=T, rows=var.ind, type=13)
+      est = paste0(est, " ", ci)
+      p=  getFormattedSummary(fits, exp=T, robust=T, rows=var.ind, type=10)
+      
+      #generalized Wald test for whether the set of markers has any correlation (rejecting the complete null)
+      stat=coef(fit)[var.ind] %*% solve(vcov(fit)[var.ind,var.ind]) %*% coef(fit)[var.ind] 
+      p.gwald=pchisq(stat, length(var.ind), lower.tail = FALSE)
+      
+      tab=cbind(est, p)
+      colnames(tab)=c(paste0("HR per ",ifelse(i==1,"sd","10 fold")," incr."), "P value")
+      tab
+      tab=rbind(tab, "Generalized Wald Test"=c("", formatDouble(p.gwald,3, remove.leading0 = F)))
+      
+      mytex(tab, file.name=paste0("CoR_multivariable_svycoxph_pretty", match(a, config$multivariate_assays), if(i==2) "_per10fold", study_name), align="c", include.colnames = T, save2input.only=T, 
+            input.foldername=save.results.to.0)
+    }
+  }
+  
+}
+
+
 
 
 print(date())
