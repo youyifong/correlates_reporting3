@@ -10,7 +10,7 @@ source(here::here("code/cor_graphics_functions.R"))
 times=c("BD1","BD29","DD1","DeltaBD29overBD1","DeltaDD1overBD1")
 uloqs=assay_metadata$uloq; names(uloqs)=assays
 pos.cutoffs=assay_metadata$pos.cutoff; names(pos.cutoffs)=assays
-loqs=assay_metadata$loqs; names(loqs)=assays
+loqs=assay_metadata$lloq; names(loqs)=assays
 
 #dat$EventIndPrimary=dat$EventIndOmicronBD29
 #dat$EventTimePrimary=dat$EventTimeOmicronBD29
