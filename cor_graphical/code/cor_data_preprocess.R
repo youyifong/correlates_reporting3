@@ -110,8 +110,12 @@ dat.long$assay <- factor(dat.long$assay, levels = assays, labels = assays)
 # add label = LLoD / poscutoff, uloq values to show in the plot
 dat.long$LLoD = with(dat.long, log10(lods[as.character(assay)]))
 dat.long$pos.cutoffs = with(dat.long, log10(pos.cutoffs[as.character(assay)]))
-dat.long$lb = with(dat.long, ifelse(grepl("bind", assay), "Pos.Cut", "LoD"))
-dat.long$lbval =  with(dat.long, ifelse(grepl("bind", assay), pos.cutoffs, LLoD)) # pos.cutoffs = LLoD for pseudovirus
+dat.long$lb = with(dat.long, #ifelse(grepl("bind", assay), 
+                   "Pos.Cut"#, "LoD")
+                   )
+dat.long$lbval =  with(dat.long, #ifelse(grepl("bind", assay), 
+                       pos.cutoffs#, LLoD)
+                       ) # pos.cutoffs = LLoD for pseudovirus
 
 dat.long$ULoQ = with(dat.long, log10(uloqs[as.character(assay)]))
 dat.long$lb2 = "ULoQ" #with(dat.long, ifelse(grepl("bind", assay), "ULoQ", ""))
