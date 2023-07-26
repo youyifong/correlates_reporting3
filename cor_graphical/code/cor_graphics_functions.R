@@ -245,10 +245,17 @@ f_longitude_by_assay <- function(
                 
                 geom_violin(scale = "width", na.rm = TRUE, show.legend = FALSE) +
                 geom_line(aes(group = Ptid), alpha = 0.5) +
-                geom_point(aes(color = .data[[pointby]], shape = .data[[pointby]]), size = 2, show.legend = TRUE) +
                 geom_boxplot(width = 0.25, lwd = 1.5, alpha = 0.3, stat = "boxplot", outlier.shape = NA, show.legend = FALSE) +
                 # The lower and upper hinges correspond to the first and third quartiles (the 25th and 75th percentiles)
                 # Whisker: Q3 + 1.5 IQR
+                scale_color_manual(name = "", values = chtcols[1:2], guide = "none") + # guide = "none" in scale_..._...() to suppress legend
+                # geoms below will use another color scale
+                new_scale_color() +
+
+                geom_point(aes(color = .data[[pointby]], shape = .data[[pointby]]), size = 2, show.legend = TRUE) +
+                scale_color_manual(name = "", values = chtcols, breaks = lgdbreaks, drop=FALSE) +
+                scale_shape_manual(name = "", values = chtpchs, breaks = lgdbreaks, drop=FALSE) +
+                
                 geom_text(aes(label = ifelse(txt!="","Rate",""), x = 0.4, y = 6.3), hjust = 0, color = "black", size = panel.text.size, check_overlap = TRUE) +
                 geom_text(aes(x = time_cohort, label = txt, y = 6.3), color = "black", size = panel.text.size, check_overlap = TRUE) +
                 
@@ -261,8 +268,6 @@ f_longitude_by_assay <- function(
                 scale_x_discrete(labels = c("BD1 Non-Cases","BD29 Non-Cases","BD1 Omicron Cases","BD29 Omicron Cases","DD1 Omicron Cases"), drop=FALSE) +
                 scale_y_continuous(limits = ylim, breaks = ybreaks, labels = scales::math_format(10^.x)) +
                 labs(x = "Cohort", y = unique(d$panel), title = paste(unique(d$panel), "longitudinal plots BD1 to BD29 (and to DD1)"), color = "Category", shape = "Category") +
-                scale_color_manual(name = "", values = chtcols, breaks = lgdbreaks, drop=FALSE) +
-                scale_shape_manual(name = "", values = chtpchs, breaks = lgdbreaks, drop=FALSE) +
                 plot_theme +
                 guides(color = guide_legend(ncol = 1), shape = guide_legend(ncol = 1))
         })
