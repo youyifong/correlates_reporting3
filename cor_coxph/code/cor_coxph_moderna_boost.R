@@ -1,6 +1,7 @@
 renv::activate(project = here::here(".."))     
 
 #Sys.setenv(TRIAL = "moderna_boost"); Sys.setenv(VERBOSE = 1)
+
 source(here::here("..", "_common.R"))
 source("code/params.R")
 
@@ -93,6 +94,13 @@ for (iObj in 1:2) {
     myprint(idat)
     if (idat==1) {dat.ph1 = dat.naive;  save.results.to = glue("{save.results.to.0}/obj{iObj}_naive/")}
     if (idat==2) {dat.ph1 = dat.nnaive; save.results.to = glue("{save.results.to.0}/obj{iObj}_nnaive/")}
+    
+    # dat.ph1 = subset(dat.ph1, Ptid!="US3302292")
+    # dat.ph1 = subset(dat.ph1, !Ptid %in% c("US3302292", "US3302397", "US3492199", "US3632155"))
+    # dat.ph1 = subset(dat.ph1, !Ptid %in% c("US3302292", "US3302397", "US3492199", "US3632155", "US3642188"))
+    # dat.ph1 = subset(dat.ph1, Ptid!="US3642188")
+    # dat.ph1[dat.ph1$Ptid=="US3302292","ph2"] =F
+    
 
     if (!dir.exists(save.results.to))  dir.create(save.results.to)
     print(paste0("save results to ", save.results.to))
@@ -106,9 +114,10 @@ for (iObj in 1:2) {
     }
     
     # create data objects
-    dat.ph2 = subset(dat.ph1, ph2)
     design.1<-twophase(id=list(~1,~1), strata=list(NULL,~Wstratum), subset=~ph2, data=dat.ph1)
     with(dat.ph1, table(Wstratum, ph2, useNA="ifany"))
+    
+    dat.ph2 = subset(dat.ph1, ph2)
     
     # table of ph1 and ph2 cases
     tab=with(dat.ph1, table(ph2, EventIndPrimary))
@@ -124,6 +133,7 @@ for (iObj in 1:2) {
     source(here::here("code", "cor_coxph_marginalized_risk_no_marker.R"))
     
     source(here::here("code", "cor_coxph_ph.R"))
+    
     
     # unit testing
     if (TRIAL == "") {
