@@ -43,6 +43,8 @@ for (iObj in 1:2) {
 COR="Objective 3"
 cat(glue("# {COR} Modification of BD29 markers or fold change by naive/non-naive\\"), sep='\n')
 
+cat(glue("One model per table.\\"), sep='\n')
+
 for (iObj in 1:2) {
   if (iObj==1) {
     all.markers = paste0("BD29", obj.assays)
@@ -69,6 +71,8 @@ for (iObj in 1:2) {
 COR="Objective 4"
 cat(glue("# {COR} Modification of BD29 markers by BD1 markers\\"), sep='\n')
 
+cat(glue("One model per table.\\"), sep='\n')
+
 all.markers = paste0("BD29", obj.assays)
 names(all.markers)=all.markers
 
@@ -89,6 +93,9 @@ for (idat in 1:2) {
 
 #
 cat(glue("# Multivariate Cox Models of Risk\\"), sep='\n')
+
+cat(glue("One model per table.\\"), sep='\n')
+
 
 # naive is also adjusted
 covariates_adjusted.0=covariates_adjusted
