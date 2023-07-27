@@ -937,7 +937,7 @@
       "RemoteUsername": "nhejazi",
       "RemoteRef": "master",
       "RemoteSha": "16350cc39b68e61566f03a11f633e08073405355",
-      "Hash": "47c34f41535fb9c16bd44e760d61cb67"
+      "Hash": "1b5958df7bd05b48da50266f92a1d327"
     },
     "haven": {
       "Package": "haven",
@@ -1079,15 +1079,15 @@
     },
     "kyotil": {
       "Package": "kyotil",
-      "Version": "2023.7-15",
+      "Version": "2023.7-22",
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteUsername": "youyifong",
       "RemoteRepo": "kyotil",
       "RemoteRef": "master",
-      "RemoteSha": "229c76a7972dcd12906a9bf40bb28e78b7607096",
-      "Hash": "2a5f1252fd393075db80cbe0dba3e7b7"
+      "RemoteSha": "8b1f51b5958292f00385a5c65f922c760410457e",
+      "Hash": "22130af86d22b591c07ff2993314ab43"
     },
     "labeling": {
       "Package": "labeling",
@@ -1702,7 +1702,9 @@
     "renv": {
       "Package": "renv",
       "Version": "0.13.2",
-      "Source": "Repository"
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "079cb1f03ff972b30401ed05623cbe92"
     },
     "repr": {
       "Package": "repr",
@@ -2109,7 +2111,7 @@
       "RemoteUsername": "nhejazi",
       "RemoteRef": "master",
       "RemoteSha": "c0f572a638b019c057aee83c9f59f56acf1398db",
-      "Hash": "154f62a760f3f43838ea629efec3e5ae"
+      "Hash": "362ae555812ded051554a1136577d20f"
     },
     "usethis": {
       "Package": "usethis",

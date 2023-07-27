@@ -4,15 +4,33 @@ default: &default
 moderna_boost: &moderna_boost
   study_name: COVEBoost
   txt.endpoint: COVID
-  data_cleaned: /trials/covpn/p3001/analysis/correlates/Part_C_Unblinded_Phase_Data/adata/moderna_boost_data_processed.csv
+  data_cleaned: /trials/covpn/p3001/analysis/correlates/Part_C_Unblinded_Phase_Data/adata/moderna_boost_data_processed_20230723.csv
   assay_metadata: assay_metadata/moderna_boost_assay_metadata.csv
   sampling_scheme: case_control
   covariates: ~.+ MinorityInd + HighRiskInd + risk_score
+  multivariate_assays: [
+# BA1 and D614G neuts           absolute level
+    BD29pseudoneutid50_BA.1 + BD29pseudoneutid50, 
+# BA1 and D614G IgG Spike    absolute level
+    BD29bindSpike_BA.1 + BD29bindSpike, 
+# BA1 neuts and BA1 IgG Spike    absolute level
+    BD29pseudoneutid50_BA.1 + BD29bindSpike_BA.1, 
+# D614G neuts and D614G IgG Spike    absolute level
+    BD29pseudoneutid50 + BD29bindSpike, 
+# BA1 and D614G neuts           fold-rise
+    DeltaBD29overBD1pseudoneutid50_BA.1 + DeltaBD29overBD1pseudoneutid50, 
+# BA1 and D614G IgG Spike    fold-rise
+    DeltaBD29overBD1bindSpike_BA.1 + DeltaBD29overBD1bindSpike, 
+# BA1 neuts and BA1 IgG Spike    fold-rise
+    DeltaBD29overBD1pseudoneutid50_BA.1 + DeltaBD29overBD1bindSpike_BA.1, 
+# D614G neuts and D614G IgG Spike    fold-rise
+    DeltaBD29overBD1pseudoneutid50 + DeltaBD29overBD1bindSpike
+  ]
   ve_ylim: [0,1]
   ve_ylim_log: [0.0,0.98]
   low_efficacy: no
-  num_boot_replicates: 10
-  num_perm_replicates: 10
+  num_boot_replicates: 1000
+  num_perm_replicates: 10000
   ph1: [ph1.BD29]
   endpoints: [EventIndOmicron]
   txt.coxph.note2: No. at-risk = estimated number in the population for analysis, i.e. baseline negative per-protocol vaccine recipients not experiencing the COVID endpoint or infected through 6 days post BD29 visit; no. cases = number of this cohort with an observed COVID endpoint. 
