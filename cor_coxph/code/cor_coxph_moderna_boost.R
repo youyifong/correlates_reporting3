@@ -61,14 +61,15 @@ dat = add.trichotomized.markers (dat, all.markers)
 marker.cutpoints=attr(dat, "marker.cutpoints")
   
 # define naive and nnaive datasets
-dat.naive=subset(dat,   naive & ph1.BD29)
-dat.nnaive=subset(dat, !naive & ph1.BD29)
+dat.naive =subset(dat, naive==1)
+dat.nnaive=subset(dat, naive==0)
 
 # compute overall risks
 prev.naive  = get.marginalized.risk.no.marker(form.0, dat.naive,  tfinal.tpeak)
 prev.nnaive = get.marginalized.risk.no.marker(form.0, dat.nnaive, tfinal.tpeak)
-overall.risks=list(prev.naive, prev.nnaive)
-myprint(prev.naive, prev.nnaive)
+prev.pooled = get.marginalized.risk.no.marker(form.0, dat, tfinal.tpeak)
+overall.risks=list(prev.naive, prev.nnaive, prev.pooled)
+myprint(prev.naive, prev.nnaive, prev.pooled)
 
 
 
@@ -87,13 +88,14 @@ for (iObj in 1:2) {
   }
   names(all.markers)=all.markers
 
-  # loop through naive and nonnaive
-  for (idat in 1:2) {
-    # idat=2
+  # loop through (1) naive, (2) nnaive, (3) pooled
+  for (idat in 1:3) {
+    # idat=3
     
     myprint(idat)
     if (idat==1) {dat.ph1 = dat.naive;  save.results.to = glue("{save.results.to.0}/obj{iObj}_naive/")}
     if (idat==2) {dat.ph1 = dat.nnaive; save.results.to = glue("{save.results.to.0}/obj{iObj}_nnaive/")}
+    if (idat==3) {dat.ph1 = dat; save.results.to = glue("{save.results.to.0}/obj{iObj}_pooled/")}
     
     # dat.ph1 = subset(dat.ph1, Ptid!="US3302292")
     # dat.ph1 = subset(dat.ph1, !Ptid %in% c("US3302292", "US3302397", "US3492199", "US3632155"))

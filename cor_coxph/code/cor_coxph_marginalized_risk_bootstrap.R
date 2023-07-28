@@ -171,35 +171,50 @@ marginalized.risk.svycoxph.boot=function(marker.name, type, data, t, B, ci.type=
 
 
 
-if(!file.exists(paste0(save.results.to, "marginalized.risk.Rdata"))) {    
-  cat("make marginalized.risk\n")
-  
-  # vaccine arm, conditional on continuous S=s
+# vaccine arm, conditional on continuous S=s
+cat("make marginalized.risk\n")
+if(!file.exists(paste0(save.results.to, "risks.all.1.Rdata"))) {    
   if (verbose) print("create risks.all.1")
   risks.all.1=lapply(all.markers, function (a) {
     if(verbose) myprint(a)
     marginalized.risk.svycoxph.boot(marker.name=a, type=1, data=dat.ph1, tfinal.tpeak, B=B, ci.type="quantile", numCores=numCores)                
   })
+  save(risks.all.1, file=paste0(save.results.to, "risks.all.1.Rdata"))
   
-  # vaccine arm, conditional on S>=s
+} else {
+  load(paste0(save.results.to, "risks.all.1.Rdata"))
+}
+
+  
+# vaccine arm, conditional on S>=s
+cat("make marginalized.risk\n")
+if(!file.exists(paste0(save.results.to, "risks.all.2.Rdata"))) {    
   if (verbose) print("create risks.all.2")
   risks.all.2=lapply(all.markers, function (a) {
     if(verbose) myprint(a)
     marginalized.risk.svycoxph.boot(marker.name=a, type=2, data=dat.ph1, tfinal.tpeak, B=B, ci.type="quantile", numCores=numCores)        
   }) 
+  save(risks.all.2, file=paste0(save.results.to, "risks.all.2.Rdata"))
   
-  # vaccine arm, conditional on categorical S
+} else {
+  load(paste0(save.results.to, "risks.all.2.Rdata"))
+}
+
+
+# vaccine arm, conditional on categorical S
+cat("make marginalized.risk\n")
+if(!file.exists(paste0(save.results.to, "risks.all.3.Rdata"))) {    
   if (verbose) print("create risks.all.3")
   risks.all.3=lapply(all.markers, function (a) {
     if(verbose) myprint(a)
     marginalized.risk.svycoxph.boot(marker.name=a%.%"cat", type=3, data=dat.ph1, tfinal.tpeak, B=B, ci.type="quantile", numCores=numCores)                
   })    
-  
-  save(risks.all.1, risks.all.2, risks.all.3, file=paste0(save.results.to, "marginalized.risk.Rdata"))
+  save(risks.all.3, file=paste0(save.results.to, "risks.all.3.Rdata"))
   
 } else {
-  load(paste0(save.results.to, "marginalized.risk.Rdata"))
+  load(paste0(save.results.to, "risks.all.3.Rdata"))
 }
+
 write(ncol(risks.all.1[[1]]$boot), file=paste0(save.results.to, "bootstrap_replicates"))
 #rv$marginalized.risk.S.eq.s=list()
 #for (a in assays) rv$marginalized.risk.S.eq.s[[a]] = risks.all.1[[a]][c("marker","prob")]

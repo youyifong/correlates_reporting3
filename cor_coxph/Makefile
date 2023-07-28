@@ -1,5 +1,5 @@
 ## all           : clean saved results and get results to populate report
-all: clean cor_coxph 
+all: clean cor_coxph report
 
 ## clean         : delete saved bootstrap results
 clean:
@@ -11,6 +11,10 @@ ifeq ($(TRIAL),$(filter $(TRIAL), moderna_boost))
 	Rscript code/cor_coxph_moderna_boost.R
 
 endif
+
+report:
+	bash _build_chapter.sh
+
 
 collate:
 	Rscript code/cor_coxph_collate_meta_VE.R

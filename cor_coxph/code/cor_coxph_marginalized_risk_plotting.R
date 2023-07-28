@@ -423,8 +423,8 @@ for (a in all.markers) {
         title(xlab="Days Since Day "%.%tpeak1%.%" Visit", line=2)
         title(main=assay_labels[assay], cex.main=.9, line=2)
         mtext(bquote(cutpoints: list(.(formatDouble(10^q.a[1]/10^floor(q.a[1]),1)) %*% 10^ .(floor(q.a[1])), .(formatDouble(10^q.a[2]/10^floor(q.a[2]),1)) %*% 10^ .(floor(q.a[2])))), line= .25, cex=.8)   
-        legend=c("Vaccine low","Vaccine medium","Vaccine high","Placebo")
-        mylegend(x=1, legend=legend, lty=c(1:3,1), col=c("green3","green","darkgreen","gray"), lwd=2)
+        legend=c("Vaccine low","Vaccine medium","Vaccine high")
+        mylegend(x=1, legend=legend, lty=c(1:3), col=c("green3","green","darkgreen"), lwd=2)
         # mylines(time.0, risk.0, col="gray", lwd=2, type="l")
     }
     

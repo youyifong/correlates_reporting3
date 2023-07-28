@@ -27,13 +27,18 @@ for (iObj in 1:2) {
   }
   names(all.markers)=all.markers
   
-  COR=glue("Objective {iObj} Naive")
+  COR=paste0("Objective ",iObj," BD29 ",if(iObj==2) "fold change ","Naive")
   pathCoRoutput <- glue("cor_coxph/output/{attr(config,'config')}/obj{iObj}_naive")
   res = knitr::knit_child(c(here::here('cor_coxph', 'report_by_COR.Rmd')), quiet = TRUE)
   cat(res, sep = '\n')
   
-  COR=glue("Objective {iObj} Non-naive")
+  COR=paste0("Objective ",iObj," BD29 ",if(iObj==2) "fold change ","Non-naive")
   pathCoRoutput <- glue("cor_coxph/output/{attr(config,'config')}/obj{iObj}_nnaive")
+  res = knitr::knit_child(c(here::here('cor_coxph', 'report_by_COR.Rmd')), quiet = TRUE)
+  cat(res, sep = '\n')
+  
+  COR=paste0("Objective ",iObj," BD29 ",if(iObj==2) "fold change ","Pooled")
+  pathCoRoutput <- glue("cor_coxph/output/{attr(config,'config')}/obj{iObj}_pooled")
   res = knitr::knit_child(c(here::here('cor_coxph', 'report_by_COR.Rmd')), quiet = TRUE)
   cat(res, sep = '\n')
 } 
