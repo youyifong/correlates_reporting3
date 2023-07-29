@@ -39,6 +39,26 @@ for (strain in c("2_strain")){
     }
   }
 }
+for (strain in c("2_strain")){
+  for (panel in set1_panels_1) {
+    for (time in set1_times) {
+  
+        res = knitr::knit_child(c(here::here('cor_graphical', 'report_sub1.2.Rmd')), quiet = TRUE)
+        cat(res, sep = '\n')
+        cat("\\clearpage", sep = '\n')
+    }
+  }
+}
+for (strain in c("2_strain")){
+  for (panel in set1_panels_1) {
+    for (time in set1_times) {
+  
+        res = knitr::knit_child(c(here::here('cor_graphical', 'report_sub1.3.Rmd')), quiet = TRUE)
+        cat(res, sep = '\n')
+        cat("\\clearpage", sep = '\n')
+    }
+  }
+}
 for (strain in c("6_strain")){
   for (panel in set1_panels_2) {
     for (time in set1_times) {
@@ -49,10 +69,40 @@ for (strain in c("6_strain")){
     }
   }
 }
+for (strain in c("6_strain")){
+  for (panel in set1_panels_2) {
+    for (time in set1_times) {
+  
+        res = knitr::knit_child(c(here::here('cor_graphical', 'report_sub1.2.Rmd')), quiet = TRUE)
+        cat(res, sep = '\n')
+        cat("\\clearpage", sep = '\n')
+    }
+  }
+}
+for (strain in c("6_strain")){
+  for (panel in set1_panels_2) {
+    for (time in set1_times) {
+  
+        res = knitr::knit_child(c(here::here('cor_graphical', 'report_sub1.3.Rmd')), quiet = TRUE)
+        cat(res, sep = '\n')
+        cat("\\clearpage", sep = '\n')
+    }
+  }
+}
 
 ## Set 2: longitudinal plots #############
 for (panel in set2_panels) {
       res = knitr::knit_child(c(here::here('cor_graphical', 'report_sub2.Rmd')), quiet = TRUE)
+      cat(res, sep = '\n')
+      cat("\\clearpage", sep = '\n')
+}
+for (panel in set2_panels) {
+      res = knitr::knit_child(c(here::here('cor_graphical', 'report_sub2.2.Rmd')), quiet = TRUE)
+      cat(res, sep = '\n')
+      cat("\\clearpage", sep = '\n')
+}
+for (panel in set2_panels) {
+      res = knitr::knit_child(c(here::here('cor_graphical', 'report_sub2.3.Rmd')), quiet = TRUE)
       cat(res, sep = '\n')
       cat("\\clearpage", sep = '\n')
 }
@@ -68,6 +118,12 @@ for (time in set3_times) {
 ## Set 4: Correlation plots for a given marker across time points #############
 for (assay in assays) {
       res = knitr::knit_child(c(here::here('cor_graphical', 'report_sub4.Rmd')), quiet = TRUE)
+      cat(res, sep = '\n')
+      cat("\\clearpage", sep = '\n')
+}
+
+for (assay in assays) {
+      res = knitr::knit_child(c(here::here('cor_graphical', 'report_sub4.2.Rmd')), quiet = TRUE)
       cat(res, sep = '\n')
       cat("\\clearpage", sep = '\n')
 }

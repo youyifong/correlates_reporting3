@@ -1,0 +1,12 @@
+\begin{figure}[H]
+\center
+
+\includegraphics[width=1\textwidth]{`r here("cor_graphical", "output", attr(config,"config"), paste0(panel, "_longitudinal_by_case_non_case_pooled_v2.pdf"))`}
+
+\caption{`r paste0("Longitudinal plots for ",  panel, " from BD1 to BD29 (and to DD1), version 3")`}
+\end{figure}
+
+\hphantom{Random text to appease the latex god}
+
+
+
