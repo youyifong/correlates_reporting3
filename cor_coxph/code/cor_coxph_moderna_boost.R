@@ -295,6 +295,10 @@ for (iNaive in 1:2) {
     # tab=rbind(tab, "Generalized Wald Test for Markers"=c("", formatDouble(p.gwald,3, remove.leading0 = F)))
     tab
     mytex(tab, file.name=paste0("CoR_itxn_",a,"_",b), align="c", include.colnames = T, save2input.only=T, input.foldername=save.results.to)
+    
+    # save llike
+    write(fits[[1]]$ll[2], file=paste0(save.results.to, "llik_",a,"_",b))
+    
     # itxn.pvals=c(itxn.pvals, last(getFixedEf(fit)[,"p.value"]))
   }
   

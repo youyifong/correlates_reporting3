@@ -78,7 +78,6 @@ if(!file.exists(paste0(save.results.to, "itxn.marginalized.risk.Rdata"))) {
     } # end inner.id
   }
   
-  write(ncol(risks.itxn[[1]]$boot), file=paste0(save.results.to, "bootstrap_replicates"))
   
   save(risks.itxn, file=paste0(save.results.to, "itxn.marginalized.risk.Rdata"))
   
@@ -88,6 +87,7 @@ if(!file.exists(paste0(save.results.to, "itxn.marginalized.risk.Rdata"))) {
   load(paste0(save.results.to, "itxn.marginalized.risk.Rdata"))
 }  
 
+write(ncol(risks.itxn[[1]]$boot[[1]]), file=paste0(save.results.to, "bootstrap_replicates"))
 
 
 ################################################################################
@@ -128,9 +128,9 @@ for (ab in config$interaction) {
     for (i in 1:length(risks$marker.2)) {
       lines(risks$marker[shown], risks$prob[shown,i], lwd=lwd, col=i, lty=1)# use dashed line for the middle so that overlaps can be seen
       col <- c(col2rgb(c("black","red","green")[i]))
-      col <- rgb(col[1], col[2], col[3], alpha=255*0.4, maxColorValue=255)
-      lines(risks$marker[shown], risks$lb[shown,i],   lwd=lwd, col=col, lty=1)
-      lines(risks$marker[shown], risks$ub[shown,i],   lwd=lwd, col=col, lty=1)    
+      col <- rgb(col[1], col[2], col[3], alpha=255*0.5, maxColorValue=255)
+      lines(risks$marker[shown], risks$lb[shown,i],   lwd=lwd, col=col, lty=3)
+      lines(risks$marker[shown], risks$ub[shown,i],   lwd=lwd, col=col, lty=3)    
     }
     
     # legend for the three lines
@@ -156,3 +156,54 @@ for (ab in config$interaction) {
     dev.off()            
   }
 }  
+
+
+if(!file.exists(paste0(save.results.to, "itxn.coef.Rdata"))) {    
+  cat ("bootstrap itxn model coef")
+  
+  coef.itxn=list()      
+  for (ab in config$interaction) {
+    myprint(ab)
+    tmp=trim(strsplit(ab, " *\\* *")[[1]]); a=tmp[1]; b=tmp[2]            
+    f= update(form.0, as.formula(paste0("~.+scale(", a ,") * scale(", b, ")")))
+    fit=svycoxph(f, design=design.1)
+    
+    # store the current rng state
+    save.seed <- try(get(".Random.seed", .GlobalEnv), silent=TRUE) 
+    if (class(save.seed)=="try-error") {set.seed(1); save.seed <- get(".Random.seed", .GlobalEnv) }         
+    
+    seeds=1:B; names(seeds)=seeds
+    out=mclapply(seeds, mc.cores = numCores, FUN=function(seed) {   
+      seed=seed+560
+      if (verbose>=2) myprint(seed)
+      
+      dat.b = bootstrap.cove.boost.2(dat.ph1, seed)
+      dat.b.ph2=subset(dat.b, ph2==1)     
+      with(dat.b, table(Wstratum, ph2))     
+      
+      # inline design object b/c it may also throw an error
+      fit.b=try(svycoxph(f, design=twophase(id=list(~1,~1), strata=list(NULL,~Wstratum), subset=~ph2, data=dat.b)))
+      
+      if (!inherits (fit.b, "try-error")) {
+        coef(fit.b)
+      } else {
+        rep(NA, length(coef(fit)))
+      }
+    })
+      
+    # restore rng state 
+    assign(".Random.seed", save.seed, .GlobalEnv)    
+    
+    coef.itxn[[ab]] = do.call(cbind, out)
+  }
+  
+  save(coef.itxn, file=paste0(save.results.to, "itxn.coef.Rdata"))
+  
+} else {
+  
+  cat ("load itxn.coef.Rdata")
+  load(paste0(save.results.to, "itxn.coef.Rdata"))
+}  
+
+
+apply(coef.itxn[[1]], 1, quantile, c(.025, .095))
