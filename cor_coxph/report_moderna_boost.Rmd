@@ -88,6 +88,13 @@ for (idat in 1:2) {
     }
     cat ("\\clearpage")
   }
+  
+  for (ab in config$interaction) {
+      tmp=kyotil::trim(strsplit(ab, " *\\* *")[[1]]); a=tmp[1]; b=tmp[2]  
+      res = knitr::knit_child(c(here::here('cor_coxph', 'itxn_by_assays.Rmd')), quiet = TRUE)
+      cat(res, sep = '\n')
+  }
+  
 }
 
 

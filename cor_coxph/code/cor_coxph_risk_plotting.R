@@ -53,13 +53,13 @@ for (w.wo.plac in 2:2) { # 1 with placebo lines, 2 without placebo lines. Implem
         
         # risks
         if (eq.geq==1) {
-            abline(h=overall.risks[[idat]], col="gray", lty=c(1,3,3), lwd=lwd)
+            abline(h=overall.risks[[iNaive]], col="gray", lty=c(1,3,3), lwd=lwd)
             lines(risks$marker[shown], risks$prob[shown], lwd=lwd)
             lines(risks$marker[shown], risks$lb[shown],   lwd=lwd, lty=3)
             lines(risks$marker[shown], risks$ub[shown],   lwd=lwd, lty=3)    
             img.dat=cbind(risks$marker[shown], risks$prob[shown], risks$lb[shown], risks$ub[shown])
         } else {
-            abline(h=overall.risks[[idat]][1], col="gray", lty=c(1), lwd=lwd)
+            abline(h=overall.risks[[iNaive]][1], col="gray", lty=c(1), lwd=lwd)
             lines(risks$marker[ncases>=5], risks$prob[ncases>=5], lwd=lwd)
             lines(risks$marker[ncases>=5], risks$lb[ncases>=5],   lwd=lwd, lty=3)
             lines(risks$marker[ncases>=5], risks$ub[ncases>=5],   lwd=lwd, lty=3)    
@@ -72,10 +72,10 @@ for (w.wo.plac in 2:2) { # 1 with placebo lines, 2 without placebo lines. Implem
         # text overall risks
         if (w.wo.plac==1) {
             # text(x=par("usr")[2]-diff(par("usr")[1:2])/3.5, y=prev.plac[1]+(prev.plac[1]-prev.plac[2])/2, "placebo overall "%.%formatDouble(prev.plac[1],3,remove.leading0=F))        
-            text(x=par("usr")[2]-diff(par("usr")[1:2])/3.5, y=overall.risks[[idat]][1]+(prev.plac[1]-prev.plac[2])/2, "vaccine overall "%.%formatDouble(overall.risks[[idat]][1],3,remove.leading0=F))
+            text(x=par("usr")[2]-diff(par("usr")[1:2])/3.5, y=overall.risks[[iNaive]][1]+(prev.plac[1]-prev.plac[2])/2, "vaccine overall "%.%formatDouble(overall.risks[[iNaive]][1],3,remove.leading0=F))
         } else {
             # text(x=par("usr")[2]-diff(par("usr")[1:2])/3.5, y=par("usr")[4]-diff(par("usr")[3:4])/20,     "placebo overall "%.%formatDouble(prev.plac[1],3,remove.leading0=F))
-            text(x=par("usr")[2]-diff(par("usr")[1:2])/3.5, y=overall.risks[[idat]][1]-(overall.risks[[idat]][1]-overall.risks[[idat]][2])/4, "vaccine overall "%.%formatDouble(overall.risks[[idat]][1],3,remove.leading0=F))
+            text(x=par("usr")[2]-diff(par("usr")[1:2])/3.5, y=overall.risks[[iNaive]][1]-(overall.risks[[iNaive]][1]-overall.risks[[iNaive]][2])/4, "vaccine overall "%.%formatDouble(overall.risks[[iNaive]][1],3,remove.leading0=F))
         }
         
         # add histogram
@@ -153,7 +153,7 @@ for (a in all.markers) {
 #             
 #             # compute Bias as a vector, which is a function of s
 #             # choose a reference marker value based on matching the overall risk
-#             which=which.min(abs(risks$prob-overall.risks[[idat]][1]))
+#             which=which.min(abs(risks$prob-overall.risks[[iNaive]][1]))
 #             s.ref=risks$marker[which]
 #             Bias=controlled.risk.bias.factor(ss=risks$marker, s.cent=s.ref, s1=risks$marker[s1], s2=risks$marker[s2], RRud) 
 #             if (is.nan(Bias[1])) Bias=rep(1,length(Bias))
@@ -320,7 +320,7 @@ for (a in all.markers) {
 #         longtable=T, caption.placement = "top", label=paste0("tab controlled_ve_eq ", COR), caption=paste0("Controlled VE as functions of Day ",
 #             tpeak," ", assay_labels_short[assay], " (=s) among baseline negative vaccine recipients with 95\\% bootstrap point-wise confidence intervals (",
 #             ncol(risks.all[[1]]$boot)," replicates). ", "Overall cumulative incidence from ", tpeaklag, " to ",tfinal.tpeak," days post Day ",tpeak1," was ",
-#             formatDouble(overall.risks[[idat]][1], 3, remove.leading0=F)," in vaccine recipients compared to ",
+#             formatDouble(overall.risks[[iNaive]][1], 3, remove.leading0=F)," in vaccine recipients compared to ",
 #             formatDouble(prev.plac[1], 3, remove.leading0=F)," in placebo recipients, with cumulative vaccine efficacy ",
 #             formatDouble(overall.ve[1]*100,1),"\\% (95\\% CI ",formatDouble(overall.ve[2]*100,1)," to ",formatDouble(overall.ve[3]*100,1),"\\%).")
 #         #, col.headers=paste0("\\hline\n", concatList(paste0("\\multicolumn{2}{c}{", labels.axis[1,], "}"), "&"), "\\\\\n")
@@ -520,76 +520,3 @@ dev.off()
 }
 
 
-
-###################################################################################################
-# interaction models and risk curves
-
-if (!is.null(config$interaction)) {
-    for (ab in config$interaction) {
-        tmp=trim(strsplit(ab, " *\\* *")[[1]])
-        aold=tmp[1]
-        bold=tmp[2]            
-        a=paste0("Day",tpeak,aold)
-        b=paste0("Day",tpeak,bold)
-            
-        for (inner.id in 1:2) {
-            vx=ifelse(inner.id==1,a,b)
-            vthree=ifelse(inner.id==1,b,a)
-            risks=risks.itxn[[paste0(vx,vthree)]]
-            
-            mypdf(oma=c(0,0,0,0), onefile=F, file=paste0(save.results.to, "itxn_marginalized_risks_",ifelse(inner.id==1,aold,bold),"_",ifelse(inner.id==1,bold,aold)), mfrow=.mfrow)
-            
-                par(las=1, cex.axis=0.9, cex.lab=1)# axis label orientation
-                lwd=2
-                
-                shown=risks$marker>=wtd.quantile(dat.ph1[[vx]], dat.ph1$wt, 2.5/100) & 
-                      risks$marker<=wtd.quantile(dat.ph1[[vx]], dat.ph1$wt, 1-2.5/100)
-                
-                # hard code ylim to make the plot look better
-                ylim=c(0,0.11)
-                #ylim=range(risks$lb[shown,], risks$ub[shown,], 0) # [shown] so that there is not too much empty space
-                xlim=get.xlim(dat.ph1, vx) 
-                if(verbose) myprint(xlim, ylim)
-                    
-                # set up an empty plot
-                plot(risks$marker[shown], risks$prob[shown,1], 
-                    xlab=paste0(labels.assays.short[marker.name.to.assay(vx)], " (=s)"), 
-                    ylab=paste0("Probability* of ",config$txt.endpoint," by Day ", tfinal.tpeak), 
-                    lwd=lwd, xlim=xlim, ylim=ylim, type="n", main="", xaxt="n")    
-                draw.x.axis.cor(xlim, lloxs[vx], llox_labels[vx])
-                    
-                # draw risk lines and confidence bands
-                for (i in 1:length(risks$marker.2)) {
-                    lines(risks$marker[shown], risks$prob[shown,i], lwd=lwd, col=i, lty=ifelse(i==2,2,1))# use dashed line for the middle so that overlaps can be seen
-                    lines(risks$marker[shown], risks$lb[shown,i],   lwd=lwd, col=i, lty=3)
-                    lines(risks$marker[shown], risks$ub[shown,i],   lwd=lwd, col=i, lty=3)    
-                }
-                
-                # legend for the three lines
-                legend.txt=c("(15th percentile)","(median)","(85th percentile)")
-#                # special handling code
-#                if (attr(config, "config")=="hvtn705second") {
-#                    if (inner.id==1) legend.txt=c("(min)","(median)","(90th percentile)")
-#                }
-                mylegend(x=3, legend=paste(signif(10**risks$marker.2, 3), legend.txt), col=1:3, lty=c(1,2,1), title=labels.assays.short[marker.name.to.assay(vthree)], lwd=lwd)
-                
-                # placebo prevelance lines
-                abline(h=prev.plac[1], col="gray", lty=c(1,3,3), lwd=lwd)
-                text(x=par("usr")[2]-diff(par("usr")[1:2])/5, y=prev.plac[1]+diff(par("usr")[3:4])/30, "placebo arm "%.%formatDouble(prev.plac[1],3,remove.leading0=F))        
-                #abline(h=risks.itxn.1$prob[1,1], col="gray", lty=c(1), lwd=lwd)
-                #text(x=par("usr")[2]-diff(par("usr")[1:2])/5, y=risks.itxn.1$prob[1,1]+diff(par("usr")[3:4])/30, "placebo arm "%.%formatDouble(risks.itxn.1$prob[1,1],3,remove.leading0=F))        
-                
-                # add histogram
-                par(new=TRUE) 
-                col <- c(col2rgb("olivedrab3")) # orange, darkgoldenrod2
-                col <- rgb(col[1], col[2], col[3], alpha=255*0.4, maxColorValue=255)
-                tmp.x=dat.ph1[[vx]][dat.ph1$ph2]
-                tmp.w=dat.ph1$wt[dat.ph1$ph2]
-                tmp=get.marker.histogram(tmp.x, tmp.w, attr(config,"config"))
-                if (is.nan(tmp$density)[1]) tmp=hist(tmp.x, plot=F)
-                plot(tmp,col=col,axes=F,labels=F,main="",xlab="",ylab="",border=0,freq=F, xlim=xlim, ylim=c(0,max(tmp$density*1.25)))
-                
-            dev.off()            
-        }
-    }        
-}

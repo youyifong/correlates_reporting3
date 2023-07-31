@@ -74,6 +74,8 @@ myprint(prev.naive, prev.nnaive, prev.pooled)
 
 
 ###################################################################################################
+cat("Univariate analyses")
+
 # Obj 1: To assess BD29 omicron Ab as a correlate of risk (CoR) against omicron COVID-19 
 # Obj 2: To assess fold-rise in omicron Ab from BD1/pre-booster to BD29 as a CoR against omicron COVID-19
 
@@ -132,8 +134,7 @@ for (iObj in 1:2) {
     # the origin of followup days, may be different from tpeak, e.g., D43start48
     tpeak1 = 29
     
-    source(here::here("code", "cor_coxph_marginalized_risk_no_marker.R"))
-    
+    # Cox regression
     source(here::here("code", "cor_coxph_ph.R"))
     
     
@@ -146,12 +147,15 @@ for (iObj in 1:2) {
     } 
     
     # marginalized risk and controlled VE
+    
     comp.risk=F
     COR=iNaive # only used in table figure labels
     
-    source(here::here("code", "cor_coxph_marginalized_risk_bootstrap.R"))
+    source(here::here("code", "cor_coxph_risk_no_marker.R"))
     
-    source(here::here("code", "cor_coxph_marginalized_risk_plotting.R"))
+    source(here::here("code", "cor_coxph_risk_bootstrap.R"))
+    
+    source(here::here("code", "cor_coxph_risk_plotting.R"))
     
     # source(here::here("code", "cor_coxph_samplesizeratio.R"))
 
@@ -161,7 +165,7 @@ for (iObj in 1:2) {
 
 
 ###################################################################################################
-# Obj 3: To assess whether the CoR in 1. or 2. is modified by SARS-CoV-2 naive/non-naive status
+cat("Obj 3: To assess whether the CoR in 1. or 2. is modified by SARS-CoV-2 naive/non-naive status by fitting interaction models")
 
 dat.ph1 = dat
 
@@ -244,7 +248,7 @@ for (iObj in 1:2) {
 
 
 ###################################################################################################
-# Obj 4: To assess whether the CoR in 1. is modified by the BD1 antibody value
+cat("Obj 4: To assess whether the CoR in 1. is modified by the BD1 antibody value")
 
 for (iNaive in 1:2) {
   # iNaive=1
@@ -253,6 +257,8 @@ for (iNaive in 1:2) {
   if (iNaive==1) {dat.ph1 = dat.naive;  save.results.to = glue("{save.results.to.0}/obj4_naive/")}
   if (iNaive==2) {dat.ph1 = dat.nnaive; save.results.to = glue("{save.results.to.0}/obj4_nnaive/")}
   
+  dat.ph2 = subset(dat.ph1, ph2)
+
   if (!dir.exists(save.results.to))  dir.create(save.results.to)
   print(paste0("save results to ", save.results.to))
   
@@ -263,15 +269,17 @@ for (iNaive in 1:2) {
   design.1<-twophase(id=list(~1,~1), strata=list(NULL,~Wstratum), subset=~ph2, data=dat.ph1)
   with(dat.ph1, table(Wstratum, ph2, useNA="ifany"))
   
-  # prepare for Cox models runs and margialized risks
+  # prepare for Cox models runs and marginalized risks
   tpeak=29
   # the origin of followup days, may be different from tpeak, e.g., D43start48
   tpeak1 = 29
   
+  
   # fit the interaction model and save regression results to a table
-  for (a in obj.assays) {
-  for (ind in 1:2) { # once for BD29 and one for Delta
-    f= update(form.0, as.formula(paste0("~.+scale(BD1", a ,") * scale(", ifelse(ind==1, "BD29", "DeltaBD29overBD1"), a, ")")))
+  for (ab in config$interaction) {
+    tmp=trim(strsplit(ab, " *\\* *")[[1]]); a=tmp[1]; b=tmp[2]            
+    f= update(form.0, as.formula(paste0("~.+scale(", a ,") * scale(", b, ")")))
+    
     fits=list(svycoxph(f, design=design.1))
     est=getFormattedSummary(fits, exp=T, robust=T, type=1)
     ci= getFormattedSummary(fits, exp=T, robust=T, type=13)
@@ -286,9 +294,8 @@ for (iNaive in 1:2) {
     colnames(tab)=c("HR", "P value")
     # tab=rbind(tab, "Generalized Wald Test for Markers"=c("", formatDouble(p.gwald,3, remove.leading0 = F)))
     tab
-    mytex(tab, file.name=paste0("CoR_itxn_BD1_",ifelse(ind==1, "BD29", "DeltaBD29overBD1"),"_",a), align="c", include.colnames = T, save2input.only=T, input.foldername=save.results.to)
+    mytex(tab, file.name=paste0("CoR_itxn_",a,"_",b), align="c", include.colnames = T, save2input.only=T, input.foldername=save.results.to)
     # itxn.pvals=c(itxn.pvals, last(getFixedEf(fit)[,"p.value"]))
-  }
   }
   
   # names(itxn.pvals)=config$interaction
@@ -298,7 +305,13 @@ for (iNaive in 1:2) {
   # tab=cbind(itxn.pvals, itx.pvals.adj.hol, itx.pvals.adj.fdr)
   # colnames(tab)=c("interaction P value", "FWER", "FDR")
   # mytex(tab, file.name="CoR_itxn_multitesting", align="c", include.colnames = T, save2input.only=T, input.foldername=save.results.to)
-}
+
+  
+  inner.ids = c(2) # model is BD1 + BD29/delta and we only want to show curves at different levels of BD1
+  source(here::here("code", "cor_coxph_risk_itxn.R"))
+  
+  
+} # end if iNaive
 
 
 # # joint distribution of BD1 and BD29 markers
@@ -311,8 +324,7 @@ for (iNaive in 1:2) {
 
 
 ###################################################################################################
-# multivariate_assays models
-# pooled over naive and nnaive
+# multivariate_assays models in naive + nnaive
 
 if (!is.null(config$multivariate_assays)) {
   if(verbose) print("Multiple regression")
