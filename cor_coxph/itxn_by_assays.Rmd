@@ -1,16 +1,16 @@
 \begin{table}[H] 
 \centering
-\input{`r pathCoRoutput`/CoR_itxn_BD1_`r if(ind==2) "Delta"`BD29_`r a`}  
-\caption{ Inference for Day `r tpeak` antibody marker covariate-adjusted correlates of risk by Day \protect\input{`r pathCoRoutput`/timepoints_cum_risk} in the vaccine arm. Hazard ratios per 10-fold increment in the marker are shown. `r special.note`}
+\input{`r pathCoRoutput`/CoR_itxn_`r a`_`r b`}  
+\caption{ Inference for Day `r tpeak` antibody marker covariate-adjusted correlates of risk by Day \protect\input{`r pathCoRoutput`/timepoints_cum_risk} in the vaccine arm. Hazard ratios per 10-fold increment in the marker are shown. Log like: \protect\input{`r paste0(pathCoRoutput, "/llik_",a,"_",b)`}. `r special.note`}
 \end{table}
 
 
 \begin{figure}
 \centering
 \includegraphics[width=.7\textwidth,keepaspectratio]{`r pathCoRoutput`/itxn_marginalized_risks_`r b`_`r a`.pdf}
-\caption{Marginalized cumulative risk by Day \protect\input{`r pathCoRoutput`/timepoints_cum_risk} as functions of Day `r tpeak` marker with 95\% bootstrap point-wise confidence bands (xx replicates). Histogram of the marker distribution is overlaid. `r special.note`}
+\caption{Marginalized cumulative risk by Day \protect\input{`r pathCoRoutput`/timepoints_cum_risk} as functions of Day `r tpeak` marker with 95\% bootstrap point-wise confidence bands (\protect\input{`r pathCoRoutput`/bootstrap_replicates} replicates). Histogram of the marker distribution is overlaid. `r special.note`}
 \end{figure}
 \clearpage
 
-<!-- \protect\input{`r pathCoRoutput`/bootstrap_replicates} -->
+
 

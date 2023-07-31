@@ -76,18 +76,18 @@ cat ("\\clearpage")
 for (idat in 1:2) {
   pathCoRoutput <- glue("cor_coxph/output/{attr(config,'config')}/obj4_{ifelse(idat==1,'naive','nnaive')}")
   cat(glue("## {ifelse(idat==1,'Naive','Non-naive')}"))
-  for (a in obj.assays) {
-    for (ind in 1:2) {
-      cat(paste0("
-  \\begin{table}[H] 
-  \\centering
-  \\input{",pathCoRoutput,"/CoR_itxn_BD1_",if(ind==2) "Delta","BD29_",a,"}  
-  \\caption{ Inference for Day ",tpeak," antibody marker covariate-adjusted correlates of risk by Day \\protect\\input{",pathCoRoutput,"/timepoints_cum_risk} in the vaccine arm. Hazard ratios per 10-fold increment in the marker are shown. ",special.note,"}
-  \\end{table}
-  "))
-    }
-    cat ("\\clearpage")
-  }
+  # for (a in obj.assays) {
+  #   for (ind in 1:2) {
+  #     cat(paste0("
+  # \\begin{table}[H] 
+  # \\centering
+  # \\input{",pathCoRoutput,"/CoR_itxn_BD1_",if(ind==2) "Delta","BD29_",a,"}  
+  # \\caption{ Inference for Day ",tpeak," antibody marker covariate-adjusted correlates of risk by Day \\protect\\input{",pathCoRoutput,"/timepoints_cum_risk} in the vaccine arm. Hazard ratios per 10-fold increment in the marker are shown. ",special.note,"}
+  # \\end{table}
+  # "))
+  #   }
+  #   cat ("\\clearpage")
+  # }
   
   for (ab in config$interaction) {
       tmp=kyotil::trim(strsplit(ab, " *\\* *")[[1]]); a=tmp[1]; b=tmp[2]  
