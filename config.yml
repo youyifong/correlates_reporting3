@@ -27,10 +27,10 @@ moderna_boost: &moderna_boost
     DeltaBD29overBD1pseudoneutid50 + DeltaBD29overBD1bindSpike
   ]
   interaction: [
-    BD1pseudoneutid50_BA.1 * BD29pseudoneutid50_BA.1, 
-    BD1pseudoneutid50_BA.1 * DeltaBD29overBD1pseudoneutid50_BA.1, 
     BD1bindSpike_BA.1 * BD29bindSpike_BA.1,
-    BD1bindSpike_BA.1 * DeltaBD29overBD1bindSpike_BA.1
+    BD1bindSpike_BA.1 * DeltaBD29overBD1bindSpike_BA.1,
+    BD1pseudoneutid50_BA.1 * BD29pseudoneutid50_BA.1, 
+    BD1pseudoneutid50_BA.1 * DeltaBD29overBD1pseudoneutid50_BA.1
   ]
   ve_ylim: [0,1]
   ve_ylim_log: [0.0,0.98]
