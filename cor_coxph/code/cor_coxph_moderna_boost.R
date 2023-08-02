@@ -1,6 +1,6 @@
-renv::activate(project = here::here(".."))     
+Sys.setenv(TRIAL = "moderna_boost"); Sys.setenv(VERBOSE = 1)
 
-#Sys.setenv(TRIAL = "moderna_boost"); Sys.setenv(VERBOSE = 1)
+renv::activate(project = here::here(".."))     
 
 source(here::here("..", "_common.R"))
 source("code/params.R")
@@ -92,7 +92,7 @@ for (iObj in 1:2) {
 
   # loop through (1) naive, (2) nnaive, (3) pooled
   for (iNaive in 1:3) {
-    # iNaive=3
+    # iNaive=1
     
     myprint(iNaive)
     if (iNaive==1) {dat.ph1 = dat.naive;  save.results.to = glue("{save.results.to.0}/obj{iObj}_naive/")}
@@ -139,13 +139,14 @@ for (iObj in 1:2) {
     
     
     # unit testing
-    if (TRIAL == "") {
-      tmp.1=c(rv$tab.1[,4], rv$tab.2[,"overall.p.0"])
-      tmp.2=c("0.162","0.079","0.006",      "0.498","   ","   ","0.162","   ","   ","0.003","   ","   ")
-      assertthat::assert_that(all(tmp.1==tmp.2), msg = "failed cor_coxph unit testing")    
+    if (iNaive==1 & iObj==1) {
+      tmp.1=c(fits.cont.coef.ls[["BD29bindSpike_BA.1"]][,"p.value"])
+      tmp.2=c(0.448327,0.492052,0.494077,0.023828)
+      assertthat::assert_that(all(round(tmp.1,6)==tmp.2), msg = "failed cor_coxph unit testing")    
       print("Passed cor_coxph unit testing")    
-    } 
+    }
     
+
     # marginalized risk and controlled VE
     
     comp.risk=F
@@ -322,7 +323,9 @@ for (iNaive in 1:2) {
 # par(mfrow=c(1,2))
 # with(dat.naive, plot(BD1bindSpike_BA.1, BD29bindSpike_BA.1, col=ifelse(EventIndPrimary, 2, 1),  main=paste0("Naive, cor ",round(cor(BD1bindSpike_BA.1, BD29bindSpike_BA.1, use="complete.obs"),2))))
 # abline(0,1)
-# with(dat.nnaive, plot(BD1bindSpike_BA.1, BD29bindSpike_BA.1, col=ifelse(EventIndPrimary, 2, 1), main=paste0("Naive, cor ",round(cor(BD1bindSpike_BA.1, BD29bindSpike_BA.1, use="complete.obs"),2))))
+# with(dat.naive, plot(BD1bindSpike_BA.1, DeltaBD29overBD1bindSpike_BA.1, col=ifelse(EventIndPrimary, 2, 1),  main=paste0("Naive, cor ",round(cor(BD1bindSpike_BA.1, DeltaBD29overBD1bindSpike_BA.1, use="complete.obs"),2))))
+# 
+# with(dat.nnaive, plot(BD1bindSpike_BA.1, BD29bindSpike_BA.1, col=ifelse(EventIndPrimary, 2, 1), main=paste0("Non-Naive, cor ",round(cor(BD1bindSpike_BA.1, BD29bindSpike_BA.1, use="complete.obs"),2))))
 # abline(0,1)
 
 
