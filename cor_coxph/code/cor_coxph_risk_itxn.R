@@ -206,4 +206,5 @@ if(!file.exists(paste0(save.results.to, "itxn.coef.Rdata"))) {
 }  
 
 
-apply(coef.itxn[[1]], 1, quantile, c(.025, .095))
+# hist(coef.itxn[[1]][6,])
+# abline(v=last(coef(fit)))

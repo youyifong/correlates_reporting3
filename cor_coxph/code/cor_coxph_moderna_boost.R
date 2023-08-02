@@ -1,6 +1,6 @@
-renv::activate(project = here::here(".."))     
+Sys.setenv(TRIAL = "moderna_boost"); Sys.setenv(VERBOSE = 1)
 
-#Sys.setenv(TRIAL = "moderna_boost"); Sys.setenv(VERBOSE = 1)
+renv::activate(project = here::here(".."))     
 
 source(here::here("..", "_common.R"))
 source("code/params.R")
@@ -55,7 +55,7 @@ dat=subset(dat, ph1.BD29)
 
 # add trichotomized markers. use the same cutpoints for naive and nnaive
 obj.assays=c("bindSpike_BA.1", "pseudoneutid50_BA.1", "bindSpike", "pseudoneutid50")  
-all.markers = c(paste0("BD29", obj.assays), paste0("DeltaBD29overBD1", obj.assays))
+all.markers = c(paste0("BD29", obj.assays), paste0("DeltaBD29overBD1", obj.assays), paste0("BD1", obj.assays))
 names(all.markers)=all.markers
 dat = add.trichotomized.markers (dat, all.markers)
 marker.cutpoints=attr(dat, "marker.cutpoints")
@@ -78,21 +78,28 @@ cat("Univariate analyses")
 
 # Obj 1: To assess BD29 omicron Ab as a correlate of risk (CoR) against omicron COVID-19 
 # Obj 2: To assess fold-rise in omicron Ab from BD1/pre-booster to BD29 as a CoR against omicron COVID-19
+# Obj 0: To assess BD1 omicron Ab as a CoR against omicron COVID-19
 
 
-for (iObj in 1:2) {
-# iObj=1
+for (iObj in c(1,2,0)) {
+# iObj=0
   
   if (iObj==1) {
     all.markers = paste0("BD29", obj.assays)
+    all.markers.labels = paste0("BD29 ", assay_labels[obj.assays])
   } else if (iObj==2) {
     all.markers = paste0("DeltaBD29overBD1", obj.assays)
-  }
+    all.markers.labels = paste0("BD29/BD1 ", assay_labels[obj.assays])
+  } else if (iObj==0) {
+    all.markers = paste0("BD1", obj.assays)
+    all.markers.labels = paste0("BD1 ", assay_labels[obj.assays])
+  } else stop("wrong iObj")
   names(all.markers)=all.markers
-
+  names(all.markers.labels)=all.markers
+  
   # loop through (1) naive, (2) nnaive, (3) pooled
-  for (iNaive in 1:3) {
-    # iNaive=3
+  for (iNaive in 1:2) {
+    # iNaive=1
     
     myprint(iNaive)
     if (iNaive==1) {dat.ph1 = dat.naive;  save.results.to = glue("{save.results.to.0}/obj{iObj}_naive/")}
@@ -104,7 +111,6 @@ for (iObj in 1:2) {
     # dat.ph1 = subset(dat.ph1, !Ptid %in% c("US3302292", "US3302397", "US3492199", "US3632155", "US3642188"))
     # dat.ph1 = subset(dat.ph1, Ptid!="US3642188")
     # dat.ph1[dat.ph1$Ptid=="US3302292","ph2"] =F
-    
 
     if (!dir.exists(save.results.to))  dir.create(save.results.to)
     print(paste0("save results to ", save.results.to))
@@ -139,13 +145,14 @@ for (iObj in 1:2) {
     
     
     # unit testing
-    if (TRIAL == "") {
-      tmp.1=c(rv$tab.1[,4], rv$tab.2[,"overall.p.0"])
-      tmp.2=c("0.162","0.079","0.006",      "0.498","   ","   ","0.162","   ","   ","0.003","   ","   ")
-      assertthat::assert_that(all(tmp.1==tmp.2), msg = "failed cor_coxph unit testing")    
+    if (iNaive==1 & iObj==1) {
+      tmp.1=c(fits.cont.coef.ls[["BD29bindSpike_BA.1"]][,"p.value"])
+      tmp.2=c(0.448327,0.492052,0.494077,0.023828)
+      assertthat::assert_that(all(round(tmp.1,6)==tmp.2), msg = "failed cor_coxph unit testing")    
       print("Passed cor_coxph unit testing")    
-    } 
+    }
     
+
     # marginalized risk and controlled VE
     
     comp.risk=F
@@ -322,7 +329,9 @@ for (iNaive in 1:2) {
 # par(mfrow=c(1,2))
 # with(dat.naive, plot(BD1bindSpike_BA.1, BD29bindSpike_BA.1, col=ifelse(EventIndPrimary, 2, 1),  main=paste0("Naive, cor ",round(cor(BD1bindSpike_BA.1, BD29bindSpike_BA.1, use="complete.obs"),2))))
 # abline(0,1)
-# with(dat.nnaive, plot(BD1bindSpike_BA.1, BD29bindSpike_BA.1, col=ifelse(EventIndPrimary, 2, 1), main=paste0("Naive, cor ",round(cor(BD1bindSpike_BA.1, BD29bindSpike_BA.1, use="complete.obs"),2))))
+# with(dat.naive, plot(BD1bindSpike_BA.1, DeltaBD29overBD1bindSpike_BA.1, col=ifelse(EventIndPrimary, 2, 1),  main=paste0("Naive, cor ",round(cor(BD1bindSpike_BA.1, DeltaBD29overBD1bindSpike_BA.1, use="complete.obs"),2))))
+# 
+# with(dat.nnaive, plot(BD1bindSpike_BA.1, BD29bindSpike_BA.1, col=ifelse(EventIndPrimary, 2, 1), main=paste0("Non-Naive, cor ",round(cor(BD1bindSpike_BA.1, BD29bindSpike_BA.1, use="complete.obs"),2))))
 # abline(0,1)
 
 
