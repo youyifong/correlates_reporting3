@@ -190,7 +190,7 @@ mytex(tab.1, file.name="CoR_univariable_svycoxph_pretty", align="c", include.col
     longtable=T, 
     label=paste0("tab:CoR_univariable_svycoxph_pretty"), 
     caption.placement = "top", 
-    caption=paste0("Inference for Day ", tpeak, "antibody marker covariate-adjusted correlates of risk of ", config$txt.endpoint, " in the vaccine group: Hazard ratios per 10-fold increment in the marker*")
+    caption=paste0("Inference for antibody marker covariate-adjusted correlates of risk of ", config$txt.endpoint, " in the vaccine group: Hazard ratios per 10-fold increment in the marker*")
 )
 tab.cont=tab.1
 
@@ -210,7 +210,7 @@ mytex(tab.1.scaled, file.name="CoR_univariable_svycoxph_pretty_scaled", align="c
     longtable=T, 
     label=paste0("tab:CoR_univariable_svycoxph_pretty_scaled"), 
     caption.placement = "top", 
-    caption=paste0("Inference for Day ", tpeak, "antibody marker covariate-adjusted correlates of risk of ", config$txt.endpoint, " in the vaccine group: Hazard ratios per SD increment in the marker*")
+    caption=paste0("Inference for antibody marker covariate-adjusted correlates of risk of ", config$txt.endpoint, " in the vaccine group: Hazard ratios per SD increment in the marker*")
 )
 tab.cont.scaled=tab.1.scaled
 
@@ -270,7 +270,7 @@ mytex(tab[1:(nrow(tab)),], file.name="CoR_univariable_svycoxph_cat_pretty", alig
     longtable=T, 
     label=paste0("tab:CoR_univariable_svycoxph_cat_pretty"), 
     caption.placement = "top", 
-    caption=paste0("Inference for Day ", tpeak, "antibody marker covariate-adjusted correlates of risk of ", config$txt.endpoint, " in the vaccine group: Hazard ratios for Middle vs. Upper tertile vs. Lower tertile*")
+    caption=paste0("Inference for antibody marker covariate-adjusted correlates of risk of ", config$txt.endpoint, " in the vaccine group: Hazard ratios for Middle vs. Upper tertile vs. Lower tertile*")
 )
 
 

@@ -6,28 +6,33 @@ obj.assays=c("bindSpike_BA.1", "pseudoneutid50_BA.1")
 tpeak <- 29
 special.note = paste0("$\\ddagger$ Count cases starting 7 days post BD29.")
   
-for (iObj in 1:2) {
+for (iObj in c(1,2,0)) {
   if (iObj==1) {
     all.markers = paste0("BD29", obj.assays)
+    COR0=paste0("Obj. 1 BD29 ")
   } else if (iObj==2) {
     all.markers = paste0("DeltaBD29overBD1", obj.assays)
+    COR0=paste0("Obj. 2 Fold change ")
+  } else if (iObj==0) {
+    all.markers = paste0("BD1", obj.assays)
+    COR0=paste0("Obj. 0 BD1 ")
   }
   names(all.markers)=all.markers
   
-  COR=paste0("Obj. ",iObj," BD29 ",if(iObj==2) "fold change ","Naive")
+  COR = paste0(COR0, "Naive")
   pathCoRoutput <- glue("cor_coxph/output/{attr(config,'config')}/obj{iObj}_naive")
   res = knitr::knit_child(c(here::here('cor_coxph', 'report_by_COR.Rmd')), quiet = TRUE)
   cat(res, sep = '\n')
   
-  COR=paste0("Obj. ",iObj," BD29 ",if(iObj==2) "fold change ","Non-naive")
+  COR = paste0(COR0, "Non-naive")
   pathCoRoutput <- glue("cor_coxph/output/{attr(config,'config')}/obj{iObj}_nnaive")
   res = knitr::knit_child(c(here::here('cor_coxph', 'report_by_COR.Rmd')), quiet = TRUE)
   cat(res, sep = '\n')
   
-  COR=paste0("Obj. ",iObj," BD29 ",if(iObj==2) "fold change ","Pooled")
-  pathCoRoutput <- glue("cor_coxph/output/{attr(config,'config')}/obj{iObj}_pooled")
-  res = knitr::knit_child(c(here::here('cor_coxph', 'report_by_COR.Rmd')), quiet = TRUE)
-  cat(res, sep = '\n')
+  # COR = paste0(COR, "Pooled")
+  # pathCoRoutput <- glue("cor_coxph/output/{attr(config,'config')}/obj{iObj}_pooled")
+  # res = knitr::knit_child(c(here::here('cor_coxph', 'report_by_COR.Rmd')), quiet = TRUE)
+  # cat(res, sep = '\n')
 } 
 
 

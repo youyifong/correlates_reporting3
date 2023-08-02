@@ -55,7 +55,7 @@ dat=subset(dat, ph1.BD29)
 
 # add trichotomized markers. use the same cutpoints for naive and nnaive
 obj.assays=c("bindSpike_BA.1", "pseudoneutid50_BA.1", "bindSpike", "pseudoneutid50")  
-all.markers = c(paste0("BD29", obj.assays), paste0("DeltaBD29overBD1", obj.assays))
+all.markers = c(paste0("BD29", obj.assays), paste0("DeltaBD29overBD1", obj.assays), paste0("BD1", obj.assays))
 names(all.markers)=all.markers
 dat = add.trichotomized.markers (dat, all.markers)
 marker.cutpoints=attr(dat, "marker.cutpoints")
@@ -78,20 +78,27 @@ cat("Univariate analyses")
 
 # Obj 1: To assess BD29 omicron Ab as a correlate of risk (CoR) against omicron COVID-19 
 # Obj 2: To assess fold-rise in omicron Ab from BD1/pre-booster to BD29 as a CoR against omicron COVID-19
+# Obj 0: To assess BD1 omicron Ab as a CoR against omicron COVID-19
 
 
-for (iObj in 1:2) {
-# iObj=1
+for (iObj in c(1,2,0)) {
+# iObj=0
   
   if (iObj==1) {
     all.markers = paste0("BD29", obj.assays)
+    all.markers.labels = paste0("BD29 ", assay_labels[obj.assays])
   } else if (iObj==2) {
     all.markers = paste0("DeltaBD29overBD1", obj.assays)
-  }
+    all.markers.labels = paste0("BD29/BD1 ", assay_labels[obj.assays])
+  } else if (iObj==0) {
+    all.markers = paste0("BD1", obj.assays)
+    all.markers.labels = paste0("BD1 ", assay_labels[obj.assays])
+  } else stop("wrong iObj")
   names(all.markers)=all.markers
-
+  names(all.markers.labels)=all.markers
+  
   # loop through (1) naive, (2) nnaive, (3) pooled
-  for (iNaive in 1:3) {
+  for (iNaive in 1:2) {
     # iNaive=1
     
     myprint(iNaive)
@@ -104,7 +111,6 @@ for (iObj in 1:2) {
     # dat.ph1 = subset(dat.ph1, !Ptid %in% c("US3302292", "US3302397", "US3492199", "US3632155", "US3642188"))
     # dat.ph1 = subset(dat.ph1, Ptid!="US3642188")
     # dat.ph1[dat.ph1$Ptid=="US3302292","ph2"] =F
-    
 
     if (!dir.exists(save.results.to))  dir.create(save.results.to)
     print(paste0("save results to ", save.results.to))

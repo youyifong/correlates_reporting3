@@ -45,7 +45,7 @@ for (w.wo.plac in 2:2) { # 1 with placebo lines, 2 without placebo lines. Implem
             xlab=assay_labels_short[assay]%.%ifelse(eq.geq==1," (=s)"," (>=s)"), 
             xlim=xlim, lwd=lwd, ylim=ylim, 
             ylab=paste0("Probability* of ",config$txt.endpoint," by ", tfinal.tpeak, " days post Day ", tpeak1, " Visit"), 
-            type="n", main=paste0(assay_labels[assay]), xaxt="n")
+            type="n", main=paste0(all.markers.labels[a]), xaxt="n")
         draw.x.axis.cor(xlim, lloxs[assay], if(is.delta) "delta" else llox_labels[assay])
             
         # prevelance lines

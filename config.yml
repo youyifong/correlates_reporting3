@@ -4,7 +4,7 @@ default: &default
 moderna_boost: &moderna_boost
   study_name: COVEBoost
   txt.endpoint: COVID
-  data_cleaned: /trials/covpn/p3001/analysis/correlates/Part_C_Unblinded_Phase_Data/adata/moderna_boost_data_processed_20230801.csv
+  data_cleaned: /trials/covpn/p3001/analysis/correlates/Part_C_Unblinded_Phase_Data/adata/moderna_boost_data_processed_20230802.csv
   assay_metadata: assay_metadata/moderna_boost_assay_metadata.csv
   sampling_scheme: case_control
   covariates: ~. + MinorityInd + HighRiskInd + risk_score
