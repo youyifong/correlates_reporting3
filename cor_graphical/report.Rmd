@@ -106,8 +106,8 @@ for (panel in set2_panels) {
       cat(res, sep = '\n')
       cat("\\clearpage", sep = '\n')
 }
-for (variant in c("BA.1","D614(G)")) {
-  for (time in c("BD1_BD29", "BD1_DeltaBD29overBD1")) {
+for (time in c("BD1_BD29", "BD1_DeltaBD29overBD1")) {
+  for (variant in c("BA.1","D614(G)")) {
       res = knitr::knit_child(c(here::here('cor_graphical', 'report_sub2.4.Rmd')), quiet = TRUE)
       cat(res, sep = '\n')
       cat("\\clearpage", sep = '\n')
