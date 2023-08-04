@@ -270,8 +270,8 @@ f_longitude_by_assay <- function(
                 scale_color_manual(name = "", values = chtcols, breaks = lgdbreaks, drop=FALSE) +
                 scale_shape_manual(name = "", values = chtpchs, breaks = lgdbreaks, drop=FALSE) +
                 
-                geom_text(aes(label = ifelse(txt!="","Rate",""), x = 0.4, y = 6.3), hjust = 0, color = "black", size = panel.text.size, check_overlap = TRUE) +
-                geom_text(aes_string(x = x.var, label = "txt", y = 6.3), color = "black", size = panel.text.size, check_overlap = TRUE) +
+                geom_text(aes(label = ifelse(txt!="","Rate",""), x = 0.4, y = 6.5), hjust = 0, color = "black", size = panel.text.size, check_overlap = TRUE) +
+                geom_text(aes_string(x = x.var, label = "txt", y = 6.5), color = "black", size = panel.text.size, check_overlap = TRUE) +
                 
                 geom_hline(aes(yintercept = ifelse(txt!="",lbval,-99)), linetype = "dashed", color = "gray", na.rm = TRUE) +
                 geom_text(aes(label = ifelse(txt!="",lb,""), x = 0.4, y = lbval), hjust = 0, color = "black", size = panel.text.size, check_overlap = TRUE, na.rm = TRUE) + 
