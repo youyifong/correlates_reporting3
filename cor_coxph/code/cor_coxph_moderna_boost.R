@@ -82,7 +82,7 @@ cat("Univariate analyses")
 
 
 for (iObj in c(1,2,0)) {
-# iObj=0
+# iObj=1
   
   if (iObj==1) {
     all.markers = paste0("BD29", obj.assays)
@@ -303,7 +303,7 @@ for (iNaive in 1:2) {
     tab
     mytex(tab, file.name=paste0("CoR_itxn_",a,"_",b), align="c", include.colnames = T, save2input.only=T, input.foldername=save.results.to)
     
-    # save llike
+    # save llik
     write(fits[[1]]$ll[2], file=paste0(save.results.to, "llik_",a,"_",b))
     
     # itxn.pvals=c(itxn.pvals, last(getFixedEf(fit)[,"p.value"]))
@@ -337,34 +337,34 @@ for (iNaive in 1:2) {
 
 
 ###################################################################################################
-# multivariate_assays models in naive + nnaive
+# multivariate_assays models 
 
 if (!is.null(config$multivariate_assays)) {
   if(verbose) print("Multiple regression")
   
-  dat.ph1 = subset(dat, ph1.BD29)
-  design.1<-twophase(id=list(~1,~1), strata=list(NULL,~Wstratum), subset=~ph2, data=dat.ph1)
-  with(dat.ph1, table(Wstratum, ph2, useNA="ifany"))
-  
-  for (ind in 1:2) { # repeat twice, with and without naive::HighRiskInd
-  for (a in config$multivariate_assays) {
-  for (i in 1:2) { # 1: per SD; 2: per 10-fold
-      
+  for (iNaive in 1:2) { # repeat twice, with and without naive::HighRiskInd
+  # iNaive=1
+    
+    myprint(iNaive)
+    if (iNaive==1) {dat.ph1 = dat.naive;  save.results.to = glue("{save.results.to.0}/multivariate_naive/")}
+    if (iNaive==2) {dat.ph1 = dat.nnaive; save.results.to = glue("{save.results.to.0}/multivariate_nnaive/")}
+    
+    design.1<-twophase(id=list(~1,~1), strata=list(NULL,~Wstratum), subset=~ph2, data=dat.ph1)
+    
+    for (a in config$multivariate_assays) {
+    for (i in 1:2) { # 1: per SD; 2: per 10-fold
+      myprint(a, i)
       a.tmp=a
       if (i==1) {
         # it is key not to trim aa and it is key that a is, e.g. x1 + x2 and not x1+x2, otherwise it won't work
-        aa=strsplit(a, "\\+")[[1]]
+        aa=strsplit(a, "[\\+\\*]")[[1]]
         for (x in aa[!contain(aa, "\\*")]) {
           # replace every variable with scale(x) when i==1
           a.tmp=gsub(x, paste0(if(i==1) "scale","(",x,")"), a.tmp) 
         }
       }
       
-      if (ind==1) {
-        f= update(form.0, as.formula(paste0("~.+naive+", a.tmp)))
-      } else{
-        f= update(form.0, as.formula(paste0("~.+naive*HighRiskInd+", a.tmp)))
-      }
+      f= update(form.0, as.formula(paste0("~.+", a.tmp)))
       fit=svycoxph(f, design=design.1) 
       var.ind = which(sapply(names(coef(fit)), function(x) any(sapply(aa, function (a) contain(x,kyotil::trim(a))))))
       
@@ -381,18 +381,26 @@ if (!is.null(config$multivariate_assays)) {
       p=  getFormattedSummary(fits, exp=T, robust=T, rows=var.ind, type=10)
       
       #generalized Wald test for whether the set of markers has any correlation (rejecting the complete null)
-      stat=coef(fit)[var.ind] %*% solve(vcov(fit)[var.ind,var.ind]) %*% coef(fit)[var.ind] 
-      p.gwald=pchisq(stat, length(var.ind), lower.tail = FALSE)
+      if (length(var.ind)>1) {
+        stat=coef(fit)[var.ind] %*% solve(vcov(fit)[var.ind,var.ind]) %*% coef(fit)[var.ind] 
+        p.gwald=pchisq(stat, length(var.ind), lower.tail = FALSE)
+      } 
       
       tab=cbind(est, p)
       colnames(tab)=c(paste0("HR per ",ifelse(i==1,"sd","10 fold")," incr."), "P value")
       tab
-      tab=rbind(tab, "Generalized Wald Test"=c("", formatDouble(p.gwald,3, remove.leading0 = F)))
+      if(length(var.ind)>1) {
+        tab=rbind(tab, "Generalized Wald Test"=c("", formatDouble(p.gwald,3, remove.leading0 = F) ))
+      } else {
+        rownames(tab) = names(coef(fit))[var.ind]
+      }
       
-      mytex(tab, file.name=paste0("CoR_multivariable_svycoxph_pretty", match(a, config$multivariate_assays), if(i==2) "_per10fold", "_", ind), align="c", include.colnames = T, save2input.only=T, 
-            input.foldername=save.results.to.0)
-  }
-  }
+      mytex(tab, file.name=paste0("CoR_multivariable_svycoxph_pretty", match(a, config$multivariate_assays), if(i==2) "_per10fold"), align="c", 
+            include.colnames = T, save2input.only=T, input.foldername=save.results.to)
+      
+      write(fits[[1]]$ll[2], file=paste0(save.results.to, "llik_",match(a, config$multivariate_assays)))
+    }
+    }
   }
 }
 

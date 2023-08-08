@@ -179,7 +179,6 @@ p.2=formatDouble(pvals.adj["cont."%.%names(pvals.cont),"p.FDR" ], 3, remove.lead
 
 
 tab.1=cbind(paste0(nevents, "/", format(natrisk, big.mark=",")), t(est), t(ci), t(p), p.2, p.1)
-# rownames(tab.1)=all.markers.names.short
 tab.1
 mytex(tab.1, file.name="CoR_univariable_svycoxph_pretty", align="c", include.colnames = F, save2input.only=T, input.foldername=save.results.to,
     col.headers=paste0("\\hline\n 
@@ -246,7 +245,7 @@ tab=cbind(
     formatDouble(nevents/natrisk, digit=4, remove.leading0=F),
     est, ci, p, overall.p.0, overall.p.2, overall.p.1
 )
-# rownames(tab)=c(rbind(all.markers.names.short, "", ""))
+rownames(tab)=c(rbind(names(fits.tri), "", ""))
 tab
 tab.cat=tab[1:(nrow(tab)),]
 #cond.plac=dat.pla.seroneg[[config$EventTimePrimary]]<=tfinal.tpeak # not used anymore
