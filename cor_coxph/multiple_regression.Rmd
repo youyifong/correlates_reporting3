@@ -1,19 +1,19 @@
 \begin{table}[H]
 \caption{Inference for antibody marker covariate-adjusted correlates of risk of COVID in the naive+nnaive group: Hazard ratios per standard deviation increment in the marker*}
 \begin{center}
-    \input{`r pathCoRoutput`/CoR_multivariable_svycoxph_pretty`r i`_`r ind`}\\
+    \input{`r pathCoRoutput`/CoR_multivariable_svycoxph_pretty`r i`}\\
 \end{center}
-*Baseline covariates adjusted for: `r covariates_adjusted`. \\
-%**`r special.note`\\
+*Baseline covariates adjusted for: `r covariates_adjusted`.  \\
+Log likelihood: \protect\input{`r paste0(pathCoRoutput, "/llik_",i)`}.   \\
 `r special.note`
 \end{table}
 
 \begin{table}[H]
 \caption{Inference for antibody marker covariate-adjusted correlates of risk of COVID in the naive+nnaive group: Hazard ratios per 10-fold increment in the marker*}
 \begin{center}
-    \input{`r pathCoRoutput`/CoR_multivariable_svycoxph_pretty`r i`_per10fold_`r ind`}\\
+    \input{`r pathCoRoutput`/CoR_multivariable_svycoxph_pretty`r i`_per10fold}\\
 \end{center}
-*Baseline covariates adjusted for: `r covariates_adjusted`. \\
-%**`r special.note`\\
+*Baseline covariates adjusted for: `r covariates_adjusted`.  \\
+Log likelihood: \protect\input{`r paste0(pathCoRoutput, "/llik_",i)`}.  \\
 `r special.note`
 \end{table}

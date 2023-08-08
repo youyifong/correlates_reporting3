@@ -1,7 +1,9 @@
 \begin{table}[H] 
 \centering
 \input{`r pathCoRoutput`/CoR_itxn_`r a`_`r b`}  
-\caption{ Inference for Day `r tpeak` antibody marker covariate-adjusted correlates of risk by Day \protect\input{`r pathCoRoutput`/timepoints_cum_risk} in the vaccine arm. Hazard ratios per 10-fold increment in the marker are shown. Log like: \protect\input{`r paste0(pathCoRoutput, "/llik_",a,"_",b)`}. `r special.note`}
+\caption{ Inference for Day `r tpeak` antibody marker covariate-adjusted correlates of risk by Day \protect\input{`r pathCoRoutput`/timepoints_cum_risk} in the vaccine arm. Hazard ratios per 10-fold increment in the marker are shown. 
+Log likelihood: \protect\input{`r paste0(pathCoRoutput, "/llik_",a,"_",b)`}. 
+`r special.note`}
 \end{table}
 
 
