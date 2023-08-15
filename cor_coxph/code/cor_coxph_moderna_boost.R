@@ -73,6 +73,7 @@ myprint(prev.naive, prev.nnaive, prev.pooled)
 
 
 
+
 ###################################################################################################
 cat("Univariate analyses")
 
@@ -82,7 +83,7 @@ cat("Univariate analyses")
 
 
 for (iObj in c(1,2,0)) {
-# iObj=1
+# iObj=2
   
   if (iObj==1) {
     all.markers = paste0("BD29", obj.assays)
@@ -97,11 +98,12 @@ for (iObj in c(1,2,0)) {
   names(all.markers)=all.markers
   names(all.markers.labels)=all.markers
   
+  
   # loop through (1) naive, (2) nnaive, (3) pooled
   for (iNaive in 1:2) {
-    # iNaive=1
+    # iNaive=2
     
-    myprint(iNaive)
+    myprint(iObj, iNaive)
     if (iNaive==1) {dat.ph1 = dat.naive;  save.results.to = glue("{save.results.to.0}/obj{iObj}_naive/")}
     if (iNaive==2) {dat.ph1 = dat.nnaive; save.results.to = glue("{save.results.to.0}/obj{iObj}_nnaive/")}
     if (iNaive==3) {dat.ph1 = dat; save.results.to = glue("{save.results.to.0}/obj{iObj}_pooled/")}

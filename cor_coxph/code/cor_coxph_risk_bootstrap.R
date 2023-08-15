@@ -8,7 +8,7 @@
 # t: a time point near to the time of the last observed outcome will be defined
 
 marginalized.risk.svycoxph.boot=function(marker.name, type, data, t, B, ci.type="quantile", numCores=1) {  
-  # marker.name=a; type=1; data=dat.ph1; t=tfinal.tpeak; B=B; ci.type="quantile"; numCores=1
+  # marker.name=a; type=3; data=dat.ph1; t=tfinal.tpeak; B=B; ci.type="quantile"; numCores=1
   
   # store the current rng state 
   save.seed <- try(get(".Random.seed", .GlobalEnv), silent=TRUE) 
@@ -36,14 +36,24 @@ marginalized.risk.svycoxph.boot=function(marker.name, type, data, t, B, ci.type=
       
     } else {        
       # non-competing risk implementation
-      # inline design object b/c it may also throw an error
-      fit.risk.1=try(svycoxph(f1, design=twophase(id=list(~1,~1), strata=list(NULL,~Wstratum), subset=~ph2, data=data)))        
-      if ( !inherits(fit.risk.1, "try-error" )) {
+      result <- tryCatch({
+        fit.risk.1=svycoxph(f1, design=twophase(id=list(~1,~1), strata=list(NULL,~Wstratum), subset=~ph2, data=data))
         out=marginalized.risk(fit.risk.1, marker.name, data.ph2, t=t, ss=ss, weights=data.ph2$wt, categorical.s=categorical.s)
-        if (n.dean) c(n.dean= last(coef(fit.risk.1)/sqrt(diag(fit.risk.1$var))) * sqrt(1/fit.risk.1$n + 1/fit.risk.1$nevent), out) else out
-      } else {
+        if (n.dean) {
+          c(n.dean= last(coef(fit.risk.1)/sqrt(diag(fit.risk.1$var))) * sqrt(1/fit.risk.1$n + 1/fit.risk.1$nevent), out) 
+        } else out
+      }, 
+      warning = function(w) {
         rep(NA, ifelse(n.dean,1,0)+length(ss))
-      }
+      },
+      error = function(e) {
+        rep(NA, ifelse(n.dean,1,0)+length(ss))
+      },
+      finally = {
+        # cat("This runs no matter what!\n")
+      })
+      result
+      
     }           
   }
   
@@ -54,13 +64,17 @@ marginalized.risk.svycoxph.boot=function(marker.name, type, data, t, B, ci.type=
         risks=try(pcr2(f1, newdata, t, weights=newdata$wt))
         ifelse (inherits(risks, "try-error"), NA, weighted.mean(risks, newdata$wt))
       })
+      
     } else {
+      # we don't try to catch warning here. if we do, all results are likely to to be NA
+      # we could try to catch warning within the marginalized.risk.threshold call
       out = try(marginalized.risk.threshold (form.0, marker.name, data=data.ph2, weights=data.ph2$wt, t=t, ss=ss))
       if ( !inherits(out, "try-error" )) {
         out
       } else {
-        NA # no need to rep, b/c results will be a list when called in bootstrap. for the point est, it is unlikely to be NA
+        rep(NA, length(ss)) 
       }
+
     }
   }    
   
@@ -121,6 +135,7 @@ marginalized.risk.svycoxph.boot=function(marker.name, type, data, t, B, ci.type=
     } else if(TRIAL=="hvtn705") {
       dat.b = bootstrap.case.control.samples(data, seed, delta.name="EventIndPrimary", strata.name="tps.stratum", ph2.name="ph2") 
     } else stop("not sure which bootstrap function to use")
+    
     dat.b.ph2=subset(dat.b, ph2==1)     
     
     if(type==1) {
@@ -146,6 +161,7 @@ marginalized.risk.svycoxph.boot=function(marker.name, type, data, t, B, ci.type=
     } else stop("wrong type")
     
   })
+  
   res=do.call(cbind, out)
   if (type==1 & !comp.risk) {
     # the first row is n.dean
@@ -192,7 +208,7 @@ if(!file.exists(paste0(save.results.to, "risks.all.2.Rdata"))) {
   if (verbose) print("create risks.all.2")
   risks.all.2=lapply(all.markers, function (a) {
     if(verbose) myprint(a)
-    marginalized.risk.svycoxph.boot(marker.name=a, type=2, data=dat.ph1, tfinal.tpeak, B=B, ci.type="quantile", numCores=numCores)        
+    marginalized.risk.svycoxph.boot(marker.name=a, type=2, data=dat.ph1, t=tfinal.tpeak, B=B, ci.type="quantile", numCores=numCores)        
   }) 
   save(risks.all.2, file=paste0(save.results.to, "risks.all.2.Rdata"))
   
