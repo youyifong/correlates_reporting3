@@ -188,3 +188,11 @@ groupby_vars1.3=c("cohort_event", "nnaive", "time", "assay")
 dat.longer.cor.subset.plot1.3 <- get_desc_by_group(dat.longer.cor.subset, groupby_vars1.3)
 write.csv(dat.longer.cor.subset.plot1.3, file = here::here("data_clean", "longer_cor_data_plot1.3.csv"), row.names=F)
 saveRDS(dat.longer.cor.subset.plot1.3, file = here::here("data_clean", "longer_cor_data_plot1.3.rds"))
+
+#### for figures 2.4: BD1 vs BD29, by naive vs non-naive, case/non-case, (Day 1), Day 29 Day 57
+#groupby_vars1.4=c("cohort_event", "nnaive", "time", "assay")
+
+# define response rate
+dat.longer.cor.subset.plot1.4 <- dat.longer.cor.subset.plot1.3 
+write.csv(dat.longer.cor.subset.plot1.4, file = here::here("data_clean", "longer_cor_data_plot1.4.csv"), row.names=F)
+saveRDS(dat.longer.cor.subset.plot1.4, file = here::here("data_clean", "longer_cor_data_plot1.4.rds"))

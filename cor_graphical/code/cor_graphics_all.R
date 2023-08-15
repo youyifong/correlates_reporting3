@@ -32,6 +32,7 @@ assay_metadata = assay_metadata %>%
 dat.longer.cor.subset.plot1 <- readRDS(here::here("data_clean", "longer_cor_data_plot1.rds"))
 dat.longer.cor.subset.plot1.2 <- readRDS(here::here("data_clean", "longer_cor_data_plot1.2.rds"))
 dat.longer.cor.subset.plot1.3 <- readRDS(here::here("data_clean", "longer_cor_data_plot1.3.rds"))
+dat.longer.cor.subset.plot1.4 <- readRDS(here::here("data_clean", "longer_cor_data_plot1.4.rds"))
 dat.cor.subset.plot3 <- readRDS(here::here("data_clean", "cor_data_plot3.rds")); dat.cor.subset.plot3$all_one <- 1 # as a placeholder for strata values
 
 # path for figures and tables etc
@@ -183,11 +184,14 @@ set2_assays = c("bindSpike","bindSpike_BA.1","pseudoneutid50","pseudoneutid50_BA
 # by naive/non-naive, vaccine/placebo
 f_2 <- f_longitude_by_assay(
     dat = dat.longer.cor.subset.plot1,
+    x.var = "time_cohort",
+    x.lb = c("BD1 Non-Cases","BD29 Non-Cases","BD1 Omicron Cases","BD29 Omicron Cases","DD1 Omicron Cases"),
     assays = set2_assays,
     times = c("BD1","BD29","DD1"),
     panel.text.size = 6,
     facet.y.var = vars(Trt_nnaive), 
     facet.x.var = vars(assay_label_short),
+    split.var = "panel",
     pointby = "cohort_col",
     lgdbreaks = c("Omicron Cases", "Non-Cases", "Non-Responders"),
     chtcols = setNames(c("#FF6F1B", "#0AB7C9", "#8F8F8F"), c("Omicron Cases", "Non-Cases", "Non-Responders")),
@@ -205,11 +209,14 @@ for (i in 1:length(c("bindSpike","pseudoneutid50"))){
 # pooling naive/non-naive, vaccine/placebo
 f_2.2 <- f_longitude_by_assay(
     dat = dat.longer.cor.subset.plot1.2,
+    x.var = "time_cohort",
+    x.lb = c("BD1 Non-Cases","BD29 Non-Cases","BD1 Omicron Cases","BD29 Omicron Cases","DD1 Omicron Cases"),
     assays = set2_assays,
     times = c("BD1","BD29","DD1"),
     panel.text.size = 6,
     facet.y.var = NULL, 
     facet.x.var = vars(assay_label_short),
+    split.var = "panel",
     pointby = "cohort_col",
     lgdbreaks = c("Omicron Cases", "Non-Cases", "Non-Responders"),
     chtcols = setNames(c("#FF6F1B", "#0AB7C9", "#8F8F8F"), c("Omicron Cases", "Non-Cases", "Non-Responders")),
@@ -224,18 +231,21 @@ for (i in 1:length(c("bindSpike","pseudoneutid50"))){
     ggsave(plot = f_2.2[[i]], filename = paste0(save.results.to, file_name), width = 16, height = 11)
     
 }
-# # by naive/non-naive, shape by vaccine/placebo
+# by naive/non-naive, shape by vaccine/placebo
 f_2.3 <- f_longitude_by_assay(
     dat = dat.longer.cor.subset.plot1.3,
+    x.var = "time_cohort",
+    x.lb = c("BD1 Non-Cases","BD29 Non-Cases","BD1 Omicron Cases","BD29 Omicron Cases","DD1 Omicron Cases"),
     assays = set2_assays,
     times = c("BD1","BD29","DD1"),
     panel.text.size = 6,
     facet.y.var = vars(nnaive), 
     facet.x.var = vars(assay_label_short),
+    split.var = "panel",
     pointby = "cohort_col2",
-    lgdbreaks = c("Omicron Cases","Non-Cases", "Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo"),
-    chtcols = setNames(c("#FF6F1B", "#0AB7C9", "#FF6F1B", "#FF6F1B", "#0AB7C9", "#0AB7C9"), c("Omicron Cases","Non-Cases", "Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo")),
-    chtpchs = setNames(c(8, 8, 17, 1, 17, 1), c("Omicron Cases","Non-Cases", "Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo"))
+    lgdbreaks = c("Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo"),
+    chtcols = setNames(c("#FF6F1B", "#FF6F1B", "#0AB7C9", "#0AB7C9"), c("Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo")),
+    chtpchs = setNames(c(17, 1, 17, 1), c("Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo"))
 )
 
 for (i in 1:length(c("bindSpike","pseudoneutid50"))){
@@ -246,6 +256,75 @@ for (i in 1:length(c("bindSpike","pseudoneutid50"))){
     ggsave(plot = f_2.3[[i]], filename = paste0(save.results.to, file_name), width = 16, height = 11)
     
 }
+
+# adhoc request for manuscript: cross-panel longitudinal analysis: BD1, BD29, by naive/non-naive, case/non-case, shape by vaccine/placebo
+# BD1, BD29
+dat.longer.cor.subset.plot1.4.sub = dat.longer.cor.subset.plot1.4 %>% 
+    mutate(assay_variant = case_when(grepl("BA.1", assay) ~ "BA.1",
+                                     TRUE ~ "D614(G)"))
+f_2.4.1 <- f_longitude_by_assay(
+    dat = dat.longer.cor.subset.plot1.4.sub,
+    x.var = "time",
+    x.lb = c("BD1","BD29"),
+    assays = c("pseudoneutid50_BA.1","bindSpike_BA.1","pseudoneutid50","bindSpike"),
+    times = c("BD1","BD29"),
+    panel.text.size = 6,
+    facet.y.var = vars(factor(assay_label_short, levels = c("Pseudovirus-nAb BA.1 (AU/ml)",
+                                                            "Pseudovirus-nAb D614G (AU/ml)",
+                                                            "Anti Spike IgG BA.1 (AU/ml)",
+                                                            "Anti Spike IgG D614 (AU/ml)"))), 
+    facet.x.var = vars(Trt_nnaive2),
+    split.var = "assay_variant",
+    pointby = "cohort_col2",
+    lgdbreaks = c("Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo"),
+    chtcols = setNames(c("#FF6F1B", "#FF6F1B", "#0AB7C9", "#0AB7C9"), c("Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo")),
+    chtpchs = setNames(c(17, 1, 17, 1), c("Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo")),
+    strip.text.y.size = 18,
+    axis.text.x.size = 18
+)
+
+for (i in 1:length(c("BA.1","D614(G)"))){
+    
+    variant = c("BA.1","D614(G)")[i]
+    
+    file_name <- paste0(variant, "_longitudinal_by_case_non_case_BD1_BD29_pooled_v3.pdf")
+    ggsave(plot = f_2.4.1[[i]], filename = paste0(save.results.to, file_name), width = 16, height = 11)
+    
+}
+
+# BD1, DeltaBD29overBD1
+f_2.4.2 <- f_longitude_by_assay(
+    dat = dat.longer.cor.subset.plot1.4.sub,
+    x.var = "time",
+    x.lb = c("BD1","DeltaBD29overBD1"),
+    assays = c("pseudoneutid50_BA.1","bindSpike_BA.1","pseudoneutid50","bindSpike"),
+    times = c("BD1","DeltaBD29overBD1"),
+    panel.text.size = 6,
+    facet.y.var = vars(factor(assay_label_short, levels = c("Pseudovirus-nAb BA.1 (AU/ml)",
+                                                            "Pseudovirus-nAb D614G (AU/ml)",
+                                                            "Anti Spike IgG BA.1 (AU/ml)",
+                                                            "Anti Spike IgG D614 (AU/ml)"))), 
+    facet.x.var = vars(Trt_nnaive2),
+    split.var = "assay_variant",
+    pointby = "cohort_col2",
+    lgdbreaks = c("Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo"),
+    chtcols = setNames(c("#FF6F1B", "#FF6F1B", "#0AB7C9", "#0AB7C9"), c("Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo")),
+    chtpchs = setNames(c(17, 1, 17, 1), c("Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo")),
+    strip.text.y.size = 18,
+    axis.text.x.size = 18
+)
+
+for (i in 1:length(c("BA.1","D614(G)"))){
+    
+    variant = c("BA.1","D614(G)")[i]
+    
+    file_name <- paste0(variant, "_longitudinal_by_case_non_case_BD1_DeltaBD29overBD1_pooled_v3.pdf")
+    ggsave(plot = f_2.4.2[[i]], filename = paste0(save.results.to, file_name), width = 16, height = 11)
+    
+}
+
+
+
 
 ###### Set 3 plots: Correlation plots across markers at a given time point
 # 9 markers, three timepoints
