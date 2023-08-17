@@ -116,10 +116,27 @@ for (time in c("BD1_BD29", "BD1_DeltaBD29overBD1")) {
 
 ## Set 3: Correlation plots across markers at a given time point #############
 for (time in set3_times) {
-  for (strain in c("9_markers", "4_markers"))
+  for (strain in c("9_markers", "4_markers")){
       res = knitr::knit_child(c(here::here('cor_graphical', 'report_sub3.Rmd')), quiet = TRUE)
       cat(res, sep = '\n')
       cat("\\clearpage", sep = '\n')
+  }
+}
+
+for (time in set3_times) {
+  for (strain in c("4_markers")){
+      res = knitr::knit_child(c(here::here('cor_graphical', 'report_sub3.2.Rmd')), quiet = TRUE)
+      cat(res, sep = '\n')
+      cat("\\clearpage", sep = '\n')
+  }
+}
+
+for (time in set3_times) {
+  for (strain in c("4_markers")){
+      res = knitr::knit_child(c(here::here('cor_graphical', 'report_sub3.3.Rmd')), quiet = TRUE)
+      cat(res, sep = '\n')
+      cat("\\clearpage", sep = '\n')
+  }
 }
 
 ## Set 4: Correlation plots for a given marker across time points #############
