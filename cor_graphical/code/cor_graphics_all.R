@@ -372,6 +372,51 @@ for (t in c("BD1","BD29","DeltaBD29overBD1")) {
             "_4_markers.pdf"
         )
     )
+    
+    # 4 markers, three timepoints, among Naive participants, adhoc request by Bo
+    covid_corr_pairplots(
+        plot_dat = subset(dat.cor.subset.plot3, nnaive == 0),
+        time = t,
+        assays = assay_metadata_sub$assay,
+        strata = "all_one", 
+        # currently strata is hard-coded to 1's and hard-coded not being used in the correlation calculation
+        # strata-based model is currently commented out in the function, ggally_statistic_resample
+        weight = "wt.BD29",
+        plot_title = paste0(
+            "Correlations of 4 ", t, " antibody markers, among naive participants\n", "Corr = Weighted Spearman Rank Correlation."
+        ),
+        column_labels = paste(t, assay_metadata_sub$assay_label_short),
+        height = max(1.3 * length(assay_metadata_sub$assay) + 0.1, 5.5),
+        width = max(1.3 * length(assay_metadata_sub$assay), 5.5),
+        column_label_size = ifelse(max(nchar(paste(t, assay_metadata_sub$assay_label_short)))>40, 3.3, 4.3),
+        filename = paste0(
+            save.results.to, "/pairs_by_time_", t,
+            "_4_markers_N.pdf"
+        )
+    )
+    
+    
+    # 4 markers, three timepoints, among Non-naive participants, adhoc request by Bo
+    covid_corr_pairplots(
+        plot_dat = subset(dat.cor.subset.plot3, nnaive == 1),
+        time = t,
+        assays = assay_metadata_sub$assay,
+        strata = "all_one", 
+        # currently strata is hard-coded to 1's and hard-coded not being used in the correlation calculation
+        # strata-based model is currently commented out in the function, ggally_statistic_resample
+        weight = "wt.BD29",
+        plot_title = paste0(
+            "Correlations of 4 ", t, " antibody markers, among non-naive participants\n", "Corr = Weighted Spearman Rank Correlation."
+        ),
+        column_labels = paste(t, assay_metadata_sub$assay_label_short),
+        height = max(1.3 * length(assay_metadata_sub$assay) + 0.1, 5.5),
+        width = max(1.3 * length(assay_metadata_sub$assay), 5.5),
+        column_label_size = ifelse(max(nchar(paste(t, assay_metadata_sub$assay_label_short)))>40, 3.3, 4.3),
+        filename = paste0(
+            save.results.to, "/pairs_by_time_", t,
+            "_4_markers_NN.pdf"
+        )
+    )
 }
 
 
