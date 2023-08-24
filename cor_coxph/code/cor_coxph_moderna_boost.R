@@ -53,10 +53,12 @@ dat$yy=dat$EventIndPrimary
 # subset to ph1
 dat=subset(dat, ph1.BD29)
 
-# add trichotomized markers. use the same cutpoints for naive and nnaive
-obj.assays=c("bindSpike_BA.1", "pseudoneutid50_BA.1", "bindSpike", "pseudoneutid50")  
+# 
+obj.assays=c("bindSpike_BA.1", "pseudoneutid50_BA.1", "bindSpike", "pseudoneutid50", "pseudoneutid50_BA.1_scaled", "pseudoneutid50_scaled")
 all.markers = c(paste0("BD29", obj.assays), paste0("DeltaBD29overBD1", obj.assays), paste0("BD1", obj.assays))
 names(all.markers)=all.markers
+
+# add trichotomized markers. use the same cutpoints for naive and nnaive
 dat = add.trichotomized.markers (dat, all.markers)
 marker.cutpoints=attr(dat, "marker.cutpoints")
   
