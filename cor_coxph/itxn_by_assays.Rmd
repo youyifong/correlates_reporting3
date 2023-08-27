@@ -7,12 +7,14 @@ Log likelihood: \protect\input{`r paste0(pathCoRoutput, "/llik_",a,"_",b)`}.
 \end{table}
 
 
+<!-- The two plots here have different xlim -->
 \begin{figure}
-\centering
-\includegraphics[width=.7\textwidth,keepaspectratio]{`r pathCoRoutput`/itxn_marginalized_risks_`r b`_`r a`.pdf}
-\caption{Marginalized cumulative risk by Day \protect\input{`r pathCoRoutput`/timepoints_cum_risk} as functions of Day `r tpeak` marker with 95\% bootstrap point-wise confidence bands (\protect\input{`r pathCoRoutput`/bootstrap_replicates} replicates). Histogram of the marker distribution is overlaid. `r special.note`}
+\center
+  \subfloat[][Marginalized (over baseline demographics variables) cumulative risk by Day \protect\input{`r pathCoRoutput`/timepoints_cum_risk} as functions of `r gsub("_", "\\\\_", b)` at three levels of `r gsub("_", "\\\\_", a)` marker with 95\% bootstrap point-wise confidence bands (\protect\input{`r pathCoRoutput`/bootstrap_replicates} replicates). Histogram of the marker distribution is overlaid.]
+  {\includegraphics[width=.48\textwidth,keepaspectratio]{`r paste0(pathCoRoutput, "/itxn_marginalized_risks_", b, "_", a, ".pdf")`}}
+  \hspace{10pt}
+  \subfloat[][Marginalized (over baseline demographics variables and `r gsub("_", "\\\\_", a)`) cumulative risk by Day \protect\input{`r pathCoRoutput`/timepoints_cum_risk} as functions of `r gsub("_", "\\\\_", b)` with 95\% bootstrap point-wise confidence bands (\protect\input{`r pathCoRoutput`/bootstrap_replicates} replicates). Histogram of the marker distribution is overlaid.]
+  {\includegraphics[width=.48\textwidth,keepaspectratio]{`r paste0(pathCoRoutput, "/", b, "_")`marginalized_risks_eq_woplacebo.pdf}  }
+\caption{Marginalized cumulative risk curves (=s). `r special.note`}
 \end{figure}
 \clearpage
-
-
-
