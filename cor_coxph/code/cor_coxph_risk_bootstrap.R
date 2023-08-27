@@ -7,7 +7,7 @@
 # data: ph1 data
 # t: a time point near to the time of the last observed outcome will be defined
 
-marginalized.risk.svycoxph.boot=function(marker.name, type, data, t, B, ci.type="quantile", numCores=1) {  
+marginalized.risk.svycoxph.boot=function(marker.name, type, data, t, B, ci.type="quantile", numCores=1, additional.terms=NULL) {  
   # marker.name=a; type=3; data=dat.ph1; t=tfinal.tpeak; B=B; ci.type="quantile"; numCores=1
   
   # store the current rng state 
@@ -16,12 +16,18 @@ marginalized.risk.svycoxph.boot=function(marker.name, type, data, t, B, ci.type=
   
   data.ph2=subset(data, ph2==1)     
   
-  if (comp.risk) {
-    f1=lapply(form.0, function(x) update(x, as.formula(paste0("~.+",marker.name))))
+  if (!is.null(additional.terms)) {
+    f2=as.formula(paste0("~.+",marker.name,"+",additional.terms))
   } else {
-    f1=update(form.0, as.formula(paste0("~.+",marker.name)))        
+    f2=as.formula(paste0("~.+",marker.name))
   }
   
+  if (comp.risk) {
+    f1=lapply(form.0, function(x) update(x, f2))
+  } else {
+    f1=update(form.0, f2)        
+  }
+
   # used in both point est and bootstrap
   # many variables are not passed but defined in the scope of marginalized.risk.svycoxph.boot
   fc.1=function(data.ph2, data, categorical.s, n.dean=FALSE){
@@ -186,54 +192,4 @@ marginalized.risk.svycoxph.boot=function(marker.name, type, data, t, B, ci.type=
 }    
 
 
-
-# vaccine arm, conditional on continuous S=s
-cat("get risks.all.1.Rdata\n")
-if(!file.exists(paste0(save.results.to, "risks.all.1.Rdata"))) {    
-  if (verbose) print("create risks.all.1")
-  risks.all.1=lapply(all.markers, function (a) {
-    if(verbose) myprint(a)
-    marginalized.risk.svycoxph.boot(marker.name=a, type=1, data=dat.ph1, tfinal.tpeak, B=B, ci.type="quantile", numCores=numCores)                
-  })
-  save(risks.all.1, file=paste0(save.results.to, "risks.all.1.Rdata"))
-  
-} else {
-  load(paste0(save.results.to, "risks.all.1.Rdata"))
-}
-
-  
-# vaccine arm, conditional on S>=s
-cat("get risks.all.2.Rdata\n")
-if(!file.exists(paste0(save.results.to, "risks.all.2.Rdata"))) {    
-  if (verbose) print("create risks.all.2")
-  risks.all.2=lapply(all.markers, function (a) {
-    if(verbose) myprint(a)
-    marginalized.risk.svycoxph.boot(marker.name=a, type=2, data=dat.ph1, t=tfinal.tpeak, B=B, ci.type="quantile", numCores=numCores)        
-  }) 
-  save(risks.all.2, file=paste0(save.results.to, "risks.all.2.Rdata"))
-  
-} else {
-  load(paste0(save.results.to, "risks.all.2.Rdata"))
-}
-
-
-# vaccine arm, conditional on categorical S
-cat("get risks.all.3.Rdata\n")
-if(!file.exists(paste0(save.results.to, "risks.all.3.Rdata"))) {    
-  if (verbose) print("create risks.all.3")
-  risks.all.3=lapply(all.markers, function (a) {
-    if(verbose) myprint(a)
-    marginalized.risk.svycoxph.boot(marker.name=a%.%"cat", type=3, data=dat.ph1, tfinal.tpeak, B=B, ci.type="quantile", numCores=numCores)                
-  })    
-  save(risks.all.3, file=paste0(save.results.to, "risks.all.3.Rdata"))
-  
-} else {
-  load(paste0(save.results.to, "risks.all.3.Rdata"))
-}
-
-write(ncol(risks.all.1[[1]]$boot), file=paste0(save.results.to, "bootstrap_replicates"))
-#rv$marginalized.risk.S.eq.s=list()
-#for (a in assays) rv$marginalized.risk.S.eq.s[[a]] = risks.all.1[[a]][c("marker","prob")]
-#rv$marginalized.risk.S.geq.s=list()
-#for (a in assays) rv$marginalized.risk.S.geq.s[[a]] = risks.all.2[[a]][c("marker","prob")]
 

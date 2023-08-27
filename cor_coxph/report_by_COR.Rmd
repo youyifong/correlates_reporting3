@@ -1,8 +1,8 @@
-# `r COR` Univariate CoR: Cox Models of Risk 
+## `r COR` Univariate CoR: Cox Models of Risk 
 
 The main regression model is the Cox proportional hazards model. All plots are made with Cox models fit unless specified otherwise.
 
-## Hazard ratios
+### Hazard ratios
 
 \setlength{\tabcolsep}{.5ex}
   \input{`r pathCoRoutput`/CoR_univariable_svycoxph_pretty}
@@ -62,7 +62,7 @@ $\dagger$ q-value and FWER (family-wide error rate) are computed over the set of
 
 
 
-## Marginalized risk and controlled vaccine efficacy plots
+### Marginalized risk and controlled vaccine efficacy plots
 
 
 \begin{table}[H] 

@@ -21,12 +21,10 @@ processed_file_digest <- digest(file = config$data_cleaned, algo = hash_algorith
 
 ```
 
-* This report was built from the
-  [`CoVPN/correlates_reporting`](https://github.com/CoVPN/correlates_reporting)
-  repository with commit hash  
+* This report was built from the repository
+  `r system("git remote get-url origin", intern = TRUE)`
+   with commit hash  
   `r system("git rev-parse HEAD", intern = TRUE)`.  
-  A diff of the changes introduced by that commit may be viewed at  
-  https://github.com/CoVPN/correlates_reporting/commit/`r system("git rev-parse HEAD", intern = TRUE)`
 
 
 * The `r hash_algorithm` hash sum of the processed file,  
