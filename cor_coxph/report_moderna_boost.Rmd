@@ -74,7 +74,7 @@ for (iObj in 1:2) {
 COR="Obj. 4"
 cat(paste0("# BD1:BD29 interaction models, hazard ratios and risk curves (", COR, ")\n\n"))
 
-cat("In the following results, each table contains estimated coefficients from one Cox model. The figures on a page are based on the underlying model from that same page.\n\n")
+cat("In the following results, each table contains estimated coefficients from one Cox model. Two risk curves are shown on a page, which marginalize over baseline demographics variables and baseline demographics variables plus BD1 marker, respectively.\n\n")
 cat ("\\clearpage")
 
 for (idat in 1:2) {
