@@ -4,7 +4,6 @@ renv::activate(project = here::here(".."))
 
 source(here::here("..", "_common.R"))
 source("code/params.R")
-source("code/cor_coxph_risk_bootstrap.R")
 
 library(survey)
 library(plotrix) # weighted.hist
