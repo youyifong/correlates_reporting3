@@ -680,6 +680,8 @@ covid_corr_pairplots <- function(plot_dat, ## data for plotting
                                  write_to_file = T) {
     dat.tmp <- plot_dat[, paste0(time, assays)]
     rr <- range(dat.tmp, na.rm = TRUE)
+    rr.x <- range(dat.tmp[, 1: (ncol(dat.tmp)-1)], na.rm = TRUE)
+    rr.y <- range(dat.tmp[, 2: ncol(dat.tmp)], na.rm = TRUE)
     
     if (rr[1] == rr[2]) {
         rr <- c(rr[1] - 1, rr[2] + 1)
@@ -727,7 +729,7 @@ covid_corr_pairplots <- function(plot_dat, ## data for plotting
             plot.margin = margin(2, 2, 2, 2)
         )
     pairplots[1, 1] <- pairplots[1, 1] +
-        scale_x_continuous(limits = rr, breaks = breaks) + ylim(0, 1.2)
+        scale_x_continuous(limits = rr.x, breaks = breaks) + ylim(0, 1.2)
     for (j in 2:pairplots$nrow) {
         for (k in 1:(j - 1)) {
             pairplots[j, k] <- pairplots[j, k] +
@@ -736,11 +738,11 @@ covid_corr_pairplots <- function(plot_dat, ## data for plotting
                     lwd = loess_lwd
                 ) +
                 scale_x_continuous(
-                    limits = rr, breaks = breaks,
+                    limits = rr.x, breaks = breaks,
                     labels = scales::math_format(10^.x)
                 ) +
                 scale_y_continuous(
-                    limits = rr, breaks = breaks,
+                    limits = rr.y, breaks = breaks,
                     labels = scales::math_format(10^.x)
                 )
         }
