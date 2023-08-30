@@ -4,6 +4,7 @@ renv::activate(project = here::here(".."))
 
 source(here::here("..", "_common.R"))
 source("code/params.R")
+source("code/cor_coxph_risk_bootstrap.R")
 
 library(survey)
 library(plotrix) # weighted.hist
@@ -85,7 +86,7 @@ cat("Univariate analyses")
 
 
 for (iObj in c(1,2,0)) {
-# iObj=2
+# iObj=1
   
   if (iObj==1) {
     all.markers = paste0("BD29", obj.assays)
@@ -103,7 +104,7 @@ for (iObj in c(1,2,0)) {
   
   # loop through (1) naive, (2) nnaive, (3) pooled
   for (iNaive in 1:2) {
-    # iNaive=2
+    # iNaive=1
     
     myprint(iObj, iNaive)
     if (iNaive==1) {dat.ph1 = dat.naive;  save.results.to = glue("{save.results.to.0}/obj{iObj}_naive/")}
@@ -147,7 +148,6 @@ for (iObj in c(1,2,0)) {
     # Cox regression
     source(here::here("code", "cor_coxph_ph.R"))
     
-    
     # unit testing
     if (iNaive==1 & iObj==1) {
       tmp.1=c(fits.cont.coef.ls[["BD29bindSpike_BA.1"]][,"p.value"])
@@ -164,7 +164,61 @@ for (iObj in c(1,2,0)) {
     
     source(here::here("code", "cor_coxph_risk_no_marker.R"))
     
-    source(here::here("code", "cor_coxph_risk_bootstrap.R"))
+    
+    ## run risk curve bootstrap
+    
+    # conditional on continuous S=s
+    cat("get risks.all.1.Rdata\n")
+    if(!file.exists(paste0(save.results.to, "risks.all.1.Rdata"))) {    
+      if (verbose) print("create risks.all.1")
+      risks.all.1=lapply(all.markers, function (a) {
+        if(verbose) myprint(a)
+        marginalized.risk.svycoxph.boot(marker.name=a, type=1, data=dat.ph1, t=tfinal.tpeak, B=B, ci.type="quantile", numCores=numCores)                
+      })
+      save(risks.all.1, file=paste0(save.results.to, "risks.all.1.Rdata"))
+      
+    } else {
+      load(paste0(save.results.to, "risks.all.1.Rdata"))
+    }
+    
+    
+    # conditional on S>=s
+    cat("get risks.all.2.Rdata\n")
+    if(!file.exists(paste0(save.results.to, "risks.all.2.Rdata"))) {    
+      if (verbose) print("create risks.all.2")
+      risks.all.2=lapply(all.markers, function (a) {
+        if(verbose) myprint(a)
+        marginalized.risk.svycoxph.boot(marker.name=a, type=2, data=dat.ph1, t=tfinal.tpeak, B=B, ci.type="quantile", numCores=numCores)        
+      }) 
+      save(risks.all.2, file=paste0(save.results.to, "risks.all.2.Rdata"))
+      
+    } else {
+      load(paste0(save.results.to, "risks.all.2.Rdata"))
+    }
+    
+    
+    # conditional on categorical S
+    cat("get risks.all.3.Rdata\n")
+    if(!file.exists(paste0(save.results.to, "risks.all.3.Rdata"))) {    
+      if (verbose) print("create risks.all.3")
+      risks.all.3=lapply(all.markers, function (a) {
+        if(verbose) myprint(a)
+        marginalized.risk.svycoxph.boot(marker.name=a%.%"cat", type=3, data=dat.ph1, t=tfinal.tpeak, B=B, ci.type="quantile", numCores=numCores)                
+      })    
+      save(risks.all.3, file=paste0(save.results.to, "risks.all.3.Rdata"))
+      
+    } else {
+      load(paste0(save.results.to, "risks.all.3.Rdata"))
+    }
+    
+    
+    write(ncol(risks.all.1[[1]]$boot), file=paste0(save.results.to, "bootstrap_replicates"))
+    #rv$marginalized.risk.S.eq.s=list()
+    #for (a in assays) rv$marginalized.risk.S.eq.s[[a]] = risks.all.1[[a]][c("marker","prob")]
+    #rv$marginalized.risk.S.geq.s=list()
+    #for (a in assays) rv$marginalized.risk.S.geq.s[[a]] = risks.all.2[[a]][c("marker","prob")]
+    
+    
     
     source(here::here("code", "cor_coxph_risk_plotting.R"))
     
@@ -258,6 +312,7 @@ for (iObj in 1:2) {
 }
 
 
+
 ###################################################################################################
 cat("Obj 4: To assess whether the CoR in 1. is modified by the BD1 antibody value")
 
@@ -313,6 +368,7 @@ for (iNaive in 1:2) {
     # itxn.pvals=c(itxn.pvals, last(getFixedEf(fit)[,"p.value"]))
   }
   
+  #### multitesting p values 
   # names(itxn.pvals)=config$interaction
   # itxn.pvals=itxn.pvals[!contain(config$interaction, "ICS4AnyEnv")] # remove the ones with ICS4AnyEnv
   # itx.pvals.adj.fdr=p.adjust(itxn.pvals, method="fdr")
@@ -322,9 +378,109 @@ for (iNaive in 1:2) {
   # mytex(tab, file.name="CoR_itxn_multitesting", align="c", include.colnames = T, save2input.only=T, input.foldername=save.results.to)
 
   
+  #### marginalized risk (over baseline demographics variables) as function of both markers in the interaction term
+  # and plotting
   inner.ids = c(2) # model is BD1 + BD29/delta and we only want to show curves at different levels of BD1
   source(here::here("code", "cor_coxph_risk_itxn.R"))
   
+  
+  #### marginalized risk (over baseline demographics variables + BD1 marker) as function of a marker
+  cat("get risks.all.1.withbaselinemarker.Rdata\n")
+  if(!file.exists(paste0(save.results.to, "risks.all.1.withbaselineitxn.Rdata"))) {    
+    if (verbose) print("create risks.all.1.withbaselineitxn for moderna_boost")
+    
+    risks.all.1.addbaselineitxn=lapply (config$interaction, function(ab) {
+      tmp=trim(strsplit(ab, " *\\* *")[[1]]); a=tmp[1]; b=tmp[2]
+      # b is assumed to be BD29 markers
+      marginalized.risk.svycoxph.boot(marker.name=b, type=1, data=dat.ph1, t=tfinal.tpeak, B=B, additional.terms = paste0(a,"*",b), ci.type="quantile", numCores=numCores)
+    })
+    names(risks.all.1.addbaselineitxn) = config$interaction
+    
+    save(risks.all.1.addbaselineitxn, file=paste0(save.results.to, "risks.all.1.addbaselineitxn.Rdata"))
+    
+  } else {
+    load(paste0(save.results.to, "risks.all.1.withbaselinemarker.Rdata"))
+  }
+  
+  # plot
+  eq.geq=1 # needed in the code below
+  for (w.wo.plac in 2:2) { # 1 with placebo lines, 2 without placebo lines. Implementation-wise, the main difference is in ylim
+
+    risks.all=risks.all.1.addbaselineitxn
+    
+    ylim=range(sapply(risks.all, function(x) x$prob), na.rm=T)
+    ylim=range(ylim, prev.naive, prev.nnaive, 0)
+    if(verbose) myprint(ylim)
+    lwd=2
+    
+    for (ab in config$interaction) {   
+      # note that we let a be tmp[2] here
+      tmp=trim(strsplit(ab, " *\\* *")[[1]])
+      a=tmp[2]
+      
+      assay=marker.name.to.assay(a)
+      risks=risks.all[[ab]]
+      
+      mypdf(oma=c(0,0,0,0), onefile=F, file=paste0(save.results.to, a, "_marginalized_risks", ifelse(eq.geq==1,"_eq","_geq"), 
+                                                   ifelse(w.wo.plac==1,"","_woplacebo")), mfrow=.mfrow)
+      
+      par(las=1, cex.axis=0.9, cex.lab=1)# axis label orientation
+      # risks=risks.all[[match(a, all.markers)]]
+      is.delta=startsWith(a,"Delta")
+      
+      ncases=sapply(risks$marker, function(s) sum(dat.ph1$yy[dat.ph1[[a]]>=s], na.rm=T))
+      
+      if (!is.delta) xlim=get.xlim(dat.ph1, a) else xlim=range(dat.ph1[[a]], na.rm=T)
+      shown=risks$marker>=wtd.quantile(dat.ph1[[a]], dat.ph1$wt, 2.5/100) & 
+            risks$marker<=wtd.quantile(dat.ph1[[a]], dat.ph1$wt, 1-2.5/100)
+      plot(risks$marker[shown], risks$prob[shown], 
+           xlab=assay_labels_short[assay]%.%ifelse(eq.geq==1," (=s)"," (>=s)"), 
+           xlim=xlim, lwd=lwd, ylim=ylim, 
+           ylab=paste0("Probability* of ",config$txt.endpoint," by ", tfinal.tpeak, " days post ", config$peak_visit, " Visit"), 
+           type="n", main=paste0(ifelse(startsWith(a,"Delta"), "BD29/BD1 ", "BD29 "), assay_labels[assay]), xaxt="n")
+      draw.x.axis.cor(xlim, lloxs[assay], if(is.delta) "delta" else llox_labels[assay])
+      
+      # prevelance lines
+      # abline(h=prev.plac, col="gray", lty=c(1,3,3), lwd=lwd)
+      
+      # risks
+      abline(h=overall.risks[[iNaive]], col="gray", lty=c(1,3,3), lwd=lwd)
+      lines(risks$marker[shown], risks$prob[shown], lwd=lwd)
+      lines(risks$marker[shown], risks$lb[shown],   lwd=lwd, lty=3)
+      lines(risks$marker[shown], risks$ub[shown],   lwd=lwd, lty=3)    
+      img.dat=cbind(risks$marker[shown], risks$prob[shown], risks$lb[shown], risks$ub[shown])
+      
+      # save to satisfy some journal requirements
+      if(w.wo.plac==1) mywrite.csv(img.dat, file=paste0(save.results.to, a, "_risk_curves",ifelse(eq.geq==1,"_eq","_geq")))    
+      
+      # text overall risks
+      if (w.wo.plac==1) {
+        # text(x=par("usr")[2]-diff(par("usr")[1:2])/3.5, y=prev.plac[1]+(prev.plac[1]-prev.plac[2])/2, "placebo overall "%.%formatDouble(prev.plac[1],3,remove.leading0=F))        
+        text(x=par("usr")[2]-diff(par("usr")[1:2])/3.5, y=overall.risks[[iNaive]][1]+(prev.plac[1]-prev.plac[2])/2, "vaccine overall "%.%formatDouble(overall.risks[[iNaive]][1],3,remove.leading0=F))
+      } else {
+        # text(x=par("usr")[2]-diff(par("usr")[1:2])/3.5, y=par("usr")[4]-diff(par("usr")[3:4])/20,     "placebo overall "%.%formatDouble(prev.plac[1],3,remove.leading0=F))
+        text(x=par("usr")[2]-diff(par("usr")[1:2])/3.5, y=overall.risks[[iNaive]][1]-(overall.risks[[iNaive]][1]-overall.risks[[iNaive]][2])/4, "vaccine overall "%.%formatDouble(overall.risks[[iNaive]][1],3,remove.leading0=F))
+      }
+      
+      # add histogram
+      par(new=TRUE) 
+      col <- c(col2rgb("olivedrab3")) # orange, darkgoldenrod2
+      col <- rgb(col[1], col[2], col[3], alpha=255*0.4, maxColorValue=255)
+      tmp.x=dat.ph1[[a]][dat.ph1$ph2]
+      tmp.w=dat.ph1$wt[dat.ph1$ph2]
+      tmp=get.marker.histogram(tmp.x, tmp.w, attr(config,"config"))
+      if (any(is.nan(tmp$density))) tmp=hist(tmp.x, plot=F)
+      # plot
+      plot(tmp,col=col,axes=F,labels=F,main="",xlab="",ylab="",border=0,freq=F, xlim=xlim, ylim=c(0,max(tmp$density*1.25)))
+      #axis(side=4, at=axTicks(side=4)[1:5])
+      #mtext("Density", side=4, las=0, line=2, cex=1, at=.3)  
+      #mylegend(x=6, fill=col, border=col, legend="Vaccine Group", bty="n", cex=0.7)      
+      #mtext(toTitleCase(study_name), side = 1, line = 0, outer = T, at = NA, adj = NA, padj = NA, cex = NA, col = NA, font = NA)
+      
+      dev.off()    
+    } # end assays
+  }
+
   
 } # end if iNaive
 

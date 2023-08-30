@@ -1,3 +1,5 @@
+# Univariate models, hazard ratios and risk curves
+
 ```{r, echo=FALSE, results='asis'}
 
 study_name = "COVEBoost"
@@ -36,12 +38,11 @@ for (iObj in c(1,2,0)) {
 } 
 
 
-#
 COR="Obj. 3"
-cat(glue("# {COR} Modification of BD29 markers or fold change by naive/non-naive\\"), sep='\n')
+cat(glue("# Modification of BD29 or fold change markers by naive/non-naive, hazard ratios ({COR})\\"), sep='\n')
 
-cat("One model per table. \n\n
-     One page per marker with results both with or without adjusting for naive:HighRiskInd shown.\n")
+cat("In the following results, each table contains estimated coefficients from one Cox model. On each page, two related regression models are shown, whose only difference is whether or not naive:HighRiskInd is adjusted.\n\n")
+
 cat ("\\clearpage")
 
 
@@ -70,12 +71,10 @@ for (iObj in 1:2) {
 }
 
 
-#
 COR="Obj. 4"
-cat(glue("# {COR} Modification of BD29 markers by BD1 markers\\"), sep='\n')
+cat(paste0("# BD1:BD29 interaction models, hazard ratios and risk curves (", COR, ")\n\n"))
 
-cat("One model per table. \n\n
-     One page per marker with results both for BD1*BD29 and BD1*fold chanage.\n")
+cat("In the following results, each table contains estimated coefficients from one Cox model. Two risk curves are shown on a page, which marginalize over baseline demographics variables and baseline demographics variables plus BD1 marker, respectively.\n\n")
 cat ("\\clearpage")
 
 for (idat in 1:2) {
@@ -104,10 +103,31 @@ for (idat in 1:2) {
 
 
 #
-cat(glue("# Multivariate Cox Models of Risk\\"), sep='\n')
+cat(glue("# Multivariate models, hazard ratios\\"), sep='\n')
 
-cat("One model per table. Scaled and not-scaled are shown on one page.\n\n")
-
+cat("In the following results, each table contains estimated coefficients from one Cox model. Log Likelihoods are shown in the caption.
+     Results from two versions of the same regression model are shown on one page, the difference being whether biomarker are standardized or not.\n\n")
+cat ("The following models are studied:\n
+    BD1bindSpike_BA.1,
+    BD29bindSpike_BA.1,
+    BD1bindSpike_BA.1 + BD29bindSpike_BA.1,
+    BD1bindSpike_BA.1 * BD29bindSpike_BA.1,
+    
+    BD1bindSpike + BD29bindSpike,
+    BD1pseudoneutid50_BA.1 + BD29pseudoneutid50_BA.1, 
+    BD1pseudoneutid50 + BD29pseudoneutid50,
+    
+    BD29pseudoneutid50_BA.1 + BD29pseudoneutid50, 
+    BD29bindSpike_BA.1 + BD29bindSpike, 
+    BD29pseudoneutid50_BA.1 + BD29bindSpike_BA.1, 
+    BD29pseudoneutid50 + BD29bindSpike, 
+    
+    DeltaBD29overBD1pseudoneutid50_BA.1 + DeltaBD29overBD1pseudoneutid50, 
+    DeltaBD29overBD1bindSpike_BA.1 + DeltaBD29overBD1bindSpike, 
+    DeltaBD29overBD1pseudoneutid50_BA.1 + DeltaBD29overBD1bindSpike_BA.1, 
+    DeltaBD29overBD1pseudoneutid50 + DeltaBD29overBD1bindSpike
+\n\n")
+cat ("The results from naive are shown first, followed by the results from non-naive. \n\n")
 cat ("\\clearpage")
 
 
