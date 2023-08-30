@@ -1,3 +1,5 @@
+cat('start plotting ...\n')
+
 # sensitivity analyses parameters
 s2="85%"; s1="15%" # these two reference quantiles are used in the next two blocks of code
 RRud=RReu=2
