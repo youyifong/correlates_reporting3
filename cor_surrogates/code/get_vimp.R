@@ -1,6 +1,7 @@
 # Sys.setenv(TRIAL = "hvtn705second")
 # Sys.setenv(TRIAL = "moderna_real")
 # Sys.setenv(TRIAL = "janssen_pooled_partA")
+# Sys.setenv(TRIAL = "moderna_boost")
 #-----------------------------------------------
 # obligatory to append to the top of each script
 renv::activate(project = here::here(".."))
@@ -18,6 +19,9 @@ job_id <- as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
 
 # common setup for CV super learners and variable importance
 source(here::here("code", "cor_surrogates_setup.R"))
+
+if(study_name == "COVEBoost")
+  use_ensemble_sl = FALSE
 
 # drop "SL.xgboost.2.yes" and "SL.xgboost.4.yes" from SL_library as class-balancing learners in the variable
 # importance computation doesn’t make sense – the regression we’re doing there (to account for the two-phase sampling)
@@ -51,8 +55,8 @@ X <- phase_1_data_treatmentDAT %>%
   select(-!!ptidvar)
 
 # read in the fits for the baseline risk factors
-baseline_fits <- readRDS(here("output", paste0(Sys.getenv("TRIAL"), "/CVSLfits_vacc_", endpoint, "_", varset_names[1], ".rds")))
-baseline_aucs <- readRDS(here("output", paste0(Sys.getenv("TRIAL"), "/CVSLaucs_vacc_", endpoint, "_", varset_names[1], ".rds")))
+baseline_fits <- readRDS(here("output", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, paste0("CVSLfits_vacc_", endpoint, "_", varset_names[1], ".rds")))
+baseline_aucs <- readRDS(here("output", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, paste0("CVSLaucs_vacc_", endpoint, "_", varset_names[1], ".rds")))
 if (!use_ensemble_sl) {
   baseline_fits <- lapply(as.list(1:length(baseline_fits)), function(i) {
     make_discrete_sl_auc(cvsl_fit = baseline_fits[[i]], all_aucs = baseline_aucs[[i]])
@@ -104,8 +108,8 @@ final_point_estimate <- "average" # helps with point estimate stability
     this_s <- which(varset_matrix[job_id, ]) + length(briskfactors)
   }
   # get the correct CV.SL lists
-  full_fits <- readRDS(here("output", paste0(Sys.getenv("TRIAL"), "/CVSLfits_vacc_", endpoint, "_", varset_names[job_id], ".rds")))
-  full_aucs <- readRDS(here("output", paste0(Sys.getenv("TRIAL"), "/CVSLaucs_vacc_", endpoint, "_", varset_names[job_id], ".rds")))
+  full_fits <- readRDS(here("output", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, paste0("CVSLfits_vacc_", endpoint, "_", varset_names[job_id], ".rds")))
+  full_aucs <- readRDS(here("output", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, paste0("CVSLaucs_vacc_", endpoint, "_", varset_names[job_id], ".rds")))
   if (!use_ensemble_sl) {
     full_fits <- lapply(as.list(1:length(baseline_fits)), function(i) {
       make_discrete_sl_auc(cvsl_fit = full_fits[[i]], all_aucs = full_aucs[[i]])

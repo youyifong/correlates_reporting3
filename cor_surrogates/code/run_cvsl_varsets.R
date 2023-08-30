@@ -1,6 +1,7 @@
 # Sys.setenv(TRIAL = "hvtn705second")
 # Sys.setenv(TRIAL = "moderna_real")
 # Sys.setenv(TRIAL = "janssen_pooled_partA")
+# Sys.setenv(TRIAL = "moderna_boost")
 #-----------------------------------------------
 # obligatory to append to the top of each script
 renv::activate(project = here::here(".."))
@@ -65,7 +66,7 @@ if(V_inner == length(Y) - 1){
 
 cvsl_args %>% add_row(Argument = "vimp package version",
                       Value = paste0(packageVersion("vimp"))) %>%    # Add vimp package version
-  write.csv(paste0("output/", Sys.getenv("TRIAL"), "/cvsl_args.csv"))
+  write.csv(paste0("output/", Sys.getenv("TRIAL"), "/", SLcohort, "/", SLrunBaseline, "/cvsl_args.csv"))
 # ---------------------------------------------------------------------------------
 # run super learner, with leave-one-out cross-validation and all screens
 # do 10 random starts, average over these
@@ -105,21 +106,33 @@ fits <- parallel::mclapply(seeds, FUN = run_cv_sl_once,
 )
 
 
-# compile all CV-AUCs and CV-SL fits
+# compile all CV-AUCs and CV-SL fits; make sure to drop the seeds that failed.
 cvaucs <- list()
 cvfits <- list()
-for (i in 1:length(seeds)) {
-  cvaucs[[i]] = fits[[i]]$cvaucs$aucs
-  cvfits[[i]] = fits[[i]]$cvfits
+
+fits_that_worked <- fits[lengths(fits) == 2]
+
+for (i in 1:length(fits_that_worked)) {
+  cvaucs[[i]] = fits_that_worked[[i]]$cvaucs$aucs
+  cvfits[[i]] = fits_that_worked[[i]]$cvfits
 }
+
+# for (i in 1:length(fits)) {
+#   cvaucs[[i]] = fits[[i]]$cvaucs$aucs
+#   cvfits[[i]] = fits[[i]]$cvfits
+# }
+
+write(paste0("For variable set ", varset_names[job_id], ", out of ", length(seeds), " total seeds, ", length(fits) - length(fits_that_worked), " seed/s failed"),
+      file=here("output", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, paste0("check_failed_seeds_", varset_names[job_id], ".csv")), 
+      append=TRUE)
     
 # save off the output
-saveRDS(cvaucs, file = paste0("output/", Sys.getenv("TRIAL"), paste0("/CVSLaucs_vacc_", endpoint, "_", varset_names[job_id], ".rds")))
-saveRDS(cvfits, file = here("output/", Sys.getenv("TRIAL"), paste0("/CVSLfits_vacc_", endpoint, "_", varset_names[job_id], ".rds")))
+saveRDS(cvaucs, file = here("output", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, paste0("CVSLaucs_vacc_", endpoint, "_", varset_names[job_id], ".rds")))
+saveRDS(cvfits, file = here("output", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, paste0("CVSLfits_vacc_", endpoint, "_", varset_names[job_id], ".rds")))
 # only save these objects once
 if (job_id == 1) {
-  saveRDS(ph2_vacc_ptids, file = paste0("output/", Sys.getenv("TRIAL"), "/ph2_vacc_ptids.rds"))
-  save(run_prod, Y, dat.ph1, dat.ph2, weights, dat.mock, briskfactors, endpoint, maxVar,
-       V_outer, varset_names, individualMarkers, SL_library, file = paste0("output/", Sys.getenv("TRIAL"), "/objects_for_running_SL.rda"))
+  saveRDS(ph2_vacc_ptids, file = paste0("output/", Sys.getenv("TRIAL"), "/", SLcohort, "/", SLrunBaseline, "/ph2_vacc_ptids.rds"))
+  save(SLcohort, SLrunBaseline, run_prod, Y, dat.ph1, dat.ph2, dat, briskfactors, endpoint, maxVar,
+       V_outer, varset_names, individualMarkers, SL_library, file = paste0("output/", Sys.getenv("TRIAL"), "/", SLcohort, "/", SLrunBaseline, "/objects_for_running_SL.rda"))
 }
 cat("\n Finished ", varset_names[job_id], "variable set \n") 

@@ -1,4 +1,5 @@
 # Sys.setenv(TRIAL = "janssen_la_partA")
+# Sys.setenv(TRIAL = "moderna_boost")
 #-----------------------------------------------
 # obligatory to append to the top of each script
 renv::activate(project = here::here(".."))
@@ -19,7 +20,13 @@ library(stringr)
 suppressMessages(conflicted::conflict_prefer("filter", "dplyr"))
 suppressMessages(conflicted::conflict_prefer("summarise", "dplyr"))
 source(here("code", "utils.R"))
-load(file = paste0("output/", Sys.getenv("TRIAL"), "/objects_for_running_SL.rda"))
+if (study_name == "COVEBoost") {
+  SLcohort = "naive"
+  SLrunBaseline = "briskfactors"
+  load(file = here("output", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, "objects_for_running_SL.rda"))
+} else {
+  load(file = here("output", Sys.getenv("TRIAL"), "objects_for_running_SL.rda"))
+}
 
 # Create fancy/tidy screen names for use in tables and figures
 # @param avgs dataframe containing Screen, Learner, AUCs information as columns
@@ -138,7 +145,7 @@ readin_SLobjects_fromFolder <- function(data_path, file_pattern, endpoint, trt){
     tibble(file = .) %>%
     mutate(listdat = lapply(paste0(data_path, "/", file), readRDS)) %>%
     #mutate(data = map(listdat, convert_SLobject_to_Slresult_dataframe)) %>%
-    mutate(data = map(listdat, convert_SLobject_to_Slresult_dataframe_UPDATE_cvauc_for_DiscreteSL)) %>%
+    mutate(data = map(listdat, convert_SLobject_to_Slresult_dataframe_UPDATE_cvauc_for_DiscreteSL))  %>%
     select(file, data) %>%
     unnest(data) %>%
     mutate(endpoint = endpoint,
@@ -148,7 +155,13 @@ readin_SLobjects_fromFolder <- function(data_path, file_pattern, endpoint, trt){
 
 # Read CV.SL object and save relevant columns as dataframe
 # For vaccine, yd57 endpoint
-data_folder <- here("output", Sys.getenv("TRIAL"))
+if(study_name == "COVEBoost"){
+  data_folder <- here("output", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline)
+} else {
+  data_folder <- here("output", Sys.getenv("TRIAL"))
+}
+  
+
 if(study_name %in% c("COVE", "MockCOVE")){
   cvaucs_vacc <- readin_SLobjects_fromFolder(data_folder, file_pattern = "CVSLaucs*", endpoint = "EventIndPrimaryD57", trt = "vaccine") %>%
     filter(file %in% c(paste0("CVSLaucs_vacc_EventIndPrimaryD57_", varset_names[1:34], ".rds"))) %>%
@@ -158,7 +171,19 @@ if(study_name %in% c("COVE", "MockCOVE")){
            varsetNo = as.numeric(sapply(strsplit(varset, "_"), `[`, 1))) %>%
     arrange(varsetNo)
 
-  saveRDS(cvaucs_vacc, file = paste0("output/", Sys.getenv("TRIAL"), "/cvaucs_vacc_EventIndPrimaryD57.rds"))
+  saveRDS(cvaucs_vacc, file = here("output", Sys.getenv("TRIAL"), "cvaucs_vacc_EventIndPrimaryD57.rds"))
+}
+
+if(study_name %in% c("COVEBoost")){
+  cvaucs_vacc <- readin_SLobjects_fromFolder(data_folder, file_pattern = "CVSLaucs*", endpoint = "EventIndPrimaryOmicronBD29", trt = "vacc") %>%
+    filter(file %in% c(paste0("CVSLaucs_vacc_EventIndPrimaryOmicronBD29_", varset_names[1:108], ".rds"))) %>%
+    mutate(varset = str_replace(file, "CVSLaucs_vacc_EventIndPrimaryOmicronBD29_", ""),
+           varset = str_replace(varset, "_varset", ""),
+           varset = str_replace(varset, ".rds", ""),
+           varsetNo = as.numeric(sapply(strsplit(varset, "_"), `[`, 1))) %>%
+    arrange(varsetNo)
+  
+  saveRDS(cvaucs_vacc, file = here("output", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, "cvaucs_boost_EventIndPrimaryOmicronBD29.rds"))
 }
 
 
