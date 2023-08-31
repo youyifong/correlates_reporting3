@@ -729,6 +729,7 @@ covid_corr_pairplots <- function(plot_dat, ## data for plotting
         )
     pairplots[1, 1] <- pairplots[1, 1] +
     scale_x_continuous(limits = rr.x, breaks = breaks) + ylim(0, 1.25)
+    
     for (j in 2:pairplots$nrow) {
         for (k in 1:(j - 1)) {
             pairplots[j, k] <- pairplots[j, k] +
