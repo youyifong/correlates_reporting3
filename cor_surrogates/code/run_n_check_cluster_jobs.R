@@ -1,6 +1,7 @@
 # Sys.setenv(TRIAL = "hvtn705second")
 # Sys.setenv(TRIAL = "moderna_real")
 # Sys.setenv(TRIAL = "janssen_pooled_partA")
+# Sys.setenv(TRIAL = "moderna_boost")
 #-----------------------------------------------
 # obligatory to append to the top of each script
 renv::activate(project = here::here(".."))
@@ -15,13 +16,20 @@ conflicted::conflict_prefer("filter", "dplyr")
 conflicted::conflict_prefer("summarise", "dplyr")
 
 # Get varset_names.csv 
-varsets <- read.csv(paste0("output/", Sys.getenv("TRIAL"), "/varset_names.csv"), stringsAsFactors = FALSE) 
+varsets <- read.csv(paste0("output/", Sys.getenv("TRIAL"), "/", SLcohort, "/", SLrunBaseline, "/varset_names.csv"), stringsAsFactors = FALSE) 
 
 # Run all sbatch jobs through R!
 system(paste0("export TRIAL=", Sys.getenv("TRIAL")))
 for(varset_number in 1:nrow(varsets)){
   system(paste("sbatch code/submit_cluster_job.sh", varset_number))
 }
+
+# For each variable set, check the number of seeds that failed. Happens at times!
+list.files(here("output", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline), 
+           pattern = "check", 
+           full.names = TRUE) %>% 
+  map(~ read.csv(file = .x, header = FALSE)) %>%
+  bind_rows()
 
 # Run all sbatch jobs through R!
 system(paste0("export TRIAL=", Sys.getenv("TRIAL")))

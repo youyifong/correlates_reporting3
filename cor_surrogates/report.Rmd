@@ -2,9 +2,7 @@
 header-includes:
    - \usepackage{float}
    
-title: "`r ifelse(Sys.getenv('TRIAL') == 'janssen_pooled_partA', 'ENSEMBLE Optimal Surrogate Analysis Report: janssen_pooled_partA', 
-                     ifelse(Sys.getenv('TRIAL') == 'janssen_la_partA', 'ENSEMBLE Optimal Surrogate Analysis Report: janssen_la_partA', 
-                     'NA'))`"
+title: "Moderna Boost Optimal Surrogate Analysis Report: naive population"
 subtitle: "`r Sys.Date()`"
 
 output:
@@ -17,11 +15,31 @@ output:
 ---
 
 ```{r, include = FALSE}
+Sys.setenv(TRIAL = "moderna_boost")
 library(here)
 here::i_am("cor_surrogates/report.Rmd")
+
+# load libraries
+library(tidyverse, quietly = T)
+library(kableExtra, quietly = T)
+library(conflicted, quietly = T)
+conflicted::conflict_prefer("filter", "dplyr")
+conflict_prefer("summarise", "dplyr")
+
+# Report-specific variables defined
+SLcohort = "naive"
+SLrunBaseline = "briskfactors"
+
 ```
 
 \tableofcontents
 
-```{r, child=here("cor_surrogates", 'report_sub_janssen_pooled_partA.Rmd')}
+
+```{r, child=here("cor_surrogates", 'report_sub_ModernaBoost_Naive.Rmd')}
 ```
+
+
+<!-- ```{r, child=here("cor_surrogates", 'report_sub_ModernaBoost_Pooled.Rmd')} -->
+<!-- ``` -->
+
+

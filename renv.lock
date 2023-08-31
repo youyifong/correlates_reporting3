@@ -497,15 +497,15 @@
     },
     "copcor": {
       "Package": "copcor",
-      "Version": "2023.8-27",
+      "Version": "2023.8-29",
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteUsername": "CoVPN",
       "RemoteRepo": "copcor",
       "RemoteRef": "main",
-      "RemoteSha": "5df36c85d024d1edd1517161cba3fac334ecc04b",
-      "Hash": "59c4fc07ec1bd86d474ca1ba45f7299a"
+      "RemoteSha": "a1ba80636f24046efea70d63f8309b2287828e53",
+      "Hash": "20c809ccae24db95e81f24c03d131165"
     },
     "corrplot": {
       "Package": "corrplot",
@@ -2155,15 +2155,10 @@
     },
     "vimp": {
       "Package": "vimp",
-      "Version": "2.2.10",
-      "Source": "GitHub",
-      "RemoteType": "github",
-      "RemoteHost": "api.github.com",
-      "RemoteRepo": "vimp",
-      "RemoteUsername": "bdwilliamson",
-      "RemoteRef": "HEAD",
-      "RemoteSha": "a36c80060b79f090cbf9c4149054e2dd20bb4221",
-      "Hash": "41db5910a2ebb9c34a7ff643b5d4bcdc"
+      "Version": "2.3.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "b6e562345d87770bdee12835c0ac3bb0"
     },
     "viridis": {
       "Package": "viridis",

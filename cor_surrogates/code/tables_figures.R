@@ -1,6 +1,7 @@
 # Sys.setenv(TRIAL = "hvtn705second")
 # Sys.setenv(TRIAL = "moderna_real")
 # Sys.setenv(TRIAL = "janssen_pooled_partA")
+# Sys.setenv(TRIAL = "moderna_boost")
 #-----------------------------------------------
 # obligatory to append to the top of each script
 renv::activate(project = here::here(".."))
@@ -33,7 +34,14 @@ conflict_prefer("load", "base")
 source(here("code", "utils.R"))
 method <- "method.CC_nloglik" # since SuperLearner relies on this to be in GlobalEnv
 ggplot2::theme_set(theme_cowplot())
-load(paste0("output/", Sys.getenv("TRIAL"), "/objects_for_running_SL.rda"))
+
+if(study_name == "COVEBoost"){
+  SLcohort = "naive"
+  SLrunBaseline = "briskfactors"
+  load(here("output", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, "objects_for_running_SL.rda"))
+} else {
+  load(here("output", Sys.getenv("TRIAL"), "objects_for_running_SL.rda"))
+}
 
 # Get vimps in one dataframe: ----------------------------------------------------------
 pooled_ests_lst <- list.files(here(paste0("output/", Sys.getenv("TRIAL"))), pattern = "pooled_ests_*") %>%
@@ -56,6 +64,11 @@ if (study_name %in% c("COVE", "MockCOVE")) {
   vim_estimates <- readRDS(file = here::here("output", Sys.getenv("TRIAL"), "vim_estimates.rds"))  %>%
     mutate(group = ifelse(variable_set %in% c("2_bAbSpike_D57", "3_bAbRBD_D57", "13_bAbSpike_D29"), TRUE, group))
 }
+if (study_name %in% c("COVEBoost")) {
+  cvaucs_vacc <- readRDS(file = here::here("output", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, "cvaucs_boost_EventIndPrimaryOmicronBD29.rds"))
+  vim_estimates <- readRDS(file = here::here("output", Sys.getenv("TRIAL"), "vim_estimates.rds"))  %>%
+    mutate(group = ifelse(variable_set %in% c("2_bAbSpike_D57", "3_bAbRBD_D57", "13_bAbSpike_D29"), TRUE, group))
+}
 if (study_name == "HVTN705") {
   cvaucs_vacc <- readRDS(file = here::here("output", Sys.getenv("TRIAL"), "cvaucs_vacc_EventIndPrimaryD210.rds"))
   vim_estimates <- readRDS(file = here::here("output", Sys.getenv("TRIAL"), "vim_estimates.rds")) %>%
@@ -65,10 +78,16 @@ if (study_name == "ENSEMBLE") {
   cvaucs_vacc <- readRDS(file = here::here("output", Sys.getenv("TRIAL"), "cvaucs_vacc_EventIndPrimaryIncludeNotMolecConfirmedD29.rds"))
   vim_estimates <- readRDS(file = here::here("output", Sys.getenv("TRIAL"), "vim_estimates.rds")) 
 }
-ph2_vacc_ptids <- readRDS(file = here::here("output", Sys.getenv("TRIAL"), "ph2_vacc_ptids.rds"))
+
+
+if(study_name %in% c("COVEBoost")){
+  ph2_vacc_ptids <- readRDS(file = here::here("output", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, "ph2_vacc_ptids.rds"))
+} else {
+  ph2_vacc_ptids <- readRDS(file = here::here("output", Sys.getenv("TRIAL"), "ph2_vacc_ptids.rds"))
+}
 
 # Select the random seed from which to display results
-if(study_name %in% c("COVE", "MockCOVE", "HVTN705")){
+if(study_name %in% c("COVE", "MockCOVE", "COVEBoost", "HVTN705")){
   rseed = 1
 } else if(study_name %in% c("ENSEMBLE")){
   rseed = 2
@@ -82,11 +101,17 @@ tab <- cvaucs_vacc %>%
   filter(!Learner %in% c("SL", "Discrete SL")) %>%
   select(Learner, Screen) %>%
   mutate(Screen = fct_relevel(Screen, c("all", "glmnet", "univar_logistic_pval",
-                                        "highcor_random")),
-         Learner = as.factor(Learner)) %>%
+                                        "highcor_random"))) %>%
   arrange(Learner, Screen) %>%
   distinct(Learner, Screen) %>%
   rename("Screen*" = Screen)
+
+if(study_name == "COVEBoost"){
+  tab <- tab %>% mutate(Learner = ifelse(Learner == "SL.step.interaction.skinny", "SL.step.interaction", Learner))
+  cvaucs_vacc  <- cvaucs_vacc %>% mutate(Learner = ifelse(Learner == "SL.step.interaction.skinny", "SL.step.interaction", Learner))
+}
+
+tab <- tab %>% mutate(Learner = as.factor(Learner))
 
 if (!grepl("Mock", study_name) & study_name == "COVE") {
   tab <- tab %>%
@@ -114,7 +139,12 @@ if (!grepl("Mock", study_name) & study_name == "COVE") {
     arrange(Learner, `Screen*`)
 }
 
-tab %>% write.csv(here("output", Sys.getenv("TRIAL"), "learner-screens.csv"))
+if(study_name == "COVEBoost"){
+  tab %>% write.csv(here("output", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, "learner-screens.csv"))
+}else{
+  tab %>% write.csv(here("output", Sys.getenv("TRIAL"), "learner-screens.csv"))
+}
+
 
 # Table of variable set definitions
 if (study_name %in% c("COVE", "MockCOVE")) {
@@ -162,6 +192,15 @@ components of nonlinear PCA), and the maximum signal diversity score]",
 components of nonlinear PCA), and the maximum signal diversity score]",
                                                         "Baseline risk factors + all individual Day 29 and Day 57 marker variables",
                                                         "Baseline risk factors + all individual Day 29 and Day 57 marker variables and their combination scores (Full model of Day 29 and Day 57 markers)"))
+}
+if (study_name %in% c("COVEBoost")) {
+  caption <- "The 108 variable sets on which an estimated optimal surrogate was built."
+  
+  only_varsets <- varset_names[1:92]
+  
+  tab <- data.frame(`Variable Set Name` = varset_names[1:92],
+                    `Variables included in the set` = c("Baseline risk factors only (Reference model)",
+                                                        rep("", 91)))
 }
 if (study_name == "HVTN705") {
   total_varsets = 36
@@ -242,7 +281,21 @@ components of nonlinear PCA), and the maximum signal diversity score]",
                                                         "Baseline risk factors + all individual Day 29 marker variables and their combination scores (Full model of Day 29 markers)"))
 }
 
-tab %>% write.csv(here("output", Sys.getenv("TRIAL"), "varsets.csv"))
+tab %>% write.csv(here("output", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, "varsets.csv"))
+
+# Check if output directory exists; if not, create it!
+if(study_name == "COVEBoost"){
+  if(!dir.exists(paste0("figs/", Sys.getenv("TRIAL"), "/", SLcohort, "/", SLrunBaseline))){
+    if(!dir.exists(paste0("figs/", Sys.getenv("TRIAL"), "/", SLcohort))){
+      dir.create(paste0("figs/", Sys.getenv("TRIAL"), "/", SLcohort))
+    }
+    dir.create(paste0("figs/", Sys.getenv("TRIAL"), "/", SLcohort, "/", SLrunBaseline))
+  }
+} else {
+  if(!dir.exists(paste0("figs/", Sys.getenv("TRIAL")))){
+    dir.create(paste0("figs/", Sys.getenv("TRIAL")))
+  }
+}
 
 # Create figures ---------------------------------------------------------------
 # Forest plots for vaccine model
@@ -250,22 +303,34 @@ tab %>% write.csv(here("output", Sys.getenv("TRIAL"), "varsets.csv"))
 options(bitmapType = "cairo")
 for(i in 1:(cvaucs_vacc %>% filter(!is.na(varsetNo)) %>% distinct(varset) %>% nrow())) {
   variableSet = unique(cvaucs_vacc$varset)[i]
-  png(file = here("figs", Sys.getenv("TRIAL"), paste0("forest_vacc_cvaucs_", variableSet, ".png")), width=1000, height=1100)
-  top_learner <- make_forest_plot(cvaucs_vacc %>% filter(varset==variableSet))
+  if(study_name == "COVEBoost"){
+    png(file = here("figs", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, paste0("forest_vacc_cvaucs_", variableSet, ".png")), width=1000, height=1100)
+  } else {
+    png(file = here("figs", Sys.getenv("TRIAL"), paste0("forest_vacc_cvaucs_", variableSet, ".png")), width=1000, height=1100)
+  }
+  top_learner <- make_forest_plot_demo(cvaucs_vacc %>% filter(varset==variableSet))
   grid.arrange(top_learner$top_learner_nms_plot, top_learner$top_learner_plot, ncol=2)
   dev.off()
 }
 
 # All Superlearners
 learner.choice = "SL"
-png(file = here("figs", Sys.getenv("TRIAL"), paste0("forest_vacc_cvaucs_all", learner.choice, "s.png")), width=1000, height=1100)
+if(study_name == "COVEBoost"){
+  png(file = here("figs", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, paste0("forest_vacc_cvaucs_all", learner.choice, "s.png")), width=1000, height=1100)
+} else {
+  png(file = here("figs", Sys.getenv("TRIAL"), paste0("forest_vacc_cvaucs_all", learner.choice, "s.png")), width=1000, height=1100)
+}
 top_learner <- make_forest_plot_SL_allVarSets(cvaucs_vacc %>% filter(!is.na(varsetNo)), learner.choice)
 grid.arrange(top_learner$top_learner_nms_plot, top_learner$top_learner_plot, ncol=2)
 dev.off()
 
 # All discrete.SLs
 learner.choice = "Discrete SL"
-png(file = here("figs", Sys.getenv("TRIAL"), paste0("forest_vacc_cvaucs_all", learner.choice, "s.png")), width=1000, height=1100)
+if(study_name == "COVEBoost"){
+  png(file = here("figs", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, paste0("forest_vacc_cvaucs_all", learner.choice, "s.png")), width=1000, height=1100)
+} else {
+  png(file = here("figs", Sys.getenv("TRIAL"), paste0("forest_vacc_cvaucs_all", learner.choice, "s.png")), width=1000, height=1100)
+}
 top_learner <- make_forest_plot_SL_allVarSets(cvaucs_vacc %>% filter(!is.na(varsetNo)), learner.choice)
 grid.arrange(top_learner$top_learner_nms_plot, top_learner$top_learner_plot, ncol=2)
 dev.off()
@@ -294,6 +359,8 @@ for(i in 1:(cvaucs_vacc %>% filter(!is.na(varsetNo)) %>% distinct(varset) %>% nr
   # Get cvsl fit and extract cv predictions
   if(study_name %in% c("COVE", "MockCOVE")){
     cvfit <- readRDS(file = here("output", Sys.getenv("TRIAL"), paste0("CVSLfits_vacc_EventIndPrimaryD57_", variableSet, ".rds")))
+  } else if(study_name == "COVEBoost"){
+    cvfit<- readRDS(file = here("output", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, paste0("CVSLfits_vacc_EventIndPrimaryOmicronBD29_", variableSet, ".rds")))
   } else if(study_name == "HVTN705"){
     cvfit<- readRDS(file = here("output", Sys.getenv("TRIAL"), paste0("CVSLfits_vacc_Delta.D210_", variableSet, ".rds")))
   } else if(study_name == "ENSEMBLE"){
@@ -325,10 +392,15 @@ for(i in 1:(cvaucs_vacc %>% filter(!is.na(varsetNo)) %>% distinct(varset) %>% nr
 
   # plot ROC curve
   options(bitmapType = "cairo")
-  png(file = here("figs", paste0(Sys.getenv("TRIAL"), "/ROCcurve_", variableSet, ".png")),
-      width = 1000, height = 1000)
+  if(study_name == "COVEBoost"){
+    png(file = here("figs", paste0(Sys.getenv("TRIAL"), "/", SLcohort, "/", SLrunBaseline, "/ROCcurve_", variableSet, ".png")), width = 1000, height = 1000)
+  } else {
+    png(file = here("figs", paste0(Sys.getenv("TRIAL"), "/ROCcurve_", variableSet, ".png")), width = 1000, height = 1000)
+  }
   if(study_name %in% c("COVE", "MockCOVE")){
     p1 <- plot_roc_curves(predict = pred, cvaucDAT = top2, weights = ph2_vacc_ptids %>% pull(wt.D57))
+    } else if(study_name == "COVEBoost"){
+      p1 <- plot_roc_curves(predict = pred, cvaucDAT = top2, weights = ph2_vacc_ptids %>% pull(wt.BD29))
     } else if(study_name == "HVTN705"){
       p1 <- plot_roc_curves(predict = pred, cvaucDAT = top2, weights = ph2_vacc_ptids %>% pull(wt.D210))
     } else if(study_name == "ENSEMBLE"){
@@ -339,8 +411,11 @@ for(i in 1:(cvaucs_vacc %>% filter(!is.na(varsetNo)) %>% distinct(varset) %>% nr
 
   # plot pred prob plot
   options(bitmapType = "cairo")
-  png(file = here("figs", paste0(Sys.getenv("TRIAL"), "/predProb_", variableSet, ".png")),
-      width = 1000, height = 1000)
+  if(study_name == "COVEBoost"){
+    png(file = here("figs", paste0(Sys.getenv("TRIAL"), "/", SLcohort, "/", SLrunBaseline, "/predProb_", variableSet, ".png")), width = 1000, height = 1000)
+  } else {
+    png(file = here("figs", paste0(Sys.getenv("TRIAL"), "/predProb_", variableSet, ".png")), width = 1000, height = 1000)
+  }
   p2 <- plot_predicted_probabilities(pred)
   print(p2)
   dev.off()
@@ -349,15 +424,73 @@ for(i in 1:(cvaucs_vacc %>% filter(!is.na(varsetNo)) %>% distinct(varset) %>% nr
 
 
 # Get SL & Discrete SL performance for all variable sets
-cvaucs_vacc %>% filter(!is.na(varsetNo)) %>%
-  arrange(-AUC) %>% filter(Learner == "SL") %>%
-  select(varset, AUCstr) %>%
-  write.csv(here("output", Sys.getenv("TRIAL"), "SLperformance_allvarsets.csv"))
+if(study_name == "COVEBoost"){
+  cvaucs_vacc %>% filter(!is.na(varsetNo)) %>%
+    arrange(-AUC) %>% filter(Learner == "SL") %>%
+    select(varset, AUCstr) %>%
+    write.csv(here("output", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, "SLperformance_allvarsets.csv"))
+  
+  cvaucs_vacc %>% filter(!is.na(varsetNo)) %>%
+    arrange(-AUC) %>% filter(Learner == "Discrete SL") %>%
+    select(varset, AUCstr) %>%
+    write.csv(here("output", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, "DiscreteSLperformance_allvarsets.csv"))
+} else {
+  cvaucs_vacc %>% filter(!is.na(varsetNo)) %>%
+    arrange(-AUC) %>% filter(Learner == "SL") %>%
+    select(varset, AUCstr) %>%
+    write.csv(here("output", Sys.getenv("TRIAL"), "SLperformance_allvarsets.csv"))
+  
+  cvaucs_vacc %>% filter(!is.na(varsetNo)) %>%
+    arrange(-AUC) %>% filter(Learner == "Discrete SL") %>%
+    select(varset, AUCstr) %>%
+    write.csv(here("output", Sys.getenv("TRIAL"), "DiscreteSLperformance_allvarsets.csv"))
+}
 
-cvaucs_vacc %>% filter(!is.na(varsetNo)) %>%
-  arrange(-AUC) %>% filter(Learner == "Discrete SL") %>%
-  select(varset, AUCstr) %>%
-  write.csv(here("output", Sys.getenv("TRIAL"), "DiscreteSLperformance_allvarsets.csv"))
+# Create plot showing distribution of phase 1 and phase 2 weights 
+png(file = here("figs", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, "phase1_wts.png"), width = 600, height = 600)
+print(cowplot::plot_grid(ggplot(dat.ph1, aes(x=wt.BD29)) + 
+                           geom_histogram(position = "identity", binwidth = 30, 
+                                          fill = "lightblue", color = "black") +
+                           xlab("wt.BD29") +
+                           theme_classic() +
+                           xlim(0,1000) + ylim(0, 4000) +
+                           ggtitle("Distribution of weights in phase 1 population") +
+                           theme(plot.title = element_text(size = 12, face = "bold")), 
+                         dat.ph1 %>% select(wt.BD29) %>%
+                           ggplot(aes(x="", y = wt.BD29)) +
+                           geom_boxplot(fill = "lightblue", color = "black") + 
+                           coord_flip() +
+                           theme_classic() +
+                           xlab("") +
+                           ylim(0,1000) +
+                           theme(axis.text.y=element_blank(),
+                                 axis.ticks.y=element_blank()), 
+                         ncol = 1, rel_heights = c(2, 0.5), align = 'v'))  
+
+dev.off()
+
+
+png(file = here("figs", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, "phase2_wts.png"), width = 600, height = 600)
+print(cowplot::plot_grid(ggplot(dat.ph2, aes(x=wt.BD29)) + 
+                           geom_histogram(position = "identity", binwidth = 30, 
+                                          fill = "lightblue", color = "black") +
+                           xlab("wt.BD29") +
+                           theme_classic() +
+                           xlim(0,1000) + ylim(0,80) +
+                           ggtitle("Distribution of weights in phase 2 population") +
+                           theme(plot.title = element_text(size = 12, face = "bold")),  
+                         dat.ph2 %>% select(wt.BD29) %>%
+                           ggplot(aes(x="", y = wt.BD29)) +
+                           geom_boxplot(fill = "lightblue", color = "black") + 
+                           coord_flip() +
+                           theme_classic() +
+                           xlab("") +
+                           ylim(0,1000) +
+                           theme(axis.text.y=element_blank(),
+                                 axis.ticks.y=element_blank()), 
+                         ncol = 1, rel_heights = c(2, 0.5), align = 'v')) 
+dev.off()
+
 
 # # Predicted probability of COVID-19 vs antibody marker (x-axis)
 # marker_cvaucs_vacc <- readin_SLobjects_fromFolder(data_folder, file_pattern = "CVSLaucs*", endpoint = "EventIndPrimaryD57", trt = "vaccine") %>%
@@ -420,6 +553,9 @@ if(!study_name %in% c("HVTN705")){
     # Get cvsl fit and extract cv predictions
     if(Sys.getenv("TRIAL") == "moderna_real"){
       cvfits <- readRDS(file = here("output", Sys.getenv("TRIAL"), paste0("CVSLfits_vacc_EventIndPrimaryD57_", variableSet, ".rds")))
+    } else if(Sys.getenv("TRIAL") %in% c("moderna_boost")){
+      if(i %in% c(30, 52) & SLcohort == "naive") next # skip 30 (30_BD1_Delta_bSpike_D614G) and 52 (52_BD29_Delta_bSpikenAb_D614G) as SL did not run for these two variable sets!
+      cvfits <- readRDS(file = here("output", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, paste0("CVSLfits_vacc_EventIndPrimaryOmicronBD29_", variableSet, ".rds")))
     } else if(Sys.getenv("TRIAL") %in% c("janssen_pooled_partA", "janssen_la_partA")){
       cvfits <- readRDS(file = here("output", Sys.getenv("TRIAL"), paste0("CVSLfits_vacc_EventIndPrimaryIncludeNotMolecConfirmedD29_", variableSet, ".rds")))
     }
@@ -537,18 +673,37 @@ if(!study_name %in% c("HVTN705")){
   }
 }
 
-if("Feature" %in% colnames(all_varsets_models)){
-  all_varsets_models %>% 
-    mutate(`Predictors/Features` = ifelse(is.na(Predictors), Feature, Predictors)) %>%
-    select(-c(Predictors, Feature)) %>%
-    select(varset, fold, Learner, `Predictors/Features`, everything()) %>%
-    write.csv(here("output", Sys.getenv("TRIAL"), "all_varsets_all_folds_discreteSLmodels.csv"))
+
+
+if(study_name == "COVEBoost"){
+  if("Feature" %in% colnames(all_varsets_models)){
+    all_varsets_models %>% 
+      mutate(`Predictors/Features` = ifelse(is.na(Predictors), Feature, Predictors)) %>%
+      select(-c(Predictors, Feature)) %>%
+      select(varset, fold, Learner, `Predictors/Features`, everything()) %>%
+      write.csv(here("output", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, "all_varsets_all_folds_discreteSLmodels.csv"))
+  } else {
+    all_varsets_models %>% 
+      mutate(`Predictors/Features` = Predictors) %>%
+      select(varset, fold, Learner, `Predictors/Features`, everything()) %>%
+      write.csv(here("output", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, "all_varsets_all_folds_discreteSLmodels.csv"))
+  }
 } else {
-  all_varsets_models %>% 
-    mutate(`Predictors/Features` = Predictors) %>%
-    select(varset, fold, Learner, `Predictors/Features`, everything()) %>%
-    write.csv(here("output", Sys.getenv("TRIAL"), "all_varsets_all_folds_discreteSLmodels.csv"))
+  if("Feature" %in% colnames(all_varsets_models)){
+    all_varsets_models %>% 
+      mutate(`Predictors/Features` = ifelse(is.na(Predictors), Feature, Predictors)) %>%
+      select(-c(Predictors, Feature)) %>%
+      select(varset, fold, Learner, `Predictors/Features`, everything()) %>%
+      write.csv(here("output", Sys.getenv("TRIAL"), "all_varsets_all_folds_discreteSLmodels.csv"))
+  } else {
+    all_varsets_models %>% 
+      mutate(`Predictors/Features` = Predictors) %>%
+      select(varset, fold, Learner, `Predictors/Features`, everything()) %>%
+      write.csv(here("output", Sys.getenv("TRIAL"), "all_varsets_all_folds_discreteSLmodels.csv"))
+  }
 }
+
+
 
 # Variable importance forest plots ---------------------------------------------
 # save off all variable importance estimates as a table

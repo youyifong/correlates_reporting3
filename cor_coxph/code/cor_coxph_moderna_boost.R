@@ -4,7 +4,10 @@ renv::activate(project = here::here(".."))
 
 source(here::here("..", "_common.R"))
 source("code/params.R")
-source("code/cor_coxph_risk_bootstrap.R")
+
+# hack
+# source('~/copcor/R/utils.R')
+
 
 library(survey)
 library(plotrix) # weighted.hist
@@ -173,7 +176,7 @@ for (iObj in c(1,2,0)) {
       if (verbose) print("create risks.all.1")
       risks.all.1=lapply(all.markers, function (a) {
         if(verbose) myprint(a)
-        marginalized.risk.svycoxph.boot(marker.name=a, type=1, data=dat.ph1, t=tfinal.tpeak, B=B, ci.type="quantile", numCores=numCores)                
+        marginalized.risk.svycoxph.boot(form.0, marker.name=a, type=1, data=dat.ph1, t=tfinal.tpeak, B=B, ci.type="quantile", numCores=numCores)
       })
       save(risks.all.1, file=paste0(save.results.to, "risks.all.1.Rdata"))
       
@@ -188,7 +191,7 @@ for (iObj in c(1,2,0)) {
       if (verbose) print("create risks.all.2")
       risks.all.2=lapply(all.markers, function (a) {
         if(verbose) myprint(a)
-        marginalized.risk.svycoxph.boot(marker.name=a, type=2, data=dat.ph1, t=tfinal.tpeak, B=B, ci.type="quantile", numCores=numCores)        
+        marginalized.risk.svycoxph.boot(form.0, marker.name=a, type=2, data=dat.ph1, t=tfinal.tpeak, B=B, ci.type="quantile", numCores=numCores)        
       }) 
       save(risks.all.2, file=paste0(save.results.to, "risks.all.2.Rdata"))
       
@@ -203,7 +206,7 @@ for (iObj in c(1,2,0)) {
       if (verbose) print("create risks.all.3")
       risks.all.3=lapply(all.markers, function (a) {
         if(verbose) myprint(a)
-        marginalized.risk.svycoxph.boot(marker.name=a%.%"cat", type=3, data=dat.ph1, t=tfinal.tpeak, B=B, ci.type="quantile", numCores=numCores)                
+        marginalized.risk.svycoxph.boot(form.0, marker.name=a%.%"cat", type=3, data=dat.ph1, t=tfinal.tpeak, B=B, ci.type="quantile", numCores=numCores)                
       })    
       save(risks.all.3, file=paste0(save.results.to, "risks.all.3.Rdata"))
       
@@ -385,21 +388,22 @@ for (iNaive in 1:2) {
   
   
   #### marginalized risk (over baseline demographics variables + BD1 marker) as function of a marker
-  cat("get risks.all.1.withbaselinemarker.Rdata\n")
-  if(!file.exists(paste0(save.results.to, "risks.all.1.withbaselineitxn.Rdata"))) {    
-    if (verbose) print("create risks.all.1.withbaselineitxn for moderna_boost")
+  fname = 'risks.all.1.addbaselineitxn.Rdata'
+  cat("get "%.%fname%.%"\n")
+  if(!file.exists(paste0(save.results.to, fname))) {    
+    if (verbose) print("create "%.% fname %.%" for moderna_boost")
     
     risks.all.1.addbaselineitxn=lapply (config$interaction, function(ab) {
       tmp=trim(strsplit(ab, " *\\* *")[[1]]); a=tmp[1]; b=tmp[2]
       # b is assumed to be BD29 markers
-      marginalized.risk.svycoxph.boot(marker.name=b, type=1, data=dat.ph1, t=tfinal.tpeak, B=B, additional.terms = paste0(a,"*",b), ci.type="quantile", numCores=numCores)
+      marginalized.risk.svycoxph.boot(form.0, marker.name=b, type=1, data=dat.ph1, t=tfinal.tpeak, B=B, additional.terms = paste0(a,"*",b), ci.type="quantile", numCores=numCores)
     })
     names(risks.all.1.addbaselineitxn) = config$interaction
     
-    save(risks.all.1.addbaselineitxn, file=paste0(save.results.to, "risks.all.1.addbaselineitxn.Rdata"))
+    save(risks.all.1.addbaselineitxn, file=paste0(save.results.to, fname))
     
   } else {
-    load(paste0(save.results.to, "risks.all.1.withbaselinemarker.Rdata"))
+    load(paste0(save.results.to, fname))
   }
   
   # plot
