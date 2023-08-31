@@ -693,7 +693,6 @@ covid_corr_pairplots <- function(plot_dat, ## data for plotting
     
     breaks <- floor(rr[1]):ceiling(rr[2])
     
-    # readjust limits to include all of the breaks
     rr <- c(floor(rr[1]), ceiling(rr[2]))
     
     if (max(breaks) - min(breaks) >= 6) {
@@ -729,7 +728,7 @@ covid_corr_pairplots <- function(plot_dat, ## data for plotting
             plot.margin = margin(2, 2, 2, 2)
         )
     pairplots[1, 1] <- pairplots[1, 1] +
-        scale_x_continuous(limits = rr.x, breaks = breaks) + ylim(0, 1.2)
+        scale_x_continuous(limits = rr.x, breaks = breaks) + ylim(0, 1.25)
     for (j in 2:pairplots$nrow) {
         for (k in 1:(j - 1)) {
             pairplots[j, k] <- pairplots[j, k] +
@@ -748,9 +747,10 @@ covid_corr_pairplots <- function(plot_dat, ## data for plotting
         }
         pairplots[j, j] <- pairplots[j, j] +
             scale_x_continuous(
-                limits = rr.x, breaks = breaks,
+                limits = rr, # use maximum range of rr.x and rr.y here in order to show a complete histogram
+                breaks = breaks,
                 labels = scales::math_format(10^.x)
-            ) + ylim(0, 1.2)
+            ) + ylim(0, 1.25)
     }
     
     if (write_to_file == T){
