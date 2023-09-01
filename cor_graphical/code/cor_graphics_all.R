@@ -259,13 +259,38 @@ for (i in 1:length(c("bindSpike","pseudoneutid50"))){
 
 # adhoc request for manuscript: cross-panel longitudinal analysis: BD1, BD29, by naive/non-naive, case/non-case, shape by vaccine/placebo
 # BD1, BD29
-dat.longer.cor.subset.plot1.4.sub = dat.longer.cor.subset.plot1.4 %>% 
+dat.longer.cor.subset.plot1.4.sub1 = dat.longer.cor.subset.plot1.4 %>% 
     mutate(assay_variant = case_when(grepl("BA.1", assay) ~ "BA.1",
-                                     TRUE ~ "D614(G)"))
-f_2.4.1 <- f_longitude_by_assay(
-    dat = dat.longer.cor.subset.plot1.4.sub,
+                                     TRUE ~ "D614(G)")) %>%
+    filter(time %in% c("BD1","BD29")) %>%
+    rowwise() %>%
+    mutate(time_jitter = as.numeric(factor(time, levels=c("BD1","BD29"))) + runif(1)/4 - 0.1)
+
+# f_2.4.1 <- f_longitude_by_assay(
+#     dat = dat.longer.cor.subset.plot1.4.sub1,
+#     x.var = "time",
+#     x.lb = c("BD1","BD29"),
+#     assays = c("pseudoneutid50_BA.1","bindSpike_BA.1","pseudoneutid50","bindSpike"),
+#     times = c("BD1","BD29"),
+#     panel.text.size = 6,
+#     facet.y.var = vars(factor(assay_label_short, levels = c("Pseudovirus-nAb BA.1 (AU/ml)",
+#                                                             "Pseudovirus-nAb D614G (AU/ml)",
+#                                                             "Anti Spike IgG BA.1 (AU/ml)",
+#                                                             "Anti Spike IgG D614 (AU/ml)"))), 
+#     facet.x.var = vars(Trt_nnaive2),
+#     split.var = "assay_variant",
+#     pointby = "cohort_col2",
+#     lgdbreaks = c("Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo"),
+#     chtcols = setNames(c("#FF6F1B", "#FF6F1B", "#0AB7C9", "#0AB7C9"), c("Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo")),
+#     chtpchs = setNames(c(17, 1, 17, 1), c("Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo")),
+#     strip.text.y.size = 18,
+#     axis.text.x.size = 18
+# )
+
+f_2.4.1 <- f_longitude_by_assay_jitter(
+    dat = dat.longer.cor.subset.plot1.4.sub1,
     x.var = "time",
-    x.lb = c("BD1","BD29"),
+    x.var.jitter = "time_jitter",
     assays = c("pseudoneutid50_BA.1","bindSpike_BA.1","pseudoneutid50","bindSpike"),
     times = c("BD1","BD29"),
     panel.text.size = 6,
@@ -293,10 +318,38 @@ for (i in 1:length(c("BA.1","D614(G)"))){
 }
 
 # BD1, DeltaBD29overBD1
-f_2.4.2 <- f_longitude_by_assay(
-    dat = dat.longer.cor.subset.plot1.4.sub,
+dat.longer.cor.subset.plot1.4.sub2 = dat.longer.cor.subset.plot1.4 %>% 
+    mutate(assay_variant = case_when(grepl("BA.1", assay) ~ "BA.1",
+                                     TRUE ~ "D614(G)")) %>%
+    filter(time %in% c("BD1","DeltaBD29overBD1")) %>%
+    rowwise() %>%
+    mutate(time_jitter = as.numeric(factor(time, levels=c("BD1","DeltaBD29overBD1"))) + runif(1)/4 - 0.1)
+
+# f_2.4.2 <- f_longitude_by_assay(
+#     dat = dat.longer.cor.subset.plot1.4.sub2,
+#     x.var = "time",
+#     x.lb = c("BD1","DeltaBD29overBD1"),
+#     assays = c("pseudoneutid50_BA.1","bindSpike_BA.1","pseudoneutid50","bindSpike"),
+#     times = c("BD1","DeltaBD29overBD1"),
+#     panel.text.size = 6,
+#     facet.y.var = vars(factor(assay_label_short, levels = c("Pseudovirus-nAb BA.1 (AU/ml)",
+#                                                             "Pseudovirus-nAb D614G (AU/ml)",
+#                                                             "Anti Spike IgG BA.1 (AU/ml)",
+#                                                             "Anti Spike IgG D614 (AU/ml)"))), 
+#     facet.x.var = vars(Trt_nnaive2),
+#     split.var = "assay_variant",
+#     pointby = "cohort_col2",
+#     lgdbreaks = c("Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo"),
+#     chtcols = setNames(c("#FF6F1B", "#FF6F1B", "#0AB7C9", "#0AB7C9"), c("Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo")),
+#     chtpchs = setNames(c(17, 1, 17, 1), c("Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo")),
+#     strip.text.y.size = 18,
+#     axis.text.x.size = 18
+# )
+
+f_2.4.2 <- f_longitude_by_assay_jitter(
+    dat = dat.longer.cor.subset.plot1.4.sub2,
     x.var = "time",
-    x.lb = c("BD1","DeltaBD29overBD1"),
+    x.var.jitter = "time_jitter",
     assays = c("pseudoneutid50_BA.1","bindSpike_BA.1","pseudoneutid50","bindSpike"),
     times = c("BD1","DeltaBD29overBD1"),
     panel.text.size = 6,
