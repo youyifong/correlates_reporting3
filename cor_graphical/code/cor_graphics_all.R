@@ -260,11 +260,25 @@ for (i in 1:length(c("bindSpike","pseudoneutid50"))){
 # adhoc request for manuscript: cross-panel longitudinal analysis: BD1, BD29, by naive/non-naive, case/non-case, shape by vaccine/placebo
 # BD1, BD29
 dat.longer.cor.subset.plot1.4.sub1 = dat.longer.cor.subset.plot1.4 %>% 
+    filter(time %in% c("BD1","BD29") & assay %in% c("pseudoneutid50_BA.1","bindSpike_BA.1","pseudoneutid50","bindSpike")) %>%
     mutate(assay_variant = case_when(grepl("BA.1", assay) ~ "BA.1",
                                      TRUE ~ "D614(G)")) %>%
-    filter(time %in% c("BD1","BD29")) %>%
-    rowwise() %>%
-    mutate(time_jitter = as.numeric(factor(time, levels=c("BD1","BD29"))) + runif(1)/4 - 0.1)
+    mutate(y.upperlim = case_when(grepl("bindSpike", assay) ~ 6,
+                                  grepl("pseudoneutid50", assay) ~ 4.5,
+                                  TRUE ~ NA_real_),
+           y.lowerlim = case_when(grepl("bindSpike", assay) ~ 1.7,
+                                  grepl("pseudoneutid50", assay) ~ 0.6,
+                                  TRUE ~ NA_real_),
+           rate.y = case_when(assay=="bindSpike" ~ 6,
+                              assay=="pseudoneutid50" ~ 4.5,
+                              assay=="bindSpike_BA.1" ~ 6,
+                              assay=="pseudoneutid50_BA.1" ~ 4.5,
+                              TRUE ~ NA_real_)
+           ) %>%
+    filter((grepl("bindSpike", assay) & value <= 6 & value >= 1) | (grepl("pseudoneutid50", assay) & value <= 4.5 & value >= 0)) #%>%
+    #filter(time %in% c("BD1","BD29")) %>%
+    #rowwise() %>%
+    #mutate(time_jitter = as.numeric(factor(time, levels=c("BD1","BD29"))) + runif(1)/4 - 0.1)
 
 # f_2.4.1 <- f_longitude_by_assay(
 #     dat = dat.longer.cor.subset.plot1.4.sub1,
@@ -287,10 +301,10 @@ dat.longer.cor.subset.plot1.4.sub1 = dat.longer.cor.subset.plot1.4 %>%
 #     axis.text.x.size = 18
 # )
 
-f_2.4.1 <- f_longitude_by_assay_jitter(
+f_2.4.1 <- f_longitude_by_assay_adhoc(
     dat = dat.longer.cor.subset.plot1.4.sub1,
     x.var = "time",
-    x.var.jitter = "time_jitter",
+    x.lb = c("BD1","BD29"),
     assays = c("pseudoneutid50_BA.1","bindSpike_BA.1","pseudoneutid50","bindSpike"),
     times = c("BD1","BD29"),
     panel.text.size = 6,
@@ -302,7 +316,7 @@ f_2.4.1 <- f_longitude_by_assay_jitter(
     split.var = "assay_variant",
     pointby = "cohort_col2",
     lgdbreaks = c("Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo"),
-    chtcols = setNames(c("#FF6F1B", "#FF6F1B", "#0AB7C9", "#0AB7C9"), c("Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo")),
+    chtcols = setNames(c("goldenrod2","#378252","goldenrod2","#378252"), c("Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo")),
     chtpchs = setNames(c(17, 1, 17, 1), c("Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo")),
     strip.text.y.size = 18,
     axis.text.x.size = 18
@@ -320,43 +334,19 @@ for (i in 1:length(c("BA.1","D614(G)"))){
 # BD1, DeltaBD29overBD1
 dat.longer.cor.subset.plot1.4.sub2 = dat.longer.cor.subset.plot1.4 %>% 
     mutate(assay_variant = case_when(grepl("BA.1", assay) ~ "BA.1",
-                                     TRUE ~ "D614(G)")) %>%
-    filter(time %in% c("BD1","DeltaBD29overBD1")) %>%
-    rowwise() %>%
-    mutate(time_jitter = as.numeric(factor(time, levels=c("BD1","DeltaBD29overBD1"))) + runif(1)/4 - 0.1)
+                                     TRUE ~ "D614(G)"))
 
-# f_2.4.2 <- f_longitude_by_assay(
-#     dat = dat.longer.cor.subset.plot1.4.sub2,
-#     x.var = "time",
-#     x.lb = c("BD1","DeltaBD29overBD1"),
-#     assays = c("pseudoneutid50_BA.1","bindSpike_BA.1","pseudoneutid50","bindSpike"),
-#     times = c("BD1","DeltaBD29overBD1"),
-#     panel.text.size = 6,
-#     facet.y.var = vars(factor(assay_label_short, levels = c("Pseudovirus-nAb BA.1 (AU/ml)",
-#                                                             "Pseudovirus-nAb D614G (AU/ml)",
-#                                                             "Anti Spike IgG BA.1 (AU/ml)",
-#                                                             "Anti Spike IgG D614 (AU/ml)"))), 
-#     facet.x.var = vars(Trt_nnaive2),
-#     split.var = "assay_variant",
-#     pointby = "cohort_col2",
-#     lgdbreaks = c("Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo"),
-#     chtcols = setNames(c("#FF6F1B", "#FF6F1B", "#0AB7C9", "#0AB7C9"), c("Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo")),
-#     chtpchs = setNames(c(17, 1, 17, 1), c("Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo")),
-#     strip.text.y.size = 18,
-#     axis.text.x.size = 18
-# )
-
-f_2.4.2 <- f_longitude_by_assay_jitter(
+f_2.4.2 <- f_longitude_by_assay(
     dat = dat.longer.cor.subset.plot1.4.sub2,
     x.var = "time",
-    x.var.jitter = "time_jitter",
+    x.lb = c("BD1","DeltaBD29overBD1"),
     assays = c("pseudoneutid50_BA.1","bindSpike_BA.1","pseudoneutid50","bindSpike"),
     times = c("BD1","DeltaBD29overBD1"),
     panel.text.size = 6,
     facet.y.var = vars(factor(assay_label_short, levels = c("Pseudovirus-nAb BA.1 (AU/ml)",
                                                             "Pseudovirus-nAb D614G (AU/ml)",
                                                             "Anti Spike IgG BA.1 (AU/ml)",
-                                                            "Anti Spike IgG D614 (AU/ml)"))), 
+                                                            "Anti Spike IgG D614 (AU/ml)"))),
     facet.x.var = vars(Trt_nnaive2),
     split.var = "assay_variant",
     pointby = "cohort_col2",
@@ -368,12 +358,12 @@ f_2.4.2 <- f_longitude_by_assay_jitter(
 )
 
 for (i in 1:length(c("BA.1","D614(G)"))){
-    
+
     variant = c("BA.1","D614(G)")[i]
-    
+
     file_name <- paste0(variant, "_longitudinal_by_case_non_case_BD1_DeltaBD29overBD1_pooled_v3.pdf")
     ggsave(plot = f_2.4.2[[i]], filename = paste0(save.results.to, file_name), width = 16, height = 11)
-    
+
 }
 
 

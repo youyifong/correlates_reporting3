@@ -287,15 +287,14 @@ f_longitude_by_assay <- function(
     }
 
 
-#' A jittered version of f_longitude_by_assay()
+#' A adhoc version of f_longitude_by_assay(), with different ylim (set in the input dataset) for different assays, 
+#' different way to set color, different position of response rate for different assays
 #' 
 #' @param dat Dataframe in long format of assays and timepoints
 #' @param x.var x variable, e.g. time_cohort, time
-#' @param x.var.jitter jittered x variable
+#' @param x.lb x variable label
 #' @param assays List of assays for plots
 #' @param times List of times for plots
-#' @param ylim y-axis limit
-#' @param ybreaks y-axis breaks
 #' @param panel.text.size font size for text within panels
 #' @param facet.x.var horizontal facet variable 
 #' @param facet.y.var vertical facet variable
@@ -307,14 +306,12 @@ f_longitude_by_assay <- function(
 #' @param strip.text.y.size strip label size for y-axis, default is 25
 #' @param axis.text.x.size x-axis label size, default is 9.5
 #' @return A ggplot object list for longitudinal violin + box plot with lines
-f_longitude_by_assay_jitter <- function(
+f_longitude_by_assay_adhoc <- function(
     dat,
     x.var = "time",
-    x.var.jitter = "time_jitter",
+    x.lb = c("BD1","BD29"),
     assays = assays,
     times = times,
-    ylim = c(0,7.2),
-    ybreaks = c(0,2,4,6),
     panel.text.size = 4,
     facet.x.var,
     facet.y.var,
@@ -363,33 +360,40 @@ f_longitude_by_assay_jitter <- function(
         ungroup() %>%
         group_split(.[[split.var]]) %>% # e.g., "panel" variable from assay_metadata
         purrr::map(function(d){
-            ggplot(data = d, aes_string(x = x.var.jitter, y = "value", color = "cohort_event", group = x.var)) +
-                facet_grid(rows = facet.y.var, col = facet.x.var) +
+            ggplot(data = d, aes(x = d[[x.var]], y = value, color = cohort_event#, group = x.var
+                                        )) +
+                facet_grid(rows = facet.y.var, col = facet.x.var, scales = "free") +
                 
-                geom_violin(aes_string(x = x.var, y = "value", color = "cohort_event", group = x.var), scale = "width", na.rm = TRUE, show.legend = FALSE) +
-                geom_line(aes(group = Ptid), alpha = 0.3) +
-                geom_boxplot(aes_string(x = x.var, y = "value", color = "cohort_event", group = x.var), width = 0.25, alpha = 0.3, stat = "boxplot", outlier.shape = NA, show.legend = FALSE) +
+                geom_violin(aes(x = d[[x.var]], y = value, color = cohort_event), scale = "width", na.rm = TRUE) +
+                
+                geom_boxplot(aes(x = d[[x.var]], y = value, color = cohort_event), width = 0.25, alpha = 0.3, stat = "boxplot", outlier.shape = NA) +
                 # The lower and upper hinges correspond to the first and third quartiles (the 25th and 75th percentiles)
                 # Whisker: Q3 + 1.5 IQR
-                scale_color_manual(name = "", values = c("#FF6F1B", "#0AB7C9"), guide = "none") + # guide = "none" in scale_..._...() to suppress legend
+                scale_color_manual(name = "", values = c("#8F8F8F", "#8F8F8F"), guide = "none") + # guide = "none" in scale_..._...() to suppress legend
                 # geoms below will use another color scale
                 new_scale_color() +
                 
-                geom_point(aes(color = .data[[pointby]], shape = .data[[pointby]]), size = 3, alpha = 0.6, show.legend = TRUE) +
+                geom_line(aes(color = d[[pointby]], group = Ptid), alpha = 0.8) +
+                geom_point(aes(color = d[[pointby]], shape = d[[pointby]]), size = 3, alpha = 1, show.legend = TRUE) +
                 scale_color_manual(name = "", values = chtcols, breaks = lgdbreaks, drop=FALSE) +
                 scale_shape_manual(name = "", values = chtpchs, breaks = lgdbreaks, drop=FALSE) +
                 
-                geom_text(aes(label = ifelse(RespRate!="","Rate",""), x = 0.1, y = 6.5), hjust = 0, color = "black", size = panel.text.size, check_overlap = TRUE) +
-                geom_text(aes_string(x = x.var, label = "RespRate", y = 6.5), color = "black", size = panel.text.size, check_overlap = TRUE) +
+                geom_text(aes(label = ifelse(RespRate!="","Rate",""), x = 0.1, y = rate.y), hjust = 0, color = "black", size = panel.text.size, check_overlap = TRUE) +
+                geom_text(aes_string(x = x.var, label = "RespRate", y = "rate.y"), color = "black", size = panel.text.size, check_overlap = TRUE) +
                 
                 geom_hline(aes(yintercept = ifelse(RespRate!="",lbval,-99)), linetype = "dashed", color = "gray", na.rm = TRUE) +
                 geom_text(aes(label = ifelse(RespRate!="",lb,""), x = 0.1, y = lbval), hjust = 0, color = "black", size = panel.text.size, check_overlap = TRUE, na.rm = TRUE) + 
                 # only plot uloq for ID50
-                geom_hline(aes(yintercept = ifelse(RespRate!="",lbval2,-99)), linetype = "dashed", color = "gray", na.rm = TRUE) +
-                geom_text(aes(label = ifelse(RespRate!="",lb2,""), x = 0.1, y = lbval2), hjust = 0, color = "black", size = panel.text.size, check_overlap = TRUE, na.rm = TRUE) + 
+                #geom_hline(aes(yintercept = ifelse(RespRate!="",lbval2,-99)), linetype = "dashed", color = "gray", na.rm = TRUE) +
+                #geom_text(aes(label = ifelse(RespRate!="",lb2,""), x = 0.1, y = lbval2), hjust = 0, color = "black", size = panel.text.size, check_overlap = TRUE, na.rm = TRUE) + 
                 
-                scale_x_discrete(labels = d[x.var]) +
-                scale_y_continuous(limits = ylim, breaks = ybreaks, labels = scales::math_format(10^.x)) +
+                # placeholder
+                geom_text(aes(label = "", x = 0.1, y = y.lowerlim), hjust = 0, color = "black", size = panel.text.size, check_overlap = TRUE, na.rm = TRUE) + 
+                
+                scale_x_discrete(labels = x.lb#d[x.var]
+                                     ) +
+                scale_y_continuous(#limits = c(d[1,"y.lowerlim", drop=T], d[1,"y.upperlim", drop=T]), breaks = seq(d[1,"y.lowerlim", drop=T], d[1,"y.upperlim", drop=T], length=4), 
+                                   labels = scales::math_format(10^.x)) +
                 labs(x = "Cohort", y = unique(d[[split.var]]), title = paste(unique(d[[split.var]]), "longitudinal plots across timepoints"), color = "Category", shape = "Category") +
                 plot_theme +
                 guides(color = guide_legend(ncol = 1), shape = guide_legend(ncol = 1))
