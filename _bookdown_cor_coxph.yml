@@ -1,4 +1,4 @@
-delete_merged_file: true
+delete_merged_file: false
 before_chapter_script: 
 output_dir: "cor_coxph"
 clean: packages.bib

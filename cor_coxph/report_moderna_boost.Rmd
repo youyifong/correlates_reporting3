@@ -4,7 +4,7 @@
 
 study_name = "COVEBoost"
 
-obj.assays=c("bindSpike_BA.1", "pseudoneutid50_BA.1")  
+obj.assays=c("bindSpike_BA.1", "pseudoneutid50_BA.1", "bindSpike", "pseudoneutid50")  
 tpeak <- 29
 special.note = paste0("$\\ddagger$ Count cases starting 7 days post BD29.")
   
