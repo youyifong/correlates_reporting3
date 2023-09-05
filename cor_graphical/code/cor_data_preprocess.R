@@ -129,6 +129,9 @@ dat.long$lbval2 =  dat.long$ULoQ #with(dat.long, ifelse(grepl("bind", assay), UL
 dat.long.cor.subset <- dat.long %>%
   dplyr::filter(ph2.BD29==1)
 
+write.csv(dat.long.cor.subset, file = here::here("data_clean", "scatter_rug_data_plot5.csv"), row.names=F)
+saveRDS(dat.long.cor.subset, file = here::here("data_clean", "scatter_rug_data_plot5.rds"))
+
 # long to longer format by time
 dat.longer.cor.subset <- dat.long.cor.subset %>%
   tidyr::pivot_longer(cols = all_of(times), names_to = "time", values_to = "value")

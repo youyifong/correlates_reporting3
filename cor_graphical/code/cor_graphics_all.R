@@ -34,6 +34,7 @@ dat.longer.cor.subset.plot1.2 <- readRDS(here::here("data_clean", "longer_cor_da
 dat.longer.cor.subset.plot1.3 <- readRDS(here::here("data_clean", "longer_cor_data_plot1.3.rds"))
 dat.longer.cor.subset.plot1.4 <- readRDS(here::here("data_clean", "longer_cor_data_plot1.4.rds"))
 dat.cor.subset.plot3 <- readRDS(here::here("data_clean", "cor_data_plot3.rds")); dat.cor.subset.plot3$all_one <- 1 # as a placeholder for strata values
+dat.long.cor.subset.plot5 <- readRDS(here::here("data_clean", "scatter_rug_data_plot5.rds"))
 
 # path for figures and tables etc
 save.results.to = here::here("output")
@@ -569,4 +570,62 @@ for (a in assays){
     
     ggsave(filename = paste0(
         save.results.to, "/pairs_by_timepoints_", a, "_pooled.pdf"), plot = combined_p, width = 8, height = 10, units="in")
+}
+
+
+## adhoc figure 5
+assays_adhoc <- c("bindSpike","pseudoneutid50")
+for (i in 1:length(assays_adhoc)){
+    x.var <- paste0("BD1", assays_adhoc)[i]
+    y.var <- paste0("DeltaBD29overBD1", assays_adhoc)[i]
+    x.lb <- paste("BD1", assay_labels_short[names(assay_labels_short) %in% assays_adhoc])[i]
+    y.lb <- paste("DeltaBD29overBD1\n", assay_labels_short[names(assay_labels_short) %in% assays_adhoc])[i]
+    
+    dat_plot <- dat.long.cor.subset.plot5 %>%
+        mutate(Trt_nnaive2 = factor(paste(nnaive, cohort_event), 
+                                    levels = c("Naive Omicron Cases", "Naive Non-Cases", "Non-naive Omicron Cases", "Non-naive Non-Cases"),
+                                    labels = c("Naive\nOmicron Cases", "Naive\nNon-Cases", "Non-naive\nOmicron Cases", "Non-naive\nNon-Cases")),
+               Trt = factor(Trt, levels = c("Vaccine", "Placebo")))
+    
+    plot_theme <- theme_bw() +
+        theme(plot.title = element_text(hjust = 0.5),
+              axis.title = element_text(size = 24, face="bold"),
+              axis.text = element_text(size = 20),
+              strip.text.x = element_text(size = 25), # facet label size
+              strip.text.y = element_text(size = 13),
+              strip.background = element_rect(fill=NA,colour=NA),
+              strip.placement = "outside",
+              legend.position = "bottom", 
+              legend.text = element_text(size = 16, face="plain"),
+              legend.key = element_blank(), # remove square outside legend key
+              plot.caption = element_text(size = 26, hjust=0, face="plain"), 
+              panel.grid.major = element_blank(), 
+              panel.grid.minor = element_blank(),
+              plot.margin = margin(5.5, 12, 5.5, 5.5, "pt")) 
+    
+    p2 <- 
+        ggplot(dat_plot %>% filter(assay == assays_adhoc[i]), 
+               aes_string(x.var, y.var, color = "Trt")) +
+        facet_grid(cols = vars(Trt_nnaive2)) +
+        geom_point(size = 2) +
+        geom_smooth(method = "loess", se=FALSE, color="red") +
+        geom_rug(alpha = 0.6, position = "jitter") +
+        scale_color_manual(name = "", values = c("goldenrod2","#378252"), drop=FALSE) +
+        scale_x_continuous(
+            limits = c(1.5, 5),
+            labels = scales::label_math(10^.x)
+        ) +
+        scale_y_continuous(
+            limits = c(-1, 3),
+            labels = scales::label_math(10^.x)
+        ) +
+        xlab(x.lb) + 
+        ylab(y.lb) + 
+        theme_bw() +
+        coord_fixed(ratio = 1) +
+        plot_theme
+    
+    file_name <- paste0(assays_adhoc[i], "_scatter_BD1_DeltaBD29overBD1_adhoc.pdf")
+    ggsave(plot = p2, filename = paste0(save.results.to, file_name), width = 16, height = 11)
+    
 }
