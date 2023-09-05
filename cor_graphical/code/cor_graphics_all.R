@@ -610,13 +610,14 @@ for (i in 1:length(assays_adhoc)){
         geom_point(size = 2) +
         geom_smooth(method = "loess", se=FALSE, color="red") +
         geom_rug(alpha = 0.6, position = "jitter") +
+        geom_hline(aes(yintercept = 0), linetype = "dashed", color = "gray", na.rm = TRUE) +
         scale_color_manual(name = "", values = c("goldenrod2","#378252"), drop=FALSE) +
         scale_x_continuous(
-            limits = c(1.5, 5),
+            #limits = c(1.5, 5),
             labels = scales::label_math(10^.x)
         ) +
         scale_y_continuous(
-            limits = c(-1, 3),
+            #limits = c(-1, 3),
             labels = scales::label_math(10^.x)
         ) +
         xlab(x.lb) + 
@@ -625,7 +626,7 @@ for (i in 1:length(assays_adhoc)){
         coord_fixed(ratio = 1) +
         plot_theme
     
-    file_name <- paste0(assays_adhoc[i], "_scatter_BD1_DeltaBD29overBD1_adhoc.pdf")
+    file_name <- paste0(assays_adhoc[i], "_scatter_BD1_DeltaBD29overBD1_adhoc2.pdf")
     ggsave(plot = p2, filename = paste0(save.results.to, file_name), width = 16, height = 11)
     
 }
