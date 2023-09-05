@@ -574,12 +574,12 @@ for (a in assays){
 
 
 ## adhoc figure 5
-assays_adhoc <- c("bindSpike","pseudoneutid50")
+assays_adhoc <- c("bindSpike","pseudoneutid50","bindSpike_BA.1","pseudoneutid50_BA.1")
 for (i in 1:length(assays_adhoc)){
     x.var <- paste0("BD1", assays_adhoc)[i]
     y.var <- paste0("DeltaBD29overBD1", assays_adhoc)[i]
-    x.lb <- paste("BD1", assay_labels_short[names(assay_labels_short) %in% assays_adhoc])[i]
-    y.lb <- paste("DeltaBD29overBD1\n", assay_labels_short[names(assay_labels_short) %in% assays_adhoc])[i]
+    x.lb <- paste("BD1", assay_labels_short[match(assays_adhoc, names(assay_labels_short))])[i]
+    y.lb <- paste("DeltaBD29overBD1\n", assay_labels_short[match(assays_adhoc, names(assay_labels_short))])[i]
     
     dat_plot <- dat.long.cor.subset.plot5 %>%
         mutate(Trt_nnaive2 = factor(paste(nnaive, cohort_event), 
