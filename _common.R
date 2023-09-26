@@ -73,8 +73,6 @@ if (TRIAL=="moderna_boost") {
   # compute tfinal.tpeak as the minimum of the four quadrants and no larger than 105 days
   tfinal.tpeaks=c(
     get.tfinal.tpeak.1(subset(dat, Trt==1 &  naive & ph2.BD29), event.ind.col="EventIndOmicronBD29", event.time.col="EventTimeOmicronBD29"),
-    get.tfinal.tpeak.1(subset(dat, Trt==1 &  naive & ph2.BD29), event.ind.col="EventIndOmicronBD29", event.time.col="EventTimeOmicronBD29"),
-    get.tfinal.tpeak.1(subset(dat, Trt==1 & !naive & ph2.BD29), event.ind.col="EventIndOmicronBD29", event.time.col="EventTimeOmicronBD29"),
     get.tfinal.tpeak.1(subset(dat, Trt==1 & !naive & ph2.BD29), event.ind.col="EventIndOmicronBD29", event.time.col="EventTimeOmicronBD29"),
     105)
   myprint(tfinal.tpeaks)
