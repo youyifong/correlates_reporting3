@@ -34,6 +34,7 @@ dat.longer.cor.subset.plot1.2 <- readRDS(here::here("data_clean", "longer_cor_da
 dat.longer.cor.subset.plot1.3 <- readRDS(here::here("data_clean", "longer_cor_data_plot1.3.rds"))
 dat.longer.cor.subset.plot1.4 <- readRDS(here::here("data_clean", "longer_cor_data_plot1.4.rds"))
 dat.cor.subset.plot3 <- readRDS(here::here("data_clean", "cor_data_plot3.rds")); dat.cor.subset.plot3$all_one <- 1 # as a placeholder for strata values
+dat.long.cor.subset.plot5 <- readRDS(here::here("data_clean", "scatter_rug_data_plot5.rds"))
 
 # path for figures and tables etc
 save.results.to = here::here("output")
@@ -259,11 +260,50 @@ for (i in 1:length(c("bindSpike","pseudoneutid50"))){
 
 # adhoc request for manuscript: cross-panel longitudinal analysis: BD1, BD29, by naive/non-naive, case/non-case, shape by vaccine/placebo
 # BD1, BD29
-dat.longer.cor.subset.plot1.4.sub = dat.longer.cor.subset.plot1.4 %>% 
+dat.longer.cor.subset.plot1.4.sub1 = dat.longer.cor.subset.plot1.4 %>% 
+    filter(time %in% c("BD1","BD29") & assay %in% c("pseudoneutid50_BA.1","bindSpike_BA.1","pseudoneutid50","bindSpike")) %>%
     mutate(assay_variant = case_when(grepl("BA.1", assay) ~ "BA.1",
-                                     TRUE ~ "D614(G)"))
-f_2.4.1 <- f_longitude_by_assay(
-    dat = dat.longer.cor.subset.plot1.4.sub,
+                                     TRUE ~ "D614(G)")) %>%
+    mutate(y.upperlim = case_when(grepl("bindSpike", assay) ~ 6,
+                                  grepl("pseudoneutid50", assay) ~ 4.5,
+                                  TRUE ~ NA_real_),
+           y.lowerlim = case_when(grepl("bindSpike", assay) ~ 1.7,
+                                  grepl("pseudoneutid50", assay) ~ 0.6,
+                                  TRUE ~ NA_real_),
+           rate.y = case_when(assay=="bindSpike" ~ 6,
+                              assay=="pseudoneutid50" ~ 4.5,
+                              assay=="bindSpike_BA.1" ~ 6,
+                              assay=="pseudoneutid50_BA.1" ~ 4.5,
+                              TRUE ~ NA_real_)
+           ) %>%
+    filter((grepl("bindSpike", assay) & value <= 6 & value >= 1) | (grepl("pseudoneutid50", assay) & value <= 4.5 & value >= 0)) #%>%
+    #filter(time %in% c("BD1","BD29")) %>%
+    #rowwise() %>%
+    #mutate(time_jitter = as.numeric(factor(time, levels=c("BD1","BD29"))) + runif(1)/4 - 0.1)
+
+# f_2.4.1 <- f_longitude_by_assay(
+#     dat = dat.longer.cor.subset.plot1.4.sub1,
+#     x.var = "time",
+#     x.lb = c("BD1","BD29"),
+#     assays = c("pseudoneutid50_BA.1","bindSpike_BA.1","pseudoneutid50","bindSpike"),
+#     times = c("BD1","BD29"),
+#     panel.text.size = 6,
+#     facet.y.var = vars(factor(assay_label_short, levels = c("Pseudovirus-nAb BA.1 (AU/ml)",
+#                                                             "Pseudovirus-nAb D614G (AU/ml)",
+#                                                             "Anti Spike IgG BA.1 (AU/ml)",
+#                                                             "Anti Spike IgG D614 (AU/ml)"))), 
+#     facet.x.var = vars(Trt_nnaive2),
+#     split.var = "assay_variant",
+#     pointby = "cohort_col2",
+#     lgdbreaks = c("Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo"),
+#     chtcols = setNames(c("#FF6F1B", "#FF6F1B", "#0AB7C9", "#0AB7C9"), c("Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo")),
+#     chtpchs = setNames(c(17, 1, 17, 1), c("Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo")),
+#     strip.text.y.size = 18,
+#     axis.text.x.size = 18
+# )
+
+f_2.4.1 <- f_longitude_by_assay_adhoc(
+    dat = dat.longer.cor.subset.plot1.4.sub1,
     x.var = "time",
     x.lb = c("BD1","BD29"),
     assays = c("pseudoneutid50_BA.1","bindSpike_BA.1","pseudoneutid50","bindSpike"),
@@ -277,7 +317,7 @@ f_2.4.1 <- f_longitude_by_assay(
     split.var = "assay_variant",
     pointby = "cohort_col2",
     lgdbreaks = c("Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo"),
-    chtcols = setNames(c("#FF6F1B", "#FF6F1B", "#0AB7C9", "#0AB7C9"), c("Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo")),
+    chtcols = setNames(c("goldenrod2","#378252","goldenrod2","#378252"), c("Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo")),
     chtpchs = setNames(c(17, 1, 17, 1), c("Omicron Cases Vaccine", "Omicron Cases Placebo", "Non-Cases Vaccine", "Non-Cases Placebo")),
     strip.text.y.size = 18,
     axis.text.x.size = 18
@@ -293,8 +333,12 @@ for (i in 1:length(c("BA.1","D614(G)"))){
 }
 
 # BD1, DeltaBD29overBD1
+dat.longer.cor.subset.plot1.4.sub2 = dat.longer.cor.subset.plot1.4 %>% 
+    mutate(assay_variant = case_when(grepl("BA.1", assay) ~ "BA.1",
+                                     TRUE ~ "D614(G)"))
+
 f_2.4.2 <- f_longitude_by_assay(
-    dat = dat.longer.cor.subset.plot1.4.sub,
+    dat = dat.longer.cor.subset.plot1.4.sub2,
     x.var = "time",
     x.lb = c("BD1","DeltaBD29overBD1"),
     assays = c("pseudoneutid50_BA.1","bindSpike_BA.1","pseudoneutid50","bindSpike"),
@@ -303,7 +347,7 @@ f_2.4.2 <- f_longitude_by_assay(
     facet.y.var = vars(factor(assay_label_short, levels = c("Pseudovirus-nAb BA.1 (AU/ml)",
                                                             "Pseudovirus-nAb D614G (AU/ml)",
                                                             "Anti Spike IgG BA.1 (AU/ml)",
-                                                            "Anti Spike IgG D614 (AU/ml)"))), 
+                                                            "Anti Spike IgG D614 (AU/ml)"))),
     facet.x.var = vars(Trt_nnaive2),
     split.var = "assay_variant",
     pointby = "cohort_col2",
@@ -315,12 +359,12 @@ f_2.4.2 <- f_longitude_by_assay(
 )
 
 for (i in 1:length(c("BA.1","D614(G)"))){
-    
+
     variant = c("BA.1","D614(G)")[i]
-    
+
     file_name <- paste0(variant, "_longitudinal_by_case_non_case_BD1_DeltaBD29overBD1_pooled_v3.pdf")
     ggsave(plot = f_2.4.2[[i]], filename = paste0(save.results.to, file_name), width = 16, height = 11)
-    
+
 }
 
 
@@ -526,4 +570,63 @@ for (a in assays){
     
     ggsave(filename = paste0(
         save.results.to, "/pairs_by_timepoints_", a, "_pooled.pdf"), plot = combined_p, width = 8, height = 10, units="in")
+}
+
+
+## adhoc figure 5
+assays_adhoc <- c("bindSpike","pseudoneutid50","bindSpike_BA.1","pseudoneutid50_BA.1")
+for (i in 1:length(assays_adhoc)){
+    x.var <- paste0("BD1", assays_adhoc)[i]
+    y.var <- paste0("DeltaBD29overBD1", assays_adhoc)[i]
+    x.lb <- paste("BD1", assay_labels_short[match(assays_adhoc, names(assay_labels_short))])[i]
+    y.lb <- paste("DeltaBD29overBD1\n", assay_labels_short[match(assays_adhoc, names(assay_labels_short))])[i]
+    
+    dat_plot <- dat.long.cor.subset.plot5 %>%
+        mutate(Trt_nnaive2 = factor(paste(nnaive, cohort_event), 
+                                    levels = c("Naive Omicron Cases", "Naive Non-Cases", "Non-naive Omicron Cases", "Non-naive Non-Cases"),
+                                    labels = c("Naive\nOmicron Cases", "Naive\nNon-Cases", "Non-naive\nOmicron Cases", "Non-naive\nNon-Cases")),
+               Trt = factor(Trt, levels = c("Vaccine", "Placebo")))
+    
+    plot_theme <- theme_bw() +
+        theme(plot.title = element_text(hjust = 0.5),
+              axis.title = element_text(size = 24, face="bold"),
+              axis.text = element_text(size = 20),
+              strip.text.x = element_text(size = 25), # facet label size
+              strip.text.y = element_text(size = 13),
+              strip.background = element_rect(fill=NA,colour=NA),
+              strip.placement = "outside",
+              legend.position = "bottom", 
+              legend.text = element_text(size = 16, face="plain"),
+              legend.key = element_blank(), # remove square outside legend key
+              plot.caption = element_text(size = 26, hjust=0, face="plain"), 
+              panel.grid.major = element_blank(), 
+              panel.grid.minor = element_blank(),
+              plot.margin = margin(5.5, 12, 5.5, 5.5, "pt")) 
+    
+    p2 <- 
+        ggplot(dat_plot %>% filter(assay == assays_adhoc[i]), 
+               aes_string(x.var, y.var, color = "Trt")) +
+        facet_grid(cols = vars(Trt_nnaive2)) +
+        geom_point(size = 2) +
+        geom_smooth(method = "loess", se=FALSE, color="red") +
+        geom_rug(alpha = 0.6, position = "jitter") +
+        geom_hline(aes(yintercept = 0), linetype = "dashed", color = "gray", na.rm = TRUE) +
+        scale_color_manual(name = "", values = c("goldenrod2","#378252"), drop=FALSE) +
+        scale_x_continuous(
+            #limits = c(1.5, 5),
+            labels = scales::label_math(10^.x)
+        ) +
+        scale_y_continuous(
+            #limits = c(-1, 3),
+            labels = scales::label_math(10^.x)
+        ) +
+        xlab(x.lb) + 
+        ylab(y.lb) + 
+        theme_bw() +
+        coord_fixed(ratio = 1) +
+        plot_theme
+    
+    file_name <- paste0(assays_adhoc[i], "_scatter_BD1_DeltaBD29overBD1_adhoc2.pdf")
+    ggsave(plot = p2, filename = paste0(save.results.to, file_name), width = 16, height = 11)
+    
 }
