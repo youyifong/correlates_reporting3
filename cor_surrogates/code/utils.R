@@ -520,12 +520,38 @@ drop_predVars_with_fewer_0s_or_1s <- function(dat, pred_vars) {
     paste0("No binary input variable had fewer than 10 ptids with a 0 or 1 for that variable.") %>%
       write.table(file = here("output", Sys.getenv("TRIAL"), "drop_predVars_with_fewer_0s_or_1s.csv"), sep=",", append = TRUE, row.names = F, col.names = F)
   }
+  ##############################
+  if(study_name == "COVEBoost"){
+    # delete the file drop_predVars_with_fewer_0s_or_1s.csv
+    unlink(here("output", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, "drop_predVars_with_fewer_0s_or_1s.csv"))
+    # Remove a variable if the number of cases in the variable = 1 subgroup is <= 3 or the number of cases in the variable = 0 subgroup is <= 3
+    for (i in 1:length(pred_vars)) {
+      #print(i)
+      if ((dat %>% select(starts_with(pred_vars[i])) %>% unique())[[1]] == c(0,1) | 
+          (dat %>% select(starts_with(pred_vars[i])) %>% unique())[[1]] == c(1,0)) {
+        if (dat %>% filter(get(pred_vars[i]) == 1) %>% pull(endpoint) %>% sum() <= 3 | dat %>% filter(get(pred_vars[i]) == 0) %>% pull(endpoint) %>% sum() <= 3){
+          #print(i)
+          dat <- dat %>% select(-starts_with(pred_vars[i]))
+          print(paste0(pred_vars[i], " dropped from risk score analysis as the number of cases in the variable = 1 or 0 subgroup is <= 3."))
+          # Also print to file
+          paste0(pred_vars[i], " dropped from risk score analysis as the number of cases in the variable = 1 or 0 subgroup is <= 3.") %>%
+            write.table(file = here("output", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, "drop_predVars_with_fewer_0s_or_1s.csv"), sep=",", append = TRUE, row.names = F, col.names = F)
+        }
+      }
+    }
+  }
   
-  if(study_name != "COVE"){
+  if(study_name == "COVEBoost" & !file.exists(here("output", Sys.getenv("TRIAL"), "drop_predVars_with_fewer_0s_or_1s.csv"))){
+    paste0("No binary input variable had number of cases in the variable = 1 or 0 subgroup <= 3") %>%
+      write.table(file = here("output", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, "drop_predVars_with_fewer_0s_or_1s.csv"), sep=",", append = TRUE, row.names = F, col.names = F)
+  }
+  ##############################
+  if(!study_name %in% c("COVE", "COVEBoost")){
     # delete the file drop_predVars_with_fewer_0s_or_1s.csv
     unlink(here("output", Sys.getenv("TRIAL"), "drop_predVars_with_fewer_0s_or_1s.csv"))
     # Remove a variable if the number of cases in the variable = 1 subgroup is <= 3 or the number of cases in the variable = 0 subgroup is <= 3
     for (i in 1:length(pred_vars)) {
+      #print(i)
       if ((dat %>% select(starts_with(pred_vars[i])) %>% unique())[[1]] == c(0,1) | 
           (dat %>% select(starts_with(pred_vars[i])) %>% unique())[[1]] == c(1,0)) {
         if (dat %>% filter(get(pred_vars[i]) == 1) %>% pull(endpoint) %>% sum() <= 3 | dat %>% filter(get(pred_vars[i]) == 0) %>% pull(endpoint) %>% sum() <= 3){
@@ -539,7 +565,7 @@ drop_predVars_with_fewer_0s_or_1s <- function(dat, pred_vars) {
     }
   }
   
-  if(study_name != "COVE" & !file.exists(here("output", Sys.getenv("TRIAL"), "drop_predVars_with_fewer_0s_or_1s.csv"))){
+  if(!study_name %in% c("COVE", "COVEBoost") & !file.exists(here("output", Sys.getenv("TRIAL"), "drop_predVars_with_fewer_0s_or_1s.csv"))){
     paste0("No binary input variable had number of cases in the variable = 1 or 0 subgroup <= 3") %>%
       write.table(file = here("output", Sys.getenv("TRIAL"), "drop_predVars_with_fewer_0s_or_1s.csv"), sep=",", append = TRUE, row.names = F, col.names = F)
   }
@@ -579,8 +605,13 @@ drop_predVars_with_fewer_0s_or_1s <- function(dat, pred_vars) {
 # @return a data frame upon removal of any binary predictor variables that have more than 5% values missing
 drop_predVars_with_high_total_missing_values <- function(X, predVars) {
   # delete the file drop_predVars_with_high_total_missing_values.csv
-  unlink(here("output", Sys.getenv("TRIAL"), "drop_predVars_with_high_total_missing_values.csv"))
+  if(study_name == "COVEBoost")
+    unlink(here("output", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, "drop_predVars_with_high_total_missing_values.csv"))
+  else
+    unlink(here("output", Sys.getenv("TRIAL"), "drop_predVars_with_high_total_missing_values.csv"))
+  
   covars_highNAvalues <- vector()
+  
   for (i in 1:length(predVars)) {
     total_NAs <- sum(is.na(X %>% pull(predVars[i])))
     percent_NAs <- total_NAs / length(X %>% pull(predVars[i]))
@@ -588,13 +619,22 @@ drop_predVars_with_high_total_missing_values <- function(X, predVars) {
     if (percent_NAs > 0.05) {
       print(paste0("WARNING: ", predVars[i], " variable has more than 5% values missing! This variable will be dropped from SuperLearner analysis."))
       # Also print to file
-      paste0(predVars[i], " variable has more than 5% values missing and was dropped from risk score analysis.") %>%
-        write.table(file = here("output", Sys.getenv("TRIAL"), "drop_predVars_with_high_total_missing_values.csv"), sep=",", append = TRUE, row.names = F, col.names = F)
+      if(study_name == "COVEBoost"){
+        paste0(predVars[i], " variable has more than 5% values missing and was dropped from risk score analysis.") %>%
+          write.table(file = here("output", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, "drop_predVars_with_high_total_missing_values.csv"), sep=",", append = TRUE, row.names = F, col.names = F)
+      }
+      else{
+        paste0(predVars[i], " variable has more than 5% values missing and was dropped from risk score analysis.") %>%
+          write.table(file = here("output", Sys.getenv("TRIAL"), "drop_predVars_with_high_total_missing_values.csv"), sep=",", append = TRUE, row.names = F, col.names = F)
+      }
       covars_highNAvalues <- predVars[i]
     }
   }
   
-  if(!file.exists(here("output", Sys.getenv("TRIAL"), "drop_predVars_with_high_total_missing_values.csv"))){
+  if(study_name == "COVEBoost" & !file.exists(here("output", Sys.getenv("TRIAL"), "drop_predVars_with_high_total_missing_values.csv"))){
+    paste0("No variables had more than 5% values missing.") %>%
+      write.table(file = here("output", Sys.getenv("TRIAL"), SLcohort, SLrunBaseline, "drop_predVars_with_high_total_missing_values.csv"), sep=",", append = TRUE, row.names = F, col.names = F)
+  } else if(!file.exists(here("output", Sys.getenv("TRIAL"), "drop_predVars_with_high_total_missing_values.csv"))){
     paste0("No variables had more than 5% values missing.") %>%
       write.table(file = here("output", Sys.getenv("TRIAL"), "drop_predVars_with_high_total_missing_values.csv"), sep=",", append = TRUE, row.names = F, col.names = F)
   }
@@ -857,12 +897,13 @@ plot_predicted_probabilities <- function(pred, weights = rep(1, length(pred$pred
   if(study_name %in% c("COVE", "MockCOVE")){
     cases = "Post Day 57 Cases"
     disease_name = "COVID-19"
-  }
-  if(study_name == "ENSEMBLE"){
+  } else if(study_name %in% c("COVEBoost")){
+    cases = "Post Day 29 Cases"
+    disease_name = "COVID-19 Omicron"
+  } else if(study_name == "ENSEMBLE"){
     cases = "Post Day 29 Cases"
     disease_name = "COVID-19"
-  }
-  if(study_name == "HVTN705"){
+  } else if(study_name == "HVTN705"){
     cases = "Post Day 210 Cases"
     disease_name = "HIV"
   }
@@ -932,7 +973,7 @@ make_forest_plot_demo <- function(avgs) {
     geom_text(hjust = 1, vjust = 0, size = 5) +
     xlim(0.7, 2) +
     theme(
-      plot.margin = unit(c(2.2, -0.15, 3, -0.15), "cm"),
+      plot.margin = unit(c(0.9, -0.15, 1.6, -0.15), "cm"),
       axis.line = element_blank(),
       axis.text.y = element_blank(),
       axis.text.x = element_text(size = 2, color = "white"),
@@ -953,6 +994,10 @@ make_forest_plot_SL_allVarSets <- function(dat, learner.choice = "SL"){
     arrange(varsetNo) %>%
     mutate(varset = fct_reorder(varset, AUC, .desc = F)) %>%
     arrange(-AUC)
+  
+  if(Sys.getenv("TRIAL") == "moderna_boost"){
+    allSLs <- allSLs %>% dplyr::slice(1:50) 
+  }
 
   lowestXTick <- floor(min(allSLs$ci_ll)*10)/10
   highestXTick <- ceiling(max(allSLs$ci_ul)*10)/10
@@ -964,6 +1009,10 @@ make_forest_plot_SL_allVarSets <- function(dat, learner.choice = "SL"){
     learner.plot.margin = unit(c(0.8,0.2,0.8,-0.15),"cm")
     names.plot.margin = unit(c(-1.5,-0.15,0.65,-0.15),"cm")
     y_at = 35.2
+  } else if(Sys.getenv("TRIAL") == "moderna_boost"){
+    learner.plot.margin = unit(c(1.9,0.2,0.8,-0.15),"cm")
+    names.plot.margin = unit(c(-0,-0.25,0.55,0),"cm")
+    y_at = 51.2
   } else if(Sys.getenv("TRIAL") %in% c("janssen_pooled_partA", "janssen_la_partA")){
     learner.plot.margin = unit(c(3.25,0.2,0.8,-0.15),"cm")
     names.plot.margin = unit(c(1.6,-0.15,1.39,-0.15),"cm")
@@ -993,12 +1042,12 @@ make_forest_plot_SL_allVarSets <- function(dat, learner.choice = "SL"){
     select(varset, AUCstr) %>%
     mutate(varset = as.character(varset)) %>%
     tidyr::gather("columnVal", "strDisplay") %>%
-    mutate(xcoord = case_when(columnVal=="varset" ~ 1.5,
+    mutate(xcoord = case_when(columnVal=="varset" ~ 1.57,
                               columnVal=="AUCstr" ~ 2),
            ycoord = rep(total_learnerScreen_combos:1, 2))
   
   top_learner_nms_plot <- ggplot(allSLs_withCoord, aes(x = xcoord, y = ycoord, label = strDisplay)) +
-    geom_text(hjust=1, vjust=0, size=5) +
+    geom_text(hjust=1, vjust=0, size=4.5) +
     xlim(0.7, 2) +
     theme_bw() +
     theme(plot.margin=names.plot.margin,
