@@ -1,0 +1,54 @@
+---
+title: "Make BD29 Correlates Mock Dataset"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(kyotil)
+set.seed(0)
+```
+
+```{r}
+dat=read.csv("/trials/covpn/p3001/analysis/correlates/Part_C_Unblinded_Phase_Data/adata/moderna_boost_data_processed_20230912.csv")
+```
+
+The ptids without Trt are also the ptids without naive. Analyses are subsetted to naive and non-naive, so we can use just data with non-NA Trt/naive.
+```{r}
+mytable(dat$Trt,dat$naive)
+dat1=subset(dat, !is.na(naive))
+```
+
+
+Resample dataset by rows
+```{r}
+n=nrow(dat1)
+dat2=dat1[sample(n), ]
+```
+
+
+Permute: resample outcome variables to break the link between them and the markers
+```{r}
+neworder=sample(n)
+vv=names(dat2)
+vv=vv[startsWith(vv, "EventInd")]
+print(vv)
+```
+
+
+
+
+```{r}
+dat3=dat2
+for (v in vv) {
+  dat3[neworder,v]=dat3[,v]
+}
+print(dat2[1:10,vv])
+print(dat3[1:10,vv])
+```
+
+
+save data
+```{r}
+mywrite.csv(dat3, file="/trials/covpn/p3001/analysis/correlates/Part_C_Unblinded_Phase_Data/adata/moderna_boost_data_mock")
+```
