@@ -1,4 +1,4 @@
-# Generalized Correlates Analysis Reporting
+# Correlates Analysis Reporting for Moderna Booster Vaccine
 
 ## Summary
 
@@ -16,11 +16,13 @@ upstream component.
 
 ## Design notes
 
-The correlates_reporting3 repo is more flexible compared to correlates_reporting2 (design doc). Reporting2 was designed such that each time the “button” was pressed, a correlates analysis was run for one endpoint/analysis population/dataset combination, e.g., correlates for the severe endpoint starting seven days post the D29 visit in the US part of the ENSEMBLE trial. A new analysis can be specific by adding a new TRIAL section and a new COR section in config.yml with minimal coding. Reporting3 is designed to facilitate implementation of more complex objectives, e.g., to assess whether a correlate is modified by naïve/non-naïve status. This is primarily achieved by pushing the logic concerning COR from _common.R into a new top layer within an analysis module, see cor_coxph_cove_boost.R for an example. 
+The correlates_reporting3 is tailored to work for the Moderna Booster Vaccine CoP analysis. This objectives in this project are more complex compared to the previous CoP projects where a correlates analysis was run for one endpoint/analysis population/dataset combination, e.g., correlates for the severe endpoint starting seven days post the D29 visit in the US part of the ENSEMBLE trial. A new analysis can be specific by adding a new TRIAL section and a new COR section in config.yml with minimal coding. Reporting3 is designed to facilitate implementation of more complex objectives, e.g., to assess whether a correlate is modified by naïve/non-naïve status. This is primarily achieved by pushing the logic concerning COR from _common.R into a new top layer within an analysis module, see cor_coxph_cove_boost.R for an example. 
 
-correlates_reporting3 makes some improvements over correlates_reporting2:
+correlates_reporting3 also introduces a new features:
 
 * Assay metadata such as LLOQs, ULOQs, llox_label etc are stored in a csv file and used in data mapping, correlates_processing, and correlates_reportings. 
+
+This feature has now been introduced in the correlates_reporting2 repo as well.
 
 The basic structure hasn’t changed from the correlates_reporting2 repo. 
 
